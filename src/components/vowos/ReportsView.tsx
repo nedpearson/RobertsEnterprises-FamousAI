@@ -1,17 +1,10 @@
 import { useMemo, useState, ReactNode } from 'react';
 
 import { Download } from 'lucide-react';
-import {
-  invoices,
-  purchaseOrders,
-  appointments,
-  leads,
-  customers,
-  revenueByMonth,
-  formatCents,
-  formatDate,
-} from '@/data/vowosData';
+import { revenueByMonth, formatCents, formatDate } from '@/data/vowosData';
+import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, btnSecondary } from './ui';
+
 
 type TabKey = 'revenue' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups';
 
@@ -36,12 +29,14 @@ function downloadCsv(filename: string, rows: (string | number)[][]) {
 
 export default function ReportsView() {
   const [tab, setTab] = useState<TabKey>('revenue');
+  const { brides: customers, leads, appointments, invoices, purchaseOrders } = useVowosData();
 
   const openOrders = invoices.filter((i) => i.status !== 'Paid');
   const pendingDeliveries = purchaseOrders.filter((p) => p.status !== 'Delivered');
   const followUps = leads.filter((l) => l.stage === 'New' || l.stage === 'Contacted');
   const maxRev = Math.max(...revenueByMonth.map((m) => m.revenue));
   const totalRev = revenueByMonth.reduce((s, m) => s + m.revenue, 0);
+
 
   const exportData = useMemo(() => {
     switch (tab) {
@@ -106,8 +101,9 @@ export default function ReportsView() {
           </div>
           <div className="space-y-4">
             {[
-              { label: 'Average sale', value: formatCents(Math.round(invoices.reduce((s, i) => s + i.amountCents, 0) / invoices.length)) },
-              { label: 'Conversion rate', value: `${Math.round((leads.filter((l) => l.stage === 'Won').length / leads.length) * 100)}% of leads` },
+              { label: 'Average sale', value: invoices.length ? formatCents(Math.round(invoices.reduce((s, i) => s + i.amountCents, 0) / invoices.length)) : '—' },
+              { label: 'Conversion rate', value: leads.length ? `${Math.round((leads.filter((l) => l.stage === 'Won').length / leads.length) * 100)}% of leads` : '—' },
+
               { label: 'Repeat & referral brides', value: `${customers.filter((c) => c.status !== 'Active').length} this season` },
               { label: 'Best month', value: 'July — $71.4k' },
             ].map((s) => (

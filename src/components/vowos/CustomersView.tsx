@@ -1,13 +1,14 @@
 import { useMemo, useState, FormEvent } from 'react';
 
-import { Search, UserPlus, CheckCircle2 } from 'lucide-react';
-import { customers as seedCustomers, Customer, formatCents, formatDate, teamMembers } from '@/data/vowosData';
+import { Search, UserPlus, CheckCircle2, Loader2 } from 'lucide-react';
+import { formatCents, formatDate, teamMembers } from '@/data/vowosData';
+import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, Modal, inputCls, btnPrimary } from './ui';
 
 const STATUS_FILTERS = ['All', 'Active', 'Purchased', 'Alterations', 'Picked Up'] as const;
 
 export default function CustomersView() {
-  const [list, setList] = useState<Customer[]>(seedCustomers);
+  const { brides: list, loading, addBride } = useVowosData();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<(typeof STATUS_FILTERS)[number]>('All');
   const [modalOpen, setModalOpen] = useState(false);
@@ -26,7 +27,6 @@ export default function CustomersView() {
   );
 
   const handleAdd = async (e: FormEvent) => {
-
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) return;
     setSaving(true);
@@ -46,18 +46,15 @@ export default function CustomersView() {
     } catch {
       // non-blocking
     }
-    const newCustomer: Customer = {
-      id: `C-${2000 + list.length + 1}`,
+    const ok = await addBride({
       name: form.name,
       email: form.email,
-      phone: form.phone || '—',
-      weddingDate: form.weddingDate || '2027-06-01',
+      phone: form.phone,
+      weddingDate: form.weddingDate,
       stylist: form.stylist,
-      status: 'Active',
-      spendCents: 0,
-    };
-    setList([newCustomer, ...list]);
+    });
     setSaving(false);
+    if (!ok) return;
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
@@ -116,34 +113,43 @@ export default function CustomersView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {filtered.map((c) => (
-                <tr key={c.id} className="transition-colors hover:bg-rose-50/40">
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-rose-200 text-xs font-semibold text-rose-600">
-                        {c.name.split(' ').map((n) => n[0]).join('')}
-                      </div>
-                      <div>
-                        <p className="font-medium text-stone-800">{c.name}</p>
-                        <p className="text-xs text-stone-400">{c.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <p className="text-stone-700">{c.email}</p>
-                    <p className="text-xs text-stone-400">{c.phone}</p>
-                  </td>
-                  <td className="px-5 py-3.5 text-stone-700">{formatDate(c.weddingDate)}</td>
-                  <td className="px-5 py-3.5 text-stone-700">{c.stylist}</td>
-                  <td className="px-5 py-3.5">
-                    <StatusBadge status={c.status} />
-                  </td>
-                  <td className="px-5 py-3.5 font-medium text-stone-800">
-                    {c.spendCents > 0 ? formatCents(c.spendCents) : '—'}
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-stone-500">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-rose-400" />
+                    <p className="mt-2 text-xs">Loading brides...</p>
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
+              )}
+              {!loading &&
+                filtered.map((c) => (
+                  <tr key={c.id} className="transition-colors hover:bg-rose-50/40">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-rose-200 text-xs font-semibold text-rose-600">
+                          {c.name.split(' ').map((n) => n[0]).join('')}
+                        </div>
+                        <div>
+                          <p className="font-medium text-stone-800">{c.name}</p>
+                          <p className="text-xs text-stone-400">{c.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <p className="text-stone-700">{c.email}</p>
+                      <p className="text-xs text-stone-400">{c.phone}</p>
+                    </td>
+                    <td className="px-5 py-3.5 text-stone-700">{formatDate(c.weddingDate)}</td>
+                    <td className="px-5 py-3.5 text-stone-700">{c.stylist}</td>
+                    <td className="px-5 py-3.5">
+                      <StatusBadge status={c.status} />
+                    </td>
+                    <td className="px-5 py-3.5 font-medium text-stone-800">
+                      {c.spendCents > 0 ? formatCents(c.spendCents) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-10 text-center text-stone-500">
                     No brides match your search.

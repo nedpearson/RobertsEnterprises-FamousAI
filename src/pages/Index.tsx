@@ -2,11 +2,14 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
 import { AppProvider } from '@/contexts/AppContext';
+import { VowosDataProvider } from '@/contexts/VowosDataContext';
 
 const Index: React.FC = () => {
   return (
     <AppProvider>
-      <AppLayout />
+      <VowosDataProvider>
+        <AppLayout />
+      </VowosDataProvider>
     </AppProvider>
   );
 };
