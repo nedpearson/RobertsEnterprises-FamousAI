@@ -97,9 +97,13 @@ export default function BridePortal() {
             stylist: r.stylist,
             status: r.status,
             location: (r.location ?? 'ido-br') as LocationId,
+            lookingFor: r.looking_for ?? '',
+            budgetCents: r.budget_cents ?? 0,
+            feePaid: r.fee_paid ?? false,
           })),
         );
       }
+
       if (invRes.data) {
         setInvoices(
           invRes.data.map((r: any) => ({

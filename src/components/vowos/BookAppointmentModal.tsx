@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CalendarPlus, Loader2, MailCheck, Pencil } from 'lucide-react';
+import { AlertTriangle, CalendarPlus, CreditCard, Loader2, MailCheck, Pencil } from 'lucide-react';
 import {
   Appointment,
   LocationId,
@@ -7,6 +7,10 @@ import {
   teamMembers,
   APPOINTMENT_TYPES,
   TIME_SLOTS,
+  LOOKING_FOR_OPTIONS,
+  BUDGET_RANGES,
+  BOOKING_FEE_CENTS,
+  formatCents,
 } from '@/data/vowosData';
 import { useVowosData, NewAppointmentInput } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
@@ -24,6 +28,8 @@ import {
 const OTHER = '__other__';
 
 const labelCls = 'mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500';
+const FEE_LABEL = formatCents(BOOKING_FEE_CENTS);
+
 
 export default function BookAppointmentModal({
   open,
@@ -53,6 +59,9 @@ export default function BookAppointmentModal({
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [stylist, setStylist] = useState(teamMembers[0]);
+  const [lookingFor, setLookingFor] = useState('');
+  const [budgetCents, setBudgetCents] = useState(0);
+  const [feeCollected, setFeeCollected] = useState(true);
   const [notify, setNotify] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -70,6 +79,9 @@ export default function BookAppointmentModal({
       // Existing times should always be one of our slots, but keep whatever it is
       setTime(appointment.time);
       setStylist(appointment.stylist);
+      setLookingFor(appointment.lookingFor);
+      setBudgetCents(appointment.budgetCents);
+      setFeeCollected(appointment.feePaid);
     } else {
       setBrideChoice('');
       setCustomName('');
@@ -79,11 +91,15 @@ export default function BookAppointmentModal({
       setDate('');
       setTime('');
       setStylist(teamMembers[0]);
+      setLookingFor('');
+      setBudgetCents(0);
+      setFeeCollected(true);
     }
     setNotify(true);
     setError('');
 
   }, [open, appointment, activeLocation]);
+
 
   const customerName = isEdit
     ? appointment!.customer
@@ -126,6 +142,14 @@ export default function BookAppointmentModal({
       setError(brideChoice === OTHER ? "Please type the lead's name." : 'Please choose a bride.');
       return;
     }
+    if (!isEdit && !lookingFor) {
+      setError("Please pick what she's looking for.");
+      return;
+    }
+    if (!isEdit && !budgetCents) {
+      setError('Please pick her budget range.');
+      return;
+    }
     if (!date) {
       setError('Please pick a date.');
       return;
@@ -147,6 +171,9 @@ export default function BookAppointmentModal({
         time,
         stylist,
         location,
+        lookingFor,
+        budgetCents,
+        feePaid: feeCollected,
       };
       ok = await addAppointment(input);
     }
@@ -163,7 +190,11 @@ export default function BookAppointmentModal({
         stylist,
         status: 'Confirmed',
         location,
+        lookingFor,
+        budgetCents,
+        feePaid: feeCollected,
       };
+
       const tpl = isEdit
         ? appointmentRescheduleTemplates(apptForMsg)
         : appointmentConfirmationTemplates(apptForMsg);
@@ -285,6 +316,68 @@ export default function BookAppointmentModal({
             ))}
           </select>
         </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="ba-looking" className={labelCls}>
+              Looking for
+            </label>
+            <select
+              id="ba-looking"
+              value={lookingFor}
+              onChange={(e) => setLookingFor(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Choose…</option>
+              {/* Keep a non-standard existing value selectable when editing */}
+              {lookingFor && !LOOKING_FOR_OPTIONS.includes(lookingFor as any) && (
+                <option value={lookingFor}>{lookingFor}</option>
+              )}
+              {LOOKING_FOR_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="ba-budget" className={labelCls}>
+              Budget
+            </label>
+            <select
+              id="ba-budget"
+              value={budgetCents}
+              onChange={(e) => setBudgetCents(parseInt(e.target.value, 10) || 0)}
+              className={inputCls}
+            >
+              <option value={0}>Choose a range…</option>
+              {BUDGET_RANGES.map((b) => (
+                <option key={b.cents} value={b.cents}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {!isEdit && (
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50/60 p-3">
+            <input
+              type="checkbox"
+              checked={feeCollected}
+              onChange={(e) => setFeeCollected(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-stone-300 text-rose-500 focus:ring-rose-400"
+            />
+            <span className="text-xs leading-relaxed text-rose-800">
+              <span className="flex items-center gap-1 font-semibold">
+                <CreditCard className="h-3.5 w-3.5" /> {FEE_LABEL} booking fee collected
+              </span>
+              Every booking carries a flat {FEE_LABEL} fee, credited toward her purchase. Uncheck if
+              collecting at check-in instead.
+            </span>
+          </label>
+        )}
+
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>

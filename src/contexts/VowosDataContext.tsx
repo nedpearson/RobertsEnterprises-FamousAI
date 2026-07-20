@@ -55,7 +55,11 @@ const mapAppointment = (r: any): Appointment => ({
   stylist: r.stylist,
   status: r.status,
   location: (r.location ?? 'ido-br') as LocationId,
+  lookingFor: r.looking_for ?? '',
+  budgetCents: r.budget_cents ?? 0,
+  feePaid: r.fee_paid ?? false,
 });
+
 
 const mapInvoice = (r: any): Invoice => ({
   id: r.id,
@@ -133,7 +137,14 @@ export interface NewAppointmentInput {
   time: string;
   stylist: string;
   location?: LocationId;
+  /** What she's shopping for (from LOOKING_FOR_OPTIONS). */
+  lookingFor?: string;
+  /** Stated budget in cents (from BUDGET_RANGES). */
+  budgetCents?: number;
+  /** Whether the $75 booking fee was collected at booking time. */
+  feePaid?: boolean;
 }
+
 
 /** Fields staff can change when rescheduling an existing appointment. */
 export interface AppointmentUpdateInput {
@@ -397,6 +408,9 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         stylist: input.stylist,
         status: 'Confirmed',
         location: input.location ?? defaultLocation,
+        lookingFor: input.lookingFor ?? '',
+        budgetCents: input.budgetCents ?? 0,
+        feePaid: input.feePaid ?? false,
       };
       const { error } = await supabase.from('appointments').insert({
         id: newAppt.id,
@@ -407,6 +421,9 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         stylist: newAppt.stylist,
         status: newAppt.status,
         location: newAppt.location,
+        looking_for: newAppt.lookingFor,
+        budget_cents: newAppt.budgetCents,
+        fee_paid: newAppt.feePaid,
       });
       if (error) {
         dbErrorToast('book appointment', error.message);
@@ -421,6 +438,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     },
     [appointments, defaultLocation],
   );
+
 
   const updateAppointment = useCallback(
     async (id: string, input: AppointmentUpdateInput): Promise<boolean> => {

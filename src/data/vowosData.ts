@@ -191,6 +191,12 @@ export interface Appointment {
   stylist: string;
   status: 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled';
   location: LocationId;
+  /** What the bride is shopping for (gown, bridesmaids, accessories, …). */
+  lookingFor: string;
+  /** Bride's stated gown budget in cents (0 = not shared). */
+  budgetCents: number;
+  /** Whether the $75 booking fee has been collected. */
+  feePaid: boolean;
 }
 
 /** Shared appointment type list — used by staff booking and the public bride booking page. */
@@ -201,6 +207,47 @@ export const APPOINTMENT_TYPES: Appointment['type'][] = [
   'Pickup',
   'Accessories',
 ];
+
+// ─── Booking fee + intake questions (shared by staff + public booking) ───
+
+/** Every booking carries a flat $75 reservation fee, credited toward her purchase. */
+export const BOOKING_FEE_CENTS = 7500;
+
+/** "What are you looking for?" options asked on every booking. */
+export const LOOKING_FOR_OPTIONS = [
+  'Wedding Gown',
+  'Bridesmaids',
+  'Mother of the Bride',
+  'Veil & Accessories',
+  'Formal / Pageant',
+  'Suit & Tux',
+  'Not Sure Yet',
+] as const;
+
+/** Budget ranges asked on every booking (value stored in cents). */
+export const BUDGET_RANGES: { label: string; cents: number }[] = [
+  { label: 'Under $1,500', cents: 150000 },
+  { label: '$1,500 – $2,500', cents: 250000 },
+  { label: '$2,500 – $3,500', cents: 350000 },
+  { label: '$3,500 – $5,000', cents: 500000 },
+  { label: '$5,000+', cents: 750000 },
+];
+
+/** Human label for a stored budget amount ("$2,500 – $3,500"), or "—" when unset. */
+export function budgetLabel(cents: number): string {
+  if (!cents || cents <= 0) return '—';
+  const match = BUDGET_RANGES.find((b) => b.cents === cents);
+  return match ? match.label : formatCents(cents);
+}
+
+/** Public booking page URL + QR image (brides scan this in-store or on print collateral). */
+export function bookingPageUrl(): string {
+  return typeof window !== 'undefined' ? `${window.location.origin}/book` : '/book';
+}
+
+export function qrImageUrl(data: string, size = 280): string {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=10&data=${encodeURIComponent(data)}`;
+}
 
 /** Salon hours: 9:00 AM – 5:30 PM in 30-minute slots, matching "1:30 PM" formatting. */
 export const TIME_SLOTS: string[] = (() => {
@@ -214,6 +261,7 @@ export const TIME_SLOTS: string[] = (() => {
   }
   return slots;
 })();
+
 
 /** Hosted CRM booking page for virtual/video consultations (opens in a new tab). */
 export const VIRTUAL_CONSULT_BOOKING_URL =

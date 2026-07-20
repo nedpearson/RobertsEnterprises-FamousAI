@@ -1,6 +1,17 @@
 import { useState } from 'react';
-import { CalendarDays, CalendarPlus, Check, Loader2, Pencil, Trash2 } from 'lucide-react';
-import { Appointment, formatDate } from '@/data/vowosData';
+import {
+  CalendarDays, CalendarPlus, Check, Copy, ExternalLink, Loader2, Pencil, Printer, QrCode, Trash2,
+  Search, Wallet, CreditCard,
+} from 'lucide-react';
+import {
+  Appointment,
+  formatDate,
+  budgetLabel,
+  bookingPageUrl,
+  qrImageUrl,
+  BOOKING_FEE_CENTS,
+  formatCents,
+} from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
 import { PageHeader, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
@@ -15,14 +26,51 @@ const TYPE_COLORS: Record<string, string> = {
   Accessories: 'bg-sky-100 text-sky-600',
 };
 
+const FEE_LABEL = formatCents(BOOKING_FEE_CENTS);
+
+/** Open a printable card with the booking QR code for the fitting-room counter. */
+function printBookingQr(url: string) {
+  const w = window.open('', '_blank', 'width=480,height=640');
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html><head><title>Book Your Visit — QR Code</title>
+    <style>
+      body { font-family: Georgia, 'Times New Roman', serif; text-align: center; padding: 48px 24px; color: #1c1917; }
+      .kicker { font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: #e11d48; }
+      h1 { font-size: 26px; margin: 8px 0 4px; }
+      p { font-size: 13px; color: #57534e; margin: 4px 0; }
+      img { margin: 24px auto; display: block; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px; }
+      .url { font-size: 11px; color: #a8a29e; word-break: break-all; }
+    </style></head><body>
+    <p class="kicker">I Do Bridal Couture · Proper &amp; Company</p>
+    <h1>Scan to Book Your Visit</h1>
+    <p>Tell us what you're looking for and your budget — a flat ${FEE_LABEL} booking fee reserves your private suite and is credited toward your purchase.</p>
+    <img src="${qrImageUrl(url, 320)}" width="320" height="320" alt="Booking QR code" />
+    <p class="url">${url}</p>
+    <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };<\/script>
+    </body></html>`);
+  w.document.close();
+}
+
 export default function AppointmentsView() {
   const { appointments: list, loading, setAppointmentStatus, deleteAppointment } = useVowosData();
   const [bookOpen, setBookOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [cancelling, setCancelling] = useState<Appointment | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const bookUrl = bookingPageUrl();
+
   const days = Array.from(new Set(list.map((a) => a.date))).sort();
+
+  const copyBookingLink = async () => {
+    try {
+      await navigator.clipboard.writeText(bookUrl);
+      toast({ title: 'Booking link copied', description: bookUrl });
+    } catch {
+      toast({ title: 'Could not copy', description: bookUrl, variant: 'destructive' });
+    }
+  };
 
   const handleConfirmCancel = async () => {
     if (!cancelling) return;
@@ -50,11 +98,17 @@ export default function AppointmentsView() {
         subtitle={`${list.filter((a) => a.status !== 'Completed' && a.status !== 'Cancelled').length} upcoming this week · ${list.filter((a) => a.status === 'Pending').length} awaiting confirmation`}
 
         action={
-          <button onClick={() => setBookOpen(true)} className={btnPrimary}>
-            <CalendarPlus className="h-4 w-4" /> Book Appointment
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => setQrOpen(true)} className={btnSecondary}>
+              <QrCode className="h-4 w-4" /> Booking QR
+            </button>
+            <button onClick={() => setBookOpen(true)} className={btnPrimary}>
+              <CalendarPlus className="h-4 w-4" /> Book Appointment
+            </button>
+          </div>
         }
       />
+
 
       {loading ? (
         <div className="flex flex-col items-center rounded-2xl border border-stone-200/80 bg-white py-16 shadow-sm">
@@ -104,6 +158,33 @@ export default function AppointmentsView() {
                       <p className="mt-0.5 text-sm text-stone-500">
                         {a.time} · with {a.stylist}
                       </p>
+                      {(a.lookingFor || a.budgetCents > 0) && (
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500">
+                          {a.lookingFor && (
+                            <span className="inline-flex items-center gap-1">
+                              <Search className="h-3 w-3 text-stone-400" /> {a.lookingFor}
+                            </span>
+                          )}
+                          {a.budgetCents > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <Wallet className="h-3 w-3 text-stone-400" /> {budgetLabel(a.budgetCents)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {a.status !== 'Cancelled' && (
+                        <span
+                          className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            a.feePaid
+                              ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
+                              : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                          }`}
+                        >
+                          <CreditCard className="h-3 w-3" />
+                          {a.feePaid ? `${FEE_LABEL} fee paid` : `${FEE_LABEL} fee due at check-in`}
+                        </span>
+                      )}
+
                       <div className="mt-4 flex gap-2">
                         {a.status === 'Pending' && (
                           <button
@@ -198,6 +279,48 @@ export default function AppointmentsView() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Booking QR code — print for the counter, mirrors, or marketing cards */}
+      <Modal open={qrOpen} onClose={() => setQrOpen(false)} title="Scan-to-Book QR Code">
+        <div className="space-y-4">
+          <p className="text-sm leading-relaxed text-stone-600">
+            Brides scan this code to open the online booking page — it asks what they're looking
+            for and their budget, and collects the flat{' '}
+            <span className="font-semibold text-stone-900">{FEE_LABEL} booking fee</span> up front.
+            Print it for the front counter, fitting-room mirrors, or bridal-show cards.
+          </p>
+          <div className="flex justify-center">
+            <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+              <img
+                src={qrImageUrl(bookUrl, 260)}
+                alt="QR code linking to the booking page"
+                width={260}
+                height={260}
+                className="h-64 w-64"
+              />
+            </div>
+          </div>
+          <p className="break-all rounded-lg bg-stone-50 px-3 py-2 text-center text-[11px] text-stone-500 ring-1 ring-stone-200">
+            {bookUrl}
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <button type="button" onClick={() => printBookingQr(bookUrl)} className={`${btnSecondary} justify-center`}>
+              <Printer className="h-4 w-4" /> Print
+            </button>
+            <button type="button" onClick={copyBookingLink} className={`${btnSecondary} justify-center`}>
+              <Copy className="h-4 w-4" /> Copy Link
+            </button>
+            <a
+              href={bookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${btnSecondary} justify-center`}
+            >
+              <ExternalLink className="h-4 w-4" /> Open Page
+            </a>
+          </div>
+        </div>
       </Modal>
     </div>
   );
