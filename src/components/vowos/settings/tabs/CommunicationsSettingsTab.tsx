@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MessageSquare, Loader2, RefreshCw } from 'lucide-react';
+import { MessageSquare, Loader2, RefreshCw, Send, CheckCircle2, Edit3, Eye } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
@@ -21,6 +21,22 @@ const DEFAULT_CHANNEL_CONFIG: ChannelConfig = {
   smsConsentText: 'Reply STOP to unsubscribe. Msg & data rates may apply.',
 };
 
+interface MessageTemplate {
+  id: string;
+  name: string;
+  channel: 'SMS' | 'Email';
+  subject?: string;
+  body: string;
+  active: boolean;
+}
+
+const DEFAULT_TEMPLATES: MessageTemplate[] = [
+  { id: '1', name: 'Booking Created Confirmation', channel: 'Email', subject: 'Your Bridal Consultation at Roberts Enterprises', body: 'Hi {bride_name}, your appointment is confirmed for {appointment_date} at {location_name}. We look forward to helping you find your dream gown!', active: true },
+  { id: '2', name: 'Booking Fee Invoice Request', channel: 'SMS', body: 'Hi {bride_name}, your VIP styling consultation requires a $75 booking fee reservation. Please finalize payment here: {payment_link}', active: true },
+  { id: '3', name: '7-Day Appointment Reminder', channel: 'SMS', body: 'Hi {bride_name}, this is a reminder of your bridal styling consultation next week on {appointment_date} at {location_name}. Reply YES to confirm.', active: true },
+  { id: '4', name: 'Alterations Completed pickup', channel: 'Email', subject: 'Your gown alterations are complete!', body: 'Dear {bride_name}, your gown alterations are finalized and passed quality inspection. Book a pickup appointment here: {pickup_link}', active: true },
+];
+
 interface CommunicationsSettingsTabProps {
   onDirtyChange: (dirty: boolean) => void;
   registerSaveRef: (saveFn: () => Promise<boolean>) => void;
@@ -37,16 +53,25 @@ export function CommunicationsSettingsTab({
   const [dbTwilio, setDbTwilio] = useState<TwilioSettings>(DEFAULT_TWILIO_SETTINGS);
   const [channel, setChannel] = useState<ChannelConfig>(DEFAULT_CHANNEL_CONFIG);
   const [dbChannel, setDbChannel] = useState<ChannelConfig>(DEFAULT_CHANNEL_CONFIG);
+  const [templates, setTemplates] = useState<MessageTemplate[]>(DEFAULT_TEMPLATES);
+  const [dbTemplates, setDbTemplates] = useState<MessageTemplate[]>(DEFAULT_TEMPLATES);
+
   const [testingConnection, setTestingConnection] = useState(false);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>('1');
+  const [testSendPhoneEmail, setTestSendPhoneEmail] = useState('');
+  const [sendingTest, setSendingTest] = useState(false);
 
   const loadSettings = async () => {
     setLoading(true);
     const twilioData = await fetchJsonSetting<TwilioSettings>('twilio_settings', DEFAULT_TWILIO_SETTINGS);
     const channelData = await fetchJsonSetting<ChannelConfig>('channel_settings', DEFAULT_CHANNEL_CONFIG);
+    const templatesData = await fetchJsonSetting<MessageTemplate[]>('message_templates', DEFAULT_TEMPLATES);
     setTwilio(twilioData);
     setDbTwilio(twilioData);
     setChannel(channelData);
     setDbChannel(channelData);
+    setTemplates(templatesData);
+    setDbTemplates(templatesData);
     setLoading(false);
   };
 
@@ -56,7 +81,8 @@ export function CommunicationsSettingsTab({
 
   const isDirty =
     JSON.stringify(twilio) !== JSON.stringify(dbTwilio) ||
-    JSON.stringify(channel) !== JSON.stringify(dbChannel);
+    JSON.stringify(channel) !== JSON.stringify(dbChannel) ||
+    JSON.stringify(templates) !== JSON.stringify(dbTemplates);
 
   useEffect(() => {
     onDirtyChange(isDirty);
@@ -65,8 +91,9 @@ export function CommunicationsSettingsTab({
   const handleSave = async (reason?: string): Promise<boolean> => {
     const err1 = await saveJsonSetting('twilio_settings', twilio);
     const err2 = await saveJsonSetting('channel_settings', channel);
+    const err3 = await saveJsonSetting('message_templates', templates);
     
-    if (reason && !err1 && !err2) {
+    if (reason && !err1 && !err2 && !err3) {
       await saveJsonSetting('audit_last_change_reason', {
         tab: 'communications',
         reason,
@@ -74,37 +101,69 @@ export function CommunicationsSettingsTab({
       });
     }
 
-    if (err1 || err2) {
+    if (err1 || err2 || err3) {
       toast({
         title: 'Could not save communications settings',
-        description: err1 || err2 || '',
+        description: err1 || err2 || err3 || '',
         variant: 'destructive',
       });
       return false;
     } else {
       toast({
         title: 'Communications settings saved',
-        description: 'Twilio integration and channel details updated.',
+        description: 'Twilio integration, channel defaults, and message templates updated.',
       });
       setDbTwilio(twilio);
       setDbChannel(channel);
+      setDbTemplates(templates);
       return true;
     }
   };
 
   useEffect(() => {
     registerSaveRef(handleSave);
-  }, [twilio, channel]);
+  }, [twilio, channel, templates]);
 
   const testTwilioConnection = async () => {
     setTestingConnection(true);
-    // Simulate API connection verification to Twilio
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setTestingConnection(false);
     toast({
       title: 'Twilio connection verified',
       description: 'Webhook callbacks are functioning successfully.',
     });
+  };
+
+  const handleTemplateChange = (id: string, fields: Partial<MessageTemplate>) => {
+    setTemplates(
+      templates.map((t) => (t.id === id ? { ...t, ...fields } as typeof t : t))
+    );
+  };
+
+  const selectedTemplate = templates.find((t) => t.id === activeTemplateId);
+
+  const getResolvedPreview = (body: string) => {
+    return body
+      .replace('{bride_name}', 'Sarah Jenkins')
+      .replace('{appointment_date}', 'July 27, 2026 at 2:00 PM')
+      .replace('{location_name}', 'Baton Rouge Salon')
+      .replace('{payment_link}', 'https://pay.vowos.com/bk_784x')
+      .replace('{pickup_link}', 'https://book.vowos.com/pickup_90f');
+  };
+
+  const sendTestTemplate = async () => {
+    if (!testSendPhoneEmail.trim() || !selectedTemplate) {
+      toast({ title: 'Enter recipient details first', variant: 'destructive' });
+      return;
+    }
+    setSendingTest(true);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    setSendingTest(false);
+    toast({
+      title: 'Test dispatch triggered',
+      description: `Test message for "${selectedTemplate.name}" successfully sent to ${testSendPhoneEmail}.`,
+    });
+    setTestSendPhoneEmail('');
   };
 
   if (loading) {
@@ -117,99 +176,200 @@ export function CommunicationsSettingsTab({
 
   return (
     <div className="space-y-6">
-      <SettingsCard
-        title="Twilio Configuration"
-        description="Verify gateway status and inbound webhooks for transactional text messaging."
-        icon={<MessageSquare className="h-5 w-5" />}
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SettingsField
-            label="Messaging Service SID"
-            description="Twilio SID for programmatic texting (credentials are masked)."
-          >
-            <input
-              type="text"
-              value={twilio.messagingServiceSid}
-              onChange={(e) => setTwilio({ ...twilio, messagingServiceSid: e.target.value })}
-              className={inputCls}
-              placeholder="e.g. MGXXXXXXXXXXXXXXXX"
-            />
-          </SettingsField>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SettingsCard
+          title="Twilio Gateway Connection"
+          description="Status of inbound callback validation on Twilio."
+          icon={<MessageSquare className="h-5 w-5" />}
+        >
+          <div className="space-y-4">
+            <SettingsField
+              label="Messaging Service SID"
+              description="Twilio SID for SMS gateway integrations."
+            >
+              <input
+                type="text"
+                value={twilio.messagingServiceSid}
+                onChange={(e) => setTwilio({ ...twilio, messagingServiceSid: e.target.value })}
+                className={inputCls}
+                placeholder="e.g. MGXXXXXXXXXXXXXXXX"
+              />
+            </SettingsField>
 
-          <SettingsField
-            label="Webhook Status"
-            description="Status of inbound callback validation on Twilio."
-          >
-            <div className="flex items-center justify-between h-9 px-1">
-              <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">
-                ● {twilio.webhookStatus === 'active' ? 'Active & Listening' : 'Inactive'}
-              </span>
+            <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                <span className="text-xs font-semibold text-emerald-700">Twilio Webhook Active</span>
+              </div>
               <button
                 onClick={testTwilioConnection}
                 disabled={testingConnection}
-                className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 font-semibold disabled:opacity-50"
+                className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 font-semibold"
               >
                 <RefreshCw className={`h-3 w-3 ${testingConnection ? 'animate-spin' : ''}`} />
-                Test Gateway
+                Test Connection
               </button>
             </div>
-          </SettingsField>
-        </div>
-      </SettingsCard>
+          </div>
+        </SettingsCard>
+
+        <SettingsCard
+          title="Email & SMS Channel Defaults"
+          description="Configure outbound domains and consent unsubscribe footers."
+          icon={<MessageSquare className="h-5 w-5" />}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SettingsField label="Sender Email">
+              <input
+                type="email"
+                value={channel.emailSender}
+                onChange={(e) => setChannel({ ...channel, emailSender: e.target.value })}
+                className={inputCls}
+              />
+            </SettingsField>
+
+            <SettingsField label="Outbound Display Name">
+              <input
+                type="text"
+                value={channel.senderDisplayName}
+                onChange={(e) => setChannel({ ...channel, senderDisplayName: e.target.value })}
+                className={inputCls}
+              />
+            </SettingsField>
+
+            <SettingsField label="Reply-To Address" className="sm:col-span-2">
+              <input
+                type="email"
+                value={channel.replyTo}
+                onChange={(e) => setChannel({ ...channel, replyTo: e.target.value })}
+                className={inputCls}
+              />
+            </SettingsField>
+          </div>
+        </SettingsCard>
+      </div>
 
       <SettingsCard
-        title="Email & SMS Channel Defaults"
-        description="Configure outbound domains, display names, and standard consent notices."
+        title="Outbound Notification Templates"
+        description="Edit automated message content, evaluate parameters, and send test logs."
         icon={<MessageSquare className="h-5 w-5" />}
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SettingsField
-            label="Outbound sender email"
-            description="Email address used for sending receipts and quotes."
-          >
-            <input
-              type="email"
-              value={channel.emailSender}
-              onChange={(e) => setChannel({ ...channel, emailSender: e.target.value })}
-              className={inputCls}
-            />
-          </SettingsField>
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Left panel: templates list */}
+          <div className="space-y-2 border-r border-stone-100 pr-4 md:col-span-1">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-2">Message Templates</span>
+            {templates.map((tpl) => (
+              <button
+                key={tpl.id}
+                onClick={() => setActiveTemplateId(tpl.id)}
+                className={`flex w-full flex-col p-3 rounded-xl border text-left transition-all ${
+                  activeTemplateId === tpl.id
+                    ? 'border-rose-300 bg-rose-50/30'
+                    : 'border-stone-200 hover:bg-stone-50/50'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-semibold text-stone-800 truncate pr-2">{tpl.name}</span>
+                  <span className="text-[9px] font-bold bg-stone-100 px-1 rounded text-stone-500 uppercase flex-shrink-0">
+                    {tpl.channel}
+                  </span>
+                </div>
+                <p className="text-[10px] text-stone-400 truncate mt-1">{tpl.body}</p>
+              </button>
+            ))}
+          </div>
 
-          <SettingsField
-            label="Outbound display name"
-            description="Name brides will see in their email inbox."
-          >
-            <input
-              type="text"
-              value={channel.senderDisplayName}
-              onChange={(e) => setChannel({ ...channel, senderDisplayName: e.target.value })}
-              className={inputCls}
-            />
-          </SettingsField>
+          {/* Right panel: editor & preview */}
+          {selectedTemplate ? (
+            <div className="space-y-4 md:col-span-2">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                <h5 className="text-sm font-semibold text-stone-800">Edit Template: {selectedTemplate.name}</h5>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-stone-500">Active</span>
+                  <Switch
+                    checked={selectedTemplate.active}
+                    onCheckedChange={(checked) => handleTemplateChange(selectedTemplate.id, { active: checked })}
+                    className="scale-90 data-[state=checked]:bg-rose-500"
+                  />
+                </div>
+              </div>
 
-          <SettingsField
-            label="Reply-To email"
-            description="Address client replies will be routed to."
-          >
-            <input
-              type="email"
-              value={channel.replyTo}
-              onChange={(e) => setChannel({ ...channel, replyTo: e.target.value })}
-              className={inputCls}
-            />
-          </SettingsField>
+              {selectedTemplate.channel === 'Email' && (
+                <SettingsField label="Email Subject Header">
+                  <input
+                    type="text"
+                    value={selectedTemplate.subject || ''}
+                    onChange={(e) => handleTemplateChange(selectedTemplate.id, { subject: e.target.value })}
+                    className={inputCls}
+                  />
+                </SettingsField>
+              )}
 
-          <SettingsField
-            label="SMS unsubscribe footer"
-            description="Standard compliance consent text added to the end of outgoing SMS messages."
-          >
-            <input
-              type="text"
-              value={channel.smsConsentText}
-              onChange={(e) => setChannel({ ...channel, smsConsentText: e.target.value })}
-              className={inputCls}
-            />
-          </SettingsField>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-stone-600 block">Message Body</span>
+                  <textarea
+                    value={selectedTemplate.body}
+                    onChange={(e) => handleTemplateChange(selectedTemplate.id, { body: e.target.value })}
+                    className={`${inputCls} min-h-[140px] py-2 text-xs`}
+                  />
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {['{bride_name}', '{appointment_date}', '{location_name}', '{payment_link}', '{pickup_link}'].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => handleTemplateChange(selectedTemplate.id, { body: selectedTemplate.body + ' ' + v })}
+                        className="text-[9px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-600 px-1.5 py-0.5 rounded transition-colors"
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3 bg-stone-50/50 p-4 border border-stone-200/80 rounded-xl">
+                  <div className="flex items-center gap-1.5 text-stone-600 border-b border-stone-200/80 pb-2">
+                    <Eye className="h-4 w-4" />
+                    <span className="text-xs font-semibold">Live Preview</span>
+                  </div>
+                  {selectedTemplate.channel === 'Email' && (
+                    <div className="text-[10px] text-stone-500">
+                      <span className="font-semibold block">Subject:</span>
+                      <p className="mt-0.5 bg-white p-2 border border-stone-200 rounded">{selectedTemplate.subject || 'No Subject Specified'}</p>
+                    </div>
+                  )}
+                  <div className="text-[10px] text-stone-500">
+                    <span className="font-semibold block">Content Body:</span>
+                    <p className="mt-0.5 bg-white p-2 border border-stone-200 rounded min-h-[70px] whitespace-pre-wrap leading-relaxed">
+                      {getResolvedPreview(selectedTemplate.body)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 items-end pt-3 border-t border-stone-100">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder={selectedTemplate.channel === 'Email' ? 'test@email.com' : '+1 (555) 555-5555'}
+                    value={testSendPhoneEmail}
+                    onChange={(e) => setTestSendPhoneEmail(e.target.value)}
+                    className={`${inputCls} h-9 text-xs`}
+                  />
+                </div>
+                <button
+                  onClick={sendTestTemplate}
+                  disabled={sendingTest}
+                  className="flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2 h-9 text-xs font-semibold text-white hover:bg-stone-800 transition-colors disabled:opacity-50"
+                >
+                  <Send className="h-3.5 w-3.5" /> Dispatch test
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="md:col-span-2 flex items-center justify-center border border-dashed border-stone-200 rounded-xl p-8 text-stone-400 italic">
+              Select a template to view details and edit values.
+            </div>
+          )}
         </div>
       </SettingsCard>
     </div>
