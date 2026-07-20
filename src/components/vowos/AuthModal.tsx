@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { LogIn, UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useAuth, StaffRole } from '@/contexts/AuthContext';
+import { useAuth, StaffRole, STAFF_ROLES, ROLE_DESCRIPTIONS } from '@/contexts/AuthContext';
+
 import { Modal, inputCls, btnPrimary } from './ui';
 
 export default function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -109,7 +110,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                 <div>
                   <label className="mb-1 block text-xs font-medium text-stone-600">Role *</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {(['Stylist', 'Owner'] as StaffRole[]).map((r) => (
+                    {STAFF_ROLES.map((r) => (
                       <button
                         key={r}
                         type="button"
@@ -124,7 +125,9 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                       </button>
                     ))}
                   </div>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-stone-400">{ROLE_DESCRIPTIONS[role]}</p>
                 </div>
+
               </>
             )}
 

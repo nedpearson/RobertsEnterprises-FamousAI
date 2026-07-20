@@ -2,7 +2,28 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
-export type StaffRole = 'Owner' | 'Stylist';
+export type StaffRole = 'Owner' | 'Manager' | 'Stylist' | 'Front Desk';
+
+export const STAFF_ROLES: StaffRole[] = ['Owner', 'Manager', 'Stylist', 'Front Desk'];
+
+export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
+  Owner: 'Full access — financial ledgers, reports, and staff role management.',
+  Manager: 'Runs the stores — everything except managing staff accounts.',
+  Stylist: 'Brides, leads, appointments, gown inventory, and transfers.',
+  'Front Desk': 'Front-of-house — brides, leads, and the appointment book.',
+};
+
+export const ROLE_BADGE_CLASSES: Record<StaffRole, string> = {
+  Owner: 'bg-rose-500/20 text-rose-500 ring-1 ring-inset ring-rose-500/30',
+  Manager: 'bg-amber-500/20 text-amber-600 ring-1 ring-inset ring-amber-500/30',
+  Stylist: 'bg-violet-500/20 text-violet-500 ring-1 ring-inset ring-violet-500/30',
+  'Front Desk': 'bg-sky-500/20 text-sky-600 ring-1 ring-inset ring-sky-500/30',
+};
+
+/** Normalize any stored role string into a supported StaffRole. */
+export function normalizeRole(role: string | null | undefined): StaffRole {
+  return (STAFF_ROLES as string[]).includes(role ?? '') ? (role as StaffRole) : 'Stylist';
+}
 
 export interface StaffProfile {
   id: string;
@@ -18,6 +39,8 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, name: string, role: StaffRole) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  /** Re-read the signed-in user's profile (e.g. after an owner changes their role). */
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -34,13 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .maybeSingle();
     if (data) {
-      setProfile({ id: data.id, name: data.name, role: (data.role as StaffRole) || 'Stylist' });
+      setProfile({ id: data.id, name: data.name, role: normalizeRole(data.role) });
     } else {
       // Profile trigger may not have fired yet — fall back to auth metadata
       setProfile({
         id: userId,
         name: fallbackName || 'Staff Member',
-        role: fallbackRole === 'Owner' ? 'Owner' : 'Stylist',
+        role: normalizeRole(fallbackRole),
       });
     }
   };
@@ -88,6 +111,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { data: { name, role } },
     });
+    if (!error) {
+      // The signup trigger may predate the expanded role set — make sure the
+      // chosen role is persisted on the profile row.
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        await supabase.from('staff_profiles').upsert({ id: data.user.id, name, role });
+      }
+    }
     return { error: error ? error.message : null };
   };
 
@@ -96,9 +127,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
+  const refreshProfile = async () => {
+    if (session?.user) {
+      await loadProfile(session.user.id, session.user.user_metadata?.name, session.user.user_metadata?.role);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut }}
+      value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

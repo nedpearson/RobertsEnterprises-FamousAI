@@ -27,14 +27,19 @@ export default function AppointmentsView() {
   const handleConfirmCancel = async () => {
     if (!cancelling) return;
     setDeleting(true);
-    const ok = await deleteAppointment(cancelling.id);
+    await setAppointmentStatus(cancelling.id, 'Cancelled');
     setDeleting(false);
+    toast({
+      title: 'Appointment cancelled',
+      description: `${cancelling.customer} · ${cancelling.type} on ${formatDate(cancelling.date)} at ${cancelling.time} moved to the Cancellations ledger.`,
+    });
+    setCancelling(null);
+  };
+
+  const handleRemove = async (a: Appointment) => {
+    const ok = await deleteAppointment(a.id);
     if (ok) {
-      toast({
-        title: 'Appointment cancelled',
-        description: `${cancelling.customer} · ${cancelling.type} on ${formatDate(cancelling.date)} at ${cancelling.time} was removed.`,
-      });
-      setCancelling(null);
+      toast({ title: 'Appointment removed', description: `${a.customer}'s cancelled visit was deleted permanently.` });
     }
   };
 
@@ -42,7 +47,8 @@ export default function AppointmentsView() {
     <div>
       <PageHeader
         title="Appointments"
-        subtitle={`${list.filter((a) => a.status !== 'Completed').length} upcoming this week · ${list.filter((a) => a.status === 'Pending').length} awaiting confirmation`}
+        subtitle={`${list.filter((a) => a.status !== 'Completed' && a.status !== 'Cancelled').length} upcoming this week · ${list.filter((a) => a.status === 'Pending').length} awaiting confirmation`}
+
         action={
           <button onClick={() => setBookOpen(true)} className={btnPrimary}>
             <CalendarPlus className="h-4 w-4" /> Book Appointment
@@ -84,13 +90,14 @@ export default function AppointmentsView() {
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={() => setCancelling(a)}
+                            onClick={() => (a.status === 'Cancelled' ? handleRemove(a) : setCancelling(a))}
                             className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-rose-50 hover:text-rose-500"
-                            title="Cancel appointment"
-                            aria-label={`Cancel appointment for ${a.customer}`}
+                            title={a.status === 'Cancelled' ? 'Delete permanently' : 'Cancel appointment'}
+                            aria-label={`${a.status === 'Cancelled' ? 'Delete' : 'Cancel'} appointment for ${a.customer}`}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
+
                         </div>
                       </div>
                       <p className="mt-3 font-serif text-lg text-stone-900">{a.customer}</p>
@@ -117,6 +124,12 @@ export default function AppointmentsView() {
                         {a.status === 'Completed' && (
                           <p className="flex-1 py-1.5 text-center text-xs text-stone-400">Visit complete</p>
                         )}
+                        {a.status === 'Cancelled' && (
+                          <p className="flex-1 py-1.5 text-center text-xs text-rose-400">
+                            Cancelled — tracked in Ledgers · Cancellations
+                          </p>
+                        )}
+
                       </div>
                     </div>
                   ))}
@@ -150,14 +163,16 @@ export default function AppointmentsView() {
         {cancelling && (
           <div className="space-y-4">
             <p className="text-sm leading-relaxed text-stone-600">
-              This will permanently remove{' '}
+              This will mark{' '}
               <span className="font-semibold text-stone-900">{cancelling.customer}</span>
               &rsquo;s {cancelling.type.toLowerCase()} with {cancelling.stylist} on{' '}
               <span className="font-medium text-stone-900">
                 {formatDate(cancelling.date)} at {cancelling.time}
               </span>{' '}
-              from the schedule. This can&rsquo;t be undone.
+              as <span className="font-semibold text-rose-600">Cancelled</span>. It stays in the
+              Cancellations ledger for win-back follow-ups and can be deleted permanently later.
             </p>
+
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"

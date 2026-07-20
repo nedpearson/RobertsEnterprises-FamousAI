@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck } from 'lucide-react';
-import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS } from '@/components/vowos/Sidebar';
+import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert } from 'lucide-react';
+import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS, canAccessView, VIEW_ACCESS } from '@/components/vowos/Sidebar';
 import NotificationsBell from '@/components/vowos/NotificationsBell';
 import AuthModal from '@/components/vowos/AuthModal';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { locationById } from '@/data/vowosData';
 import { LocationSwitcher } from '@/components/vowos/LocationSelect';
@@ -16,7 +16,8 @@ import AppointmentsView from '@/components/vowos/AppointmentsView';
 import InvoicesView from '@/components/vowos/InvoicesView';
 import PurchasesView from '@/components/vowos/PurchasesView';
 import ReportsView from '@/components/vowos/ReportsView';
-
+import LedgersView from '@/components/vowos/LedgersView';
+import StaffView from '@/components/vowos/StaffView';
 
 function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void }) {
   return (
@@ -42,6 +43,22 @@ function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void 
   );
 }
 
+function RoleLockedPanel({ label, view, role }: { label: string; view: ViewKey; role: string }) {
+  return (
+    <div className="flex flex-col items-center rounded-3xl border border-dashed border-amber-300 bg-amber-50/40 px-6 py-20 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg">
+        <ShieldAlert className="h-6 w-6" />
+      </div>
+      <h2 className="mt-5 font-serif text-2xl text-stone-900">{label} needs a higher role</h2>
+      <p className="mt-2 max-w-sm text-sm text-stone-500">
+        Your <span className="font-semibold">{role}</span> role doesn't include {label.toLowerCase()}.
+        This section is open to: {VIEW_ACCESS[view].join(', ')}. Ask an Owner to adjust your role in
+        Staff &amp; Roles.
+      </p>
+    </div>
+  );
+}
+
 export default function AppLayout() {
   const [view, setView] = useState<ViewKey>('dashboard');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -50,9 +67,10 @@ export default function AppLayout() {
   const { session, profile, loading, signOut } = useAuth();
   const { activeLocation } = useVowosData();
 
-
   const currentLabel = NAV_ITEMS.find((n) => n.key === view)?.label ?? 'Dashboard';
-  const isLocked = !session && !PUBLIC_VIEWS.includes(view);
+  const isGuestLocked = !session && !PUBLIC_VIEWS.includes(view);
+  const role = session && profile ? profile.role : null;
+  const isRoleLocked = !!role && !canAccessView(role, view);
 
   const initials = profile?.name
     ? profile.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -89,7 +107,6 @@ export default function AppLayout() {
               {/* Store / location switcher — scopes every view */}
               <LocationSwitcher />
 
-
               <button
                 onClick={() => setView('customers')}
                 className="hidden items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-400 transition-colors hover:border-stone-300 sm:flex"
@@ -110,9 +127,9 @@ export default function AppLayout() {
                     </div>
                     <div className="hidden leading-tight sm:block">
                       <p className="max-w-[120px] truncate text-xs font-semibold text-stone-800">{profile.name}</p>
-                      <p className={`text-[10px] font-semibold uppercase tracking-wider ${profile.role === 'Owner' ? 'text-rose-500' : 'text-violet-500'}`}>
+                      <span className={`inline-flex rounded-full px-1.5 text-[10px] font-semibold uppercase tracking-wider ${ROLE_BADGE_CLASSES[profile.role]}`}>
                         {profile.role}
-                      </p>
+                      </span>
                     </div>
                     <button
                       onClick={() => signOut()}
@@ -156,8 +173,10 @@ export default function AppLayout() {
             </div>
           )}
 
-          {isLocked ? (
+          {isGuestLocked ? (
             <LockedPanel label={currentLabel} onSignIn={() => setAuthOpen(true)} />
+          ) : isRoleLocked ? (
+            <RoleLockedPanel label={currentLabel} view={view} role={role!} />
           ) : (
             <>
               {view === 'dashboard' && <DashboardView onNavigate={setView} />}
@@ -169,8 +188,9 @@ export default function AppLayout() {
               {view === 'invoices' && <InvoicesView />}
               {view === 'purchases' && <PurchasesView />}
               {view === 'reports' && <ReportsView />}
+              {view === 'ledgers' && <LedgersView />}
+              {view === 'staff' && <StaffView />}
             </>
-
           )}
 
           <footer className="mt-10 border-t border-stone-200 pt-6 pb-4 text-center text-xs text-stone-400">
@@ -178,7 +198,6 @@ export default function AppLayout() {
             + Proper & Company · Baton Rouge & Covington, LA ·{' '}
             {activeLocation === 'all' ? 'Viewing all locations' : `Viewing ${locationById(activeLocation).short}`}
           </footer>
-
         </main>
       </div>
 

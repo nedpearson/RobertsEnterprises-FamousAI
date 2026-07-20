@@ -1,31 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CalendarPlus, Loader2, Pencil } from 'lucide-react';
-import { Appointment, LocationId, locationById, teamMembers } from '@/data/vowosData';
+import {
+  Appointment,
+  LocationId,
+  locationById,
+  teamMembers,
+  APPOINTMENT_TYPES,
+  TIME_SLOTS,
+} from '@/data/vowosData';
 import { useVowosData, NewAppointmentInput } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
 import { Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { LocationSelect } from './LocationSelect';
 
-const APPOINTMENT_TYPES: Appointment['type'][] = [
-  'Bridal Consultation',
-  'Fitting',
-  'Alterations',
-  'Pickup',
-  'Accessories',
-];
-
-/** Salon hours: 9:00 AM – 5:30 PM in 30-minute slots, matching "1:30 PM" formatting. */
-const TIME_SLOTS: string[] = (() => {
-  const slots: string[] = [];
-  for (let mins = 9 * 60; mins <= 17 * 60 + 30; mins += 30) {
-    const h24 = Math.floor(mins / 60);
-    const m = mins % 60;
-    const period = h24 >= 12 ? 'PM' : 'AM';
-    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-    slots.push(`${h12}:${String(m).padStart(2, '0')} ${period}`);
-  }
-  return slots;
-})();
 
 const OTHER = '__other__';
 
@@ -102,7 +89,9 @@ export default function BookAppointmentModal({
           a.date === date &&
           a.time === time &&
           a.status !== 'Completed' &&
+          a.status !== 'Cancelled' &&
           a.id !== appointment?.id, // an appointment never conflicts with itself
+
       ) || null
     );
   }, [allAppointments, date, time, stylist, appointment]);

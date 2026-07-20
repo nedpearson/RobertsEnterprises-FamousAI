@@ -136,7 +136,8 @@ export interface Customer {
   phone: string;
   weddingDate: string;
   stylist: string;
-  status: 'Active' | 'Purchased' | 'Alterations' | 'Picked Up';
+  status: 'Active' | 'Purchased' | 'Alterations' | 'Picked Up' | 'Did Not Buy';
+
   spendCents: number;
   location: LocationId;
 }
@@ -172,9 +173,36 @@ export interface Appointment {
   date: string;
   time: string;
   stylist: string;
-  status: 'Confirmed' | 'Pending' | 'Completed';
+  status: 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled';
   location: LocationId;
 }
+
+/** Shared appointment type list — used by staff booking and the public bride booking page. */
+export const APPOINTMENT_TYPES: Appointment['type'][] = [
+  'Bridal Consultation',
+  'Fitting',
+  'Alterations',
+  'Pickup',
+  'Accessories',
+];
+
+/** Salon hours: 9:00 AM – 5:30 PM in 30-minute slots, matching "1:30 PM" formatting. */
+export const TIME_SLOTS: string[] = (() => {
+  const slots: string[] = [];
+  for (let mins = 9 * 60; mins <= 17 * 60 + 30; mins += 30) {
+    const h24 = Math.floor(mins / 60);
+    const m = mins % 60;
+    const period = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    slots.push(`${h12}:${String(m).padStart(2, '0')} ${period}`);
+  }
+  return slots;
+})();
+
+/** Hosted CRM booking page for virtual/video consultations (opens in a new tab). */
+export const VIRTUAL_CONSULT_BOOKING_URL =
+  'https://famous.ai/api/crm/6a5d5dc9d84ad34d886e72c1/calendar/public?calendarId=9daa261f-6b15-4ab3-8346-aef10a0a0e54&view=booking';
+
 
 export interface PurchaseOrder {
   id: string;

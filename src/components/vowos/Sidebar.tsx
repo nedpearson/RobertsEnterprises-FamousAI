@@ -8,11 +8,15 @@ import {
   Receipt,
   PackageSearch,
   BarChart3,
+  BookOpenText,
+  ShieldCheck,
   Gem,
   Lock,
   LogOut,
+  CalendarHeart,
+  ExternalLink,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 
 export type ViewKey =
   | 'dashboard'
@@ -23,7 +27,9 @@ export type ViewKey =
   | 'appointments'
   | 'invoices'
   | 'purchases'
-  | 'reports';
+  | 'reports'
+  | 'ledgers'
+  | 'staff';
 
 export const PUBLIC_VIEWS: ViewKey[] = ['dashboard'];
 
@@ -37,8 +43,33 @@ export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = 
   { key: 'invoices', label: 'Invoices', icon: Receipt },
   { key: 'purchases', label: 'Purchase Orders', icon: PackageSearch },
   { key: 'reports', label: 'Reports', icon: BarChart3 },
+  { key: 'ledgers', label: 'Ledgers', icon: BookOpenText },
+  { key: 'staff', label: 'Staff & Roles', icon: ShieldCheck },
 ];
 
+// ─── Role-based access matrix ───
+// Owner: everything. Manager: everything except staff management.
+// Stylist: styling floor tools. Front Desk: front-of-house tools.
+export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
+  dashboard: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  customers: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  leads: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  inventory: ['Owner', 'Manager', 'Stylist'],
+  transfers: ['Owner', 'Manager', 'Stylist'],
+  appointments: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  invoices: ['Owner', 'Manager', 'Front Desk'],
+  purchases: ['Owner', 'Manager'],
+  reports: ['Owner', 'Manager'],
+  ledgers: ['Owner', 'Manager'],
+  staff: ['Owner'],
+};
+
+/** Can a (possibly signed-out) user open a view? */
+export function canAccessView(role: StaffRole | null, view: ViewKey): boolean {
+  if (PUBLIC_VIEWS.includes(view)) return true;
+  if (!role) return false;
+  return VIEW_ACCESS[view].includes(role);
+}
 
 export default function Sidebar({
   view,
@@ -54,6 +85,7 @@ export default function Sidebar({
   onRequestSignIn: () => void;
 }) {
   const { session, profile, signOut } = useAuth();
+  const role: StaffRole | null = session && profile ? profile.role : null;
 
   const initials = profile?.name
     ? profile.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -71,10 +103,12 @@ export default function Sidebar({
         </div>
       </div>
 
-      <nav className="mt-2 flex-1 space-y-1 px-3">
+      <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-3 pb-2">
         {NAV_ITEMS.map(({ key, label, icon: Icon }) => {
           const active = view === key;
-          const locked = !session && !PUBLIC_VIEWS.includes(key);
+          const locked = !canAccessView(role, key);
+          // Hide staff management entirely from non-owners who are signed in
+          if (key === 'staff' && role && role !== 'Owner') return null;
           return (
             <button
               key={key}
@@ -94,6 +128,18 @@ export default function Sidebar({
             </button>
           );
         })}
+
+        {/* Public bride booking page */}
+        <a
+          href="/book"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group mt-3 flex w-full items-center gap-3 rounded-xl border border-dashed border-rose-500/30 px-3 py-2.5 text-sm font-medium text-rose-300/90 transition-all hover:bg-rose-500/10 hover:text-rose-200"
+        >
+          <CalendarHeart className="h-[18px] w-[18px] text-rose-400" />
+          Bride Booking Page
+          <ExternalLink className="ml-auto h-3.5 w-3.5 text-rose-400/60" />
+        </a>
       </nav>
 
       <div className="border-t border-white/10 p-4">
@@ -106,11 +152,7 @@ export default function Sidebar({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-white">{profile.name}</p>
                 <span
-                  className={`mt-0.5 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                    profile.role === 'Owner'
-                      ? 'bg-rose-500/20 text-rose-300 ring-1 ring-inset ring-rose-500/30'
-                      : 'bg-violet-500/20 text-violet-300 ring-1 ring-inset ring-violet-500/30'
-                  }`}
+                  className={`mt-0.5 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${ROLE_BADGE_CLASSES[profile.role]}`}
                 >
                   {profile.role}
                 </span>
