@@ -72,6 +72,14 @@ export interface NewBrideInput {
   stylist: string;
 }
 
+export interface NewInvoiceInput {
+  customer: string;
+  description: string;
+  amountCents: number;
+  depositCents: number;
+  dueDate: string;
+}
+
 interface VowosDataContextType {
   brides: Customer[];
   leads: Lead[];
@@ -83,7 +91,8 @@ interface VowosDataContextType {
   addBride: (input: NewBrideInput) => Promise<boolean>;
   advanceLead: (id: string) => Promise<void>;
   setAppointmentStatus: (id: string, status: Appointment['status']) => Promise<void>;
-  recordPayment: (id: string) => Promise<void>;
+  addInvoice: (input: NewInvoiceInput) => Promise<boolean>;
+  recordPayment: (id: string, paymentCents: number) => Promise<boolean>;
   markPoDelivered: (id: string) => Promise<void>;
 }
 
@@ -98,7 +107,8 @@ const VowosDataContext = createContext<VowosDataContextType>({
   addBride: async () => false,
   advanceLead: async () => {},
   setAppointmentStatus: async () => {},
-  recordPayment: async () => {},
+  addInvoice: async () => false,
+  recordPayment: async () => false,
   markPoDelivered: async () => {},
 });
 
@@ -215,23 +225,90 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [appointments],
   );
 
-  const recordPayment = useCallback(
-    async (id: string) => {
-      const prevInv = invoices.find((i) => i.id === id);
-      if (!prevInv) return;
+  /** Add a payment amount to the matching bride's lifetime spend (by name). */
+  const bumpBrideSpend = useCallback(
+    async (customerName: string, deltaCents: number) => {
+      if (deltaCents <= 0) return;
+      const bride = brides.find((b) => b.name === customerName);
+      if (!bride) return; // invoice customer isn't a tracked bride — skip silently
+      const newSpend = bride.spendCents + deltaCents;
+      setBrides((prev) => prev.map((b) => (b.id === bride.id ? { ...b, spendCents: newSpend } : b)));
+      const { error } = await supabase.from('brides').update({ spend_cents: newSpend }).eq('id', bride.id);
+      if (error) {
+        // Roll back the local spend bump; the invoice payment itself already succeeded
+        setBrides((prev) =>
+          prev.map((b) => (b.id === bride.id ? { ...b, spendCents: bride.spendCents } : b)),
+        );
+        dbErrorToast("update bride's spend total", error.message);
+      }
+    },
+    [brides],
+  );
+
+  const addInvoice = useCallback(
+    async (input: NewInvoiceInput): Promise<boolean> => {
+      const maxNum = invoices.reduce((max, i) => {
+        const m = /(\d+)$/.exec(i.id);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 5000);
+      const deposit = Math.max(0, Math.min(input.depositCents, input.amountCents));
+      const status: Invoice['status'] =
+        deposit >= input.amountCents ? 'Paid' : deposit > 0 ? 'Partial' : 'Open';
+      const newInvoice: Invoice = {
+        id: `INV-${maxNum + 1}`,
+        customer: input.customer,
+        description: input.description,
+        amountCents: input.amountCents,
+        paidCents: deposit,
+        dueDate: input.dueDate,
+        status,
+      };
+      const { error } = await supabase.from('invoices').insert({
+        id: newInvoice.id,
+        customer: newInvoice.customer,
+        description: newInvoice.description,
+        amount_cents: newInvoice.amountCents,
+        paid_cents: newInvoice.paidCents,
+        due_date: newInvoice.dueDate,
+        status: newInvoice.status,
+      });
+      if (error) {
+        dbErrorToast('create invoice', error.message);
+        return false;
+      }
       setInvoices((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, paidCents: i.amountCents, status: 'Paid' as const } : i)),
+        [...prev, newInvoice].sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
+      );
+      if (deposit > 0) await bumpBrideSpend(newInvoice.customer, deposit);
+      return true;
+    },
+    [invoices, bumpBrideSpend],
+  );
+
+  const recordPayment = useCallback(
+    async (id: string, paymentCents: number): Promise<boolean> => {
+      const prevInv = invoices.find((i) => i.id === id);
+      if (!prevInv || paymentCents <= 0) return false;
+      const balance = prevInv.amountCents - prevInv.paidCents;
+      const payment = Math.min(paymentCents, balance);
+      const newPaid = prevInv.paidCents + payment;
+      const newStatus: Invoice['status'] = newPaid >= prevInv.amountCents ? 'Paid' : 'Partial';
+      setInvoices((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, paidCents: newPaid, status: newStatus } : i)),
       );
       const { error } = await supabase
         .from('invoices')
-        .update({ paid_cents: prevInv.amountCents, status: 'Paid' })
+        .update({ paid_cents: newPaid, status: newStatus })
         .eq('id', id);
       if (error) {
         dbErrorToast('record payment', error.message);
         setInvoices((prev) => prev.map((i) => (i.id === id ? prevInv : i)));
+        return false;
       }
+      await bumpBrideSpend(prevInv.customer, payment);
+      return true;
     },
-    [invoices],
+    [invoices, bumpBrideSpend],
   );
 
   const markPoDelivered = useCallback(
@@ -263,6 +340,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addBride,
         advanceLead,
         setAppointmentStatus,
+        addInvoice,
         recordPayment,
         markPoDelivered,
       }}

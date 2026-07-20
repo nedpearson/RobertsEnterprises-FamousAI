@@ -1,15 +1,18 @@
 import { useMemo, useState } from 'react';
-import { Search, Receipt, Loader2 } from 'lucide-react';
-import { formatCents, formatDate } from '@/data/vowosData';
+import { Search, Receipt, Loader2, Plus } from 'lucide-react';
+import { Invoice, formatCents, formatDate } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
-import { PageHeader, StatusBadge, inputCls } from './ui';
+import { PageHeader, StatusBadge, inputCls, btnPrimary } from './ui';
+import { NewInvoiceModal, RecordPaymentModal } from './InvoiceModals';
 
 const FILTERS = ['All', 'Paid', 'Partial', 'Open', 'Overdue'] as const;
 
 export default function InvoicesView() {
-  const { invoices: list, loading, recordPayment } = useVowosData();
+  const { invoices: list, loading } = useVowosData();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
+  const [showNewInvoice, setShowNewInvoice] = useState(false);
+  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
 
   const filtered = useMemo(
     () =>
@@ -22,12 +25,19 @@ export default function InvoicesView() {
   );
 
   const outstanding = list.reduce((s, i) => s + (i.amountCents - i.paidCents), 0);
+  const payingInvoice: Invoice | null = list.find((i) => i.id === payingInvoiceId) ?? null;
 
   return (
     <div>
       <PageHeader
         title="Invoices"
         subtitle={`${list.length} invoices · ${formatCents(outstanding)} outstanding`}
+        action={
+          <button onClick={() => setShowNewInvoice(true)} className={btnPrimary}>
+            <Plus className="h-4 w-4" />
+            New Invoice
+          </button>
+        }
       />
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -97,7 +107,7 @@ export default function InvoicesView() {
                       <td className="px-5 py-3.5 text-right">
                         {balance > 0 && (
                           <button
-                            onClick={() => recordPayment(inv.id)}
+                            onClick={() => setPayingInvoiceId(inv.id)}
                             className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-stone-700"
                           >
                             Record Payment
@@ -118,6 +128,9 @@ export default function InvoicesView() {
           </table>
         </div>
       </div>
+
+      <NewInvoiceModal open={showNewInvoice} onClose={() => setShowNewInvoice(false)} />
+      <RecordPaymentModal invoice={payingInvoice} onClose={() => setPayingInvoiceId(null)} />
     </div>
   );
 }
