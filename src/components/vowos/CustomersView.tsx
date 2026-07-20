@@ -1,10 +1,11 @@
 import { useMemo, useState, FormEvent } from 'react';
 
-import { Search, UserPlus, CheckCircle2, Loader2, Link2, Check, Mail, MessageSquare } from 'lucide-react';
+import { Search, UserPlus, CheckCircle2, Loader2, Link2, Check, Mail, MessageSquare, Ruler } from 'lucide-react';
 import { formatCents, formatDate, teamMembers, Customer } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { sendAndLogMessage, isEmail, isPhone } from '@/lib/messaging';
 import { portalUrl, portalLinkTemplates } from '@/lib/contractsAlterations';
+import BrideProfileModal from './BrideProfileModal';
 import { PageHeader, StatusBadge, Modal, inputCls, btnPrimary } from './ui';
 import { toast } from '@/components/ui/use-toast';
 
@@ -19,7 +20,9 @@ export default function CustomersView() {
   const [saved, setSaved] = useState(false);
   const [copiedId, setCopiedId] = useState('');
   const [sendingKey, setSendingKey] = useState('');
+  const [profileBride, setProfileBride] = useState<Customer | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', weddingDate: '', stylist: teamMembers[0], smsOptIn: true });
+
 
   const filtered = useMemo(
     () =>
@@ -154,7 +157,7 @@ export default function CustomersView() {
           <table className="min-w-full divide-y divide-stone-100 text-sm">
             <thead className="bg-stone-50/70">
               <tr>
-                {['Bride', 'Contact', 'Wedding Date', 'Stylist', 'Status', 'Spend', 'Portal'].map((h) => (
+                {['Bride', 'Contact', 'Wedding Date', 'Stylist', 'Status', 'Spend', 'Fit Profile', 'Portal'].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
                     {h}
                   </th>
@@ -164,7 +167,7 @@ export default function CustomersView() {
             <tbody className="divide-y divide-stone-100">
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-stone-500">
+                  <td colSpan={8} className="px-5 py-10 text-center text-stone-500">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-rose-400" />
                     <p className="mt-2 text-xs">Loading brides...</p>
                   </td>
@@ -174,15 +177,19 @@ export default function CustomersView() {
                 filtered.map((c) => (
                   <tr key={c.id} className="transition-colors hover:bg-rose-50/40">
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setProfileBride(c)}
+                        title="Open fit profile"
+                        className="flex items-center gap-3 text-left"
+                      >
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-rose-200 text-xs font-semibold text-rose-600">
                           {c.name.split(' ').map((n) => n[0]).join('')}
                         </div>
                         <div>
-                          <p className="font-medium text-stone-800">{c.name}</p>
+                          <p className="font-medium text-stone-800 hover:text-rose-600">{c.name}</p>
                           <p className="text-xs text-stone-400">{c.id}</p>
                         </div>
-                      </div>
+                      </button>
                     </td>
                     <td className="px-5 py-3.5">
                       <p className="text-stone-700">{c.email}</p>
@@ -196,6 +203,16 @@ export default function CustomersView() {
                     <td className="px-5 py-3.5 font-medium text-stone-800">
                       {c.spendCents > 0 ? formatCents(c.spendCents) : '—'}
                     </td>
+                    <td className="px-5 py-3.5">
+                      <button
+                        onClick={() => setProfileBride(c)}
+                        title="Measurements & try-on notes"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        <Ruler className="h-3.5 w-3.5" /> Open
+                      </button>
+                    </td>
+
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1">
                         <button
@@ -227,11 +244,12 @@ export default function CustomersView() {
                 ))}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-stone-500">
+                  <td colSpan={8} className="px-5 py-10 text-center text-stone-500">
                     No brides match your search.
                   </td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>
@@ -286,6 +304,10 @@ export default function CustomersView() {
           </form>
         )}
       </Modal>
+
+      {/* Fit profile: measurements & try-on notes */}
+      <BrideProfileModal bride={profileBride} open={!!profileBride} onClose={() => setProfileBride(null)} />
     </div>
   );
 }
+

@@ -15,6 +15,7 @@ import {
   RefreshCw,
   X,
   ArrowDownLeft,
+  Sunrise,
 } from 'lucide-react';
 import { Customer, formatCents, formatDate, locationById } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
@@ -36,7 +37,9 @@ import {
   isEmail,
   isPhone,
 } from '@/lib/messaging';
+import { fetchDigestSettings, saveDigestSettings } from '@/lib/fitProfile';
 import BrideChecklist, { ChecklistDraft } from './BrideChecklist';
+
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -55,6 +58,20 @@ export default function CommunicationsView() {
   const [runningAuto, setRunningAuto] = useState(false);
   const [lastInboundCount, setLastInboundCount] = useState<Record<string, number>>({});
   const pollRef = useRef<number | null>(null);
+
+  // Morning digest settings (persisted in app_settings, consumed by the 9am cron)
+  const [digestEmail, setDigestEmail] = useState('');
+  const [digestEnabled, setDigestEnabled] = useState(true);
+  const [savingDigest, setSavingDigest] = useState(false);
+  const [sendingDigest, setSendingDigest] = useState(false);
+
+  useEffect(() => {
+    fetchDigestSettings().then((s) => {
+      setDigestEmail(s.email);
+      setDigestEnabled(s.enabled);
+    });
+  }, []);
+
 
   const contacts = useMemo(
     () =>
@@ -244,7 +261,7 @@ export default function CommunicationsView() {
     if (selected && selected.name === appt.customer) loadThread(appt.customer);
   };
 
-  /** Manually trigger the nightly automation sweep (reminders / chases / photo emails). */
+  /** Manually trigger the automation sweep (reminders / chases / photo emails / digest). */
   const handleRunAutomations = async () => {
     setRunningAuto(true);
     try {
@@ -254,7 +271,7 @@ export default function CommunicationsView() {
       } else {
         toast({
           title: 'Automations ran',
-          description: `${data.reminders} reminder(s) · ${data.chases} overdue chase(s) · ${data.photos} photo email(s) sent.`,
+          description: `${data.reminders} reminder(s) · ${data.chases} overdue chase(s) · ${data.photos} photo email(s) · digest: ${data.digest ?? 'n/a'}.`,
         });
         if (selected) loadThread(selected.name, false);
       }
@@ -263,6 +280,51 @@ export default function CommunicationsView() {
     }
     setRunningAuto(false);
   };
+
+  /** Persist the morning digest recipient + on/off switch. */
+  const handleSaveDigest = async () => {
+    if (digestEmail.trim() && !isEmail(digestEmail)) {
+      toast({ title: 'Enter a valid email address', variant: 'destructive' });
+      return;
+    }
+    setSavingDigest(true);
+    const err = await saveDigestSettings({ email: digestEmail, enabled: digestEnabled });
+    setSavingDigest(false);
+    if (err) toast({ title: 'Could not save digest settings', description: err, variant: 'destructive' });
+    else
+      toast({
+        title: 'Digest settings saved',
+        description: digestEnabled && digestEmail.trim()
+          ? `The morning digest will go to ${digestEmail.trim()} every day at 9am.`
+          : 'The daily digest is currently off.',
+      });
+  };
+
+  /** Send today's digest immediately (also saves the recipient first). */
+  const handleSendDigestNow = async () => {
+    if (!isEmail(digestEmail)) {
+      toast({ title: 'Enter a recipient email first', variant: 'destructive' });
+      return;
+    }
+    setSendingDigest(true);
+    await saveDigestSettings({ email: digestEmail, enabled: digestEnabled });
+    try {
+      const { data, error } = await supabase.functions.invoke('auto-comms', {
+        body: { task: 'digest', force: true },
+      });
+      if (error || !data?.ok) {
+        toast({ title: 'Digest send failed', description: error?.message ?? data?.error ?? 'Unknown error', variant: 'destructive' });
+      } else if (String(data.digest ?? '').startsWith('sent')) {
+        toast({ title: 'Digest sent', description: `Today's briefing is on its way to ${digestEmail.trim()}.` });
+      } else {
+        toast({ title: 'Digest not sent', description: String(data.digest ?? 'Unknown result'), variant: 'destructive' });
+      }
+    } catch (e: any) {
+      toast({ title: 'Digest send failed', description: e?.message ?? 'Network error', variant: 'destructive' });
+    }
+    setSendingDigest(false);
+  };
+
 
   const templateChips: { key: 'confirm' | 'reschedule' | 'payment' | 'chase' | 'reminder'; label: string; icon: typeof CalendarCheck }[] = [
     { key: 'confirm', label: 'Confirm appointment', icon: CalendarCheck },
@@ -286,7 +348,7 @@ export default function CommunicationsView() {
           <div>
             <p className="text-sm font-semibold">Auto-pilot is on — runs every morning at 9am</p>
             <p className="text-xs text-stone-400">
-              Visit reminders 24h before · overdue balances chased every 4 days (max 4) · wedding photo email 2 months after the big day · bride replies flow back in below
+              Visit reminders 24h before · overdue balances chased every 4 days (max 4) · wedding photo email 2 months after the big day · morning digest to staff · bride replies flow back in below
             </p>
           </div>
         </div>
@@ -299,6 +361,58 @@ export default function CommunicationsView() {
           Run now
         </button>
       </div>
+
+      {/* Daily digest settings */}
+      <div className="mb-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-xl bg-amber-50 p-2 text-amber-600">
+              <Sunrise className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-stone-800">Morning digest email</p>
+              <p className="max-w-md text-xs text-stone-500">
+                One email every morning at 9am: today's appointments, overdue balances, gowns awaiting pickup, unsigned contracts, and every bride text from the last 24 hours.
+              </p>
+            </div>
+          </div>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <input
+              type="email"
+              value={digestEmail}
+              onChange={(e) => setDigestEmail(e.target.value)}
+              placeholder="owner@idobridalcouture.com"
+              className={`${inputCls} w-64`}
+            />
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-stone-200 px-3 py-2 text-xs font-medium text-stone-600">
+              <input
+                type="checkbox"
+                checked={digestEnabled}
+                onChange={(e) => setDigestEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-stone-300 text-rose-500 focus:ring-rose-300"
+              />
+              Send daily
+            </label>
+            <button
+              onClick={handleSaveDigest}
+              disabled={savingDigest}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-stone-700 disabled:opacity-60"
+            >
+              {savingDigest ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+              Save
+            </button>
+            <button
+              onClick={handleSendDigestNow}
+              disabled={sendingDigest}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-60"
+            >
+              {sendingDigest ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              Send now
+            </button>
+          </div>
+        </div>
+      </div>
+
 
       {/* Pending confirmations strip */}
       {pendingConfirmations.length > 0 && (

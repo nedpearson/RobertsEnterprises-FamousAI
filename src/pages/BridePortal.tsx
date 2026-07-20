@@ -14,6 +14,7 @@ import {
   MapPin,
   Phone,
   Heart,
+  Ruler,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import {
@@ -32,6 +33,7 @@ import {
   mapAlteration,
   jobProgress,
 } from '@/lib/contractsAlterations';
+import { MeasurementSet, MEASUREMENT_FIELDS, fetchMeasurements } from '@/lib/fitProfile';
 
 export default function BridePortal() {
   const { brideId } = useParams<{ brideId: string }>();
@@ -43,6 +45,7 @@ export default function BridePortal() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
   const [alterations, setAlterations] = useState<AlterationJob[]>([]);
+  const [measurements, setMeasurements] = useState<MeasurementSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -114,7 +117,9 @@ export default function BridePortal() {
       }
       if (ctRes.data) setContracts(ctRes.data.map(mapContract));
       if (altRes.data) setAlterations(altRes.data.map(mapAlteration));
+      setMeasurements(await fetchMeasurements(b.id));
       setLoading(false);
+
     };
     load();
   }, [brideId, token]);
@@ -293,6 +298,36 @@ export default function BridePortal() {
                 })}
               </div>
             </section>
+
+            {/* Fit profile — latest measurements on file */}
+            {measurements.length > 0 && (
+              <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-stone-100 bg-stone-50/60 px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-4 w-4 text-rose-500" />
+                    <h2 className="font-serif text-lg text-stone-900">Your fit profile</h2>
+                  </div>
+                  <span className="text-[11px] text-stone-400">
+                    Last measured {formatDate(measurements[0].takenOn)}
+                    {measurements[0].takenBy && ` by ${measurements[0].takenBy}`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-6 py-5 sm:grid-cols-4">
+                  {MEASUREMENT_FIELDS.map((f) => (
+                    <div key={String(f.key)}>
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400">{f.label}</p>
+                      <p className="text-sm font-semibold text-stone-800">{(measurements[0] as any)[f.key] || '—'}</p>
+                    </div>
+                  ))}
+                </div>
+                {measurements[0].notes && (
+                  <p className="border-t border-stone-100 px-6 py-3 text-xs leading-relaxed text-stone-500">
+                    {measurements[0].notes}
+                  </p>
+                )}
+              </section>
+            )}
+
 
             {/* Invoices & payments */}
             <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
