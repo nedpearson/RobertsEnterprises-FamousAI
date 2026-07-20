@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Minus, Plus } from 'lucide-react';
-import { Gown, GOWN_IMAGES, GOWN_STYLES, gownStatusForStock, formatCents } from '@/data/vowosData';
+import { Gown, GOWN_IMAGES, GOWN_STYLES, LocationId, gownStatusForStock, formatCents } from '@/data/vowosData';
 import { useVowosData, GownInput } from '@/contexts/VowosDataContext';
 import { Modal, StatusBadge, inputCls, btnPrimary, btnSecondary } from './ui';
+import { LocationSelect, LocationBadge } from './LocationSelect';
+
 
 const labelCls = 'mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500';
 
@@ -23,7 +25,7 @@ export function GownFormModal({
   gown: Gown | null; // null = add new
   onClose: () => void;
 }) {
-  const { addGown, updateGown } = useVowosData();
+  const { addGown, updateGown, activeLocation } = useVowosData();
   const [name, setName] = useState('');
   const [designer, setDesigner] = useState('');
   const [style, setStyle] = useState(GOWN_STYLES[0]);
@@ -32,6 +34,7 @@ export function GownFormModal({
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('1');
   const [image, setImage] = useState(GOWN_IMAGES[0]);
+  const [location, setLocation] = useState<LocationId>('ido-br');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -45,10 +48,13 @@ export function GownFormModal({
       setPrice(gown ? (gown.priceCents / 100).toFixed(2) : '');
       setStock(gown ? String(gown.stock) : '1');
       setImage(gown?.image ?? GOWN_IMAGES[0]);
+      // New gowns default to the store currently being viewed.
+      setLocation(gown?.location ?? (activeLocation === 'all' ? 'ido-br' : activeLocation));
       setError('');
       setSaving(false);
     }
-  }, [open, gown]);
+  }, [open, gown, activeLocation]);
+
 
   const priceCents = dollarsToCents(price);
   const stockNum = parseInt(stock, 10);
@@ -75,7 +81,9 @@ export function GownFormModal({
       priceCents,
       stock: stockNum,
       image,
+      location,
     };
+
     setSaving(true);
     const ok = gown ? await updateGown(gown.id, input) : await addGown(input);
     setSaving(false);
@@ -173,6 +181,17 @@ export function GownFormModal({
         </div>
 
         <div>
+          <label className={labelCls} htmlFor="gown-location">Store location</label>
+          <LocationSelect id="gown-location" value={location} onChange={setLocation} />
+          {gown && location !== gown.location && (
+            <p className="mt-1 text-[11px] text-amber-600">
+              This will move the record to a different store. For stock moves, prefer a Store Transfer.
+            </p>
+          )}
+        </div>
+
+
+        <div>
           <label className={labelCls}>Catalog photo</label>
           <div className="grid grid-cols-8 gap-2">
             {GOWN_IMAGES.map((url, i) => (
@@ -265,6 +284,8 @@ export function AdjustStockModal({
             <p className="mt-1 text-xs text-stone-400">
               Currently {gown.stock} on hand · <StatusBadge status={gown.status} />
             </p>
+            <LocationBadge id={gown.location} className="mt-1.5" />
+
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useEffect, useState } from 'react';
+import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import {
@@ -10,10 +10,16 @@ import {
   Invoice,
   PurchaseOrder,
   Gown,
+  Transfer,
+  LocationId,
+  LocationFilter,
+  locationById,
   gownStatusForStock,
 } from '@/data/vowosData';
 
 // ─── Row mappers: database snake_case → app camelCase ───
+
+const asDate = (v: any): string => (typeof v === 'string' ? v.slice(0, 10) : '');
 
 const mapBride = (r: any): Customer => ({
   id: r.id,
@@ -24,6 +30,7 @@ const mapBride = (r: any): Customer => ({
   stylist: r.stylist,
   status: r.status,
   spendCents: r.spend_cents,
+  location: (r.location ?? 'ido-br') as LocationId,
 });
 
 const mapLead = (r: any): Lead => ({
@@ -44,6 +51,7 @@ const mapAppointment = (r: any): Appointment => ({
   time: r.time,
   stylist: r.stylist,
   status: r.status,
+  location: (r.location ?? 'ido-br') as LocationId,
 });
 
 const mapInvoice = (r: any): Invoice => ({
@@ -54,6 +62,7 @@ const mapInvoice = (r: any): Invoice => ({
   paidCents: r.paid_cents,
   dueDate: r.due_date,
   status: r.status,
+  location: (r.location ?? 'ido-br') as LocationId,
 });
 
 const mapPo = (r: any): PurchaseOrder => ({
@@ -64,6 +73,7 @@ const mapPo = (r: any): PurchaseOrder => ({
   ordered: r.ordered,
   expectedDelivery: r.expected_delivery,
   status: r.status,
+  location: (r.location ?? 'ido-br') as LocationId,
 });
 
 const mapGown = (r: any): Gown => ({
@@ -77,8 +87,21 @@ const mapGown = (r: any): Gown => ({
   stock: r.stock,
   status: r.status,
   image: r.image,
+  location: (r.location ?? 'ido-br') as LocationId,
 });
 
+const mapTransfer = (r: any): Transfer => ({
+  id: r.id,
+  gownId: r.gown_id,
+  gownName: r.gown_name,
+  from: r.from_location as LocationId,
+  to: r.to_location as LocationId,
+  qty: r.qty,
+  status: r.status,
+  requested: asDate(r.requested),
+  received: r.received ? asDate(r.received) : null,
+  note: r.note ?? '',
+});
 
 export interface NewBrideInput {
   name: string;
@@ -86,6 +109,7 @@ export interface NewBrideInput {
   phone: string;
   weddingDate: string;
   stylist: string;
+  location?: LocationId;
 }
 
 export interface NewInvoiceInput {
@@ -94,6 +118,7 @@ export interface NewInvoiceInput {
   amountCents: number;
   depositCents: number;
   dueDate: string;
+  location?: LocationId;
 }
 
 export interface NewAppointmentInput {
@@ -102,6 +127,7 @@ export interface NewAppointmentInput {
   date: string;
   time: string;
   stylist: string;
+  location?: LocationId;
 }
 
 /** Fields staff can change when rescheduling an existing appointment. */
@@ -121,15 +147,30 @@ export interface GownInput {
   priceCents: number;
   stock: number;
   image: string;
+  location?: LocationId;
+}
+
+export interface NewTransferInput {
+  gownId: string;
+  to: LocationId;
+  qty: number;
+  note?: string;
 }
 
 interface VowosDataContextType {
+  /** Records scoped to the active location ('all' shows everything). */
   brides: Customer[];
   leads: Lead[];
   appointments: Appointment[];
   invoices: Invoice[];
   purchaseOrders: PurchaseOrder[];
   gowns: Gown[];
+  transfers: Transfer[];
+  /** Complete, unscoped gown catalog across every store (for transfer pickers). */
+  allGowns: Gown[];
+  /** Active location filter shared by every view. */
+  activeLocation: LocationFilter;
+  setActiveLocation: (loc: LocationFilter) => void;
   loading: boolean;
   refresh: () => Promise<void>;
   addBride: (input: NewBrideInput) => Promise<boolean>;
@@ -144,6 +185,8 @@ interface VowosDataContextType {
   addGown: (input: GownInput) => Promise<boolean>;
   updateGown: (id: string, input: GownInput) => Promise<boolean>;
   adjustGownStock: (id: string, newStock: number) => Promise<boolean>;
+  addTransfer: (input: NewTransferInput) => Promise<boolean>;
+  receiveTransfer: (id: string) => Promise<boolean>;
 }
 
 const VowosDataContext = createContext<VowosDataContextType>({
@@ -153,6 +196,10 @@ const VowosDataContext = createContext<VowosDataContextType>({
   invoices: [],
   purchaseOrders: [],
   gowns: [],
+  transfers: [],
+  allGowns: [],
+  activeLocation: 'all',
+  setActiveLocation: () => {},
   loading: true,
   refresh: async () => {},
   addBride: async () => false,
@@ -167,10 +214,11 @@ const VowosDataContext = createContext<VowosDataContextType>({
   addGown: async () => false,
   updateGown: async () => false,
   adjustGownStock: async () => false,
+  addTransfer: async () => false,
+  receiveTransfer: async () => false,
 });
 
 export const useVowosData = () => useContext(VowosDataContext);
-
 
 function dbErrorToast(action: string, message?: string) {
   toast({
@@ -180,23 +228,32 @@ function dbErrorToast(action: string, message?: string) {
   });
 }
 
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
 export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Full, unscoped datasets — location scoping is applied on the way out.
   const [brides, setBrides] = useState<Customer[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [gowns, setGowns] = useState<Gown[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeLocation, setActiveLocation] = useState<LocationFilter>('all');
+
+  /** Location a new record belongs to when a form doesn't specify one. */
+  const defaultLocation: LocationId = activeLocation === 'all' ? 'ido-br' : activeLocation;
 
   const refresh = useCallback(async () => {
-    const [bridesRes, leadsRes, apptsRes, invRes, poRes, gownsRes] = await Promise.all([
+    const [bridesRes, leadsRes, apptsRes, invRes, poRes, gownsRes, transfersRes] = await Promise.all([
       supabase.from('brides').select('*').order('created_at', { ascending: false }),
       supabase.from('leads').select('*').order('created_at', { ascending: true }),
       supabase.from('appointments').select('*').order('date', { ascending: true }),
       supabase.from('invoices').select('*').order('due_date', { ascending: true }),
       supabase.from('purchase_orders').select('*').order('expected_delivery', { ascending: true }),
       supabase.from('gowns').select('*').order('id', { ascending: true }),
+      supabase.from('transfers').select('*').order('requested', { ascending: false }),
     ]);
     if (!bridesRes.error && bridesRes.data) setBrides(bridesRes.data.map(mapBride));
     if (!leadsRes.error && leadsRes.data) setLeads(leadsRes.data.map(mapLead));
@@ -204,9 +261,9 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!invRes.error && invRes.data) setInvoices(invRes.data.map(mapInvoice));
     if (!poRes.error && poRes.data) setPurchaseOrders(poRes.data.map(mapPo));
     if (!gownsRes.error && gownsRes.data) setGowns(gownsRes.data.map(mapGown));
+    if (!transfersRes.error && transfersRes.data) setTransfers(transfersRes.data.map(mapTransfer));
     setLoading(false);
   }, []);
-
 
   useEffect(() => {
     refresh();
@@ -235,6 +292,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         stylist: input.stylist,
         status: 'Active',
         spendCents: 0,
+        location: input.location ?? defaultLocation,
       };
       const { error } = await supabase.from('brides').insert({
         id: newBride.id,
@@ -245,6 +303,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         stylist: newBride.stylist,
         status: newBride.status,
         spend_cents: newBride.spendCents,
+        location: newBride.location,
       });
       if (error) {
         dbErrorToast('add bride', error.message);
@@ -253,7 +312,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setBrides((prev) => [newBride, ...prev]);
       return true;
     },
-    [brides],
+    [brides, defaultLocation],
   );
 
   const advanceLead = useCallback(
@@ -310,6 +369,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         time: input.time,
         stylist: input.stylist,
         status: 'Confirmed',
+        location: input.location ?? defaultLocation,
       };
       const { error } = await supabase.from('appointments').insert({
         id: newAppt.id,
@@ -319,6 +379,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         time: newAppt.time,
         stylist: newAppt.stylist,
         status: newAppt.status,
+        location: newAppt.location,
       });
       if (error) {
         dbErrorToast('book appointment', error.message);
@@ -331,7 +392,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       );
       return true;
     },
-    [appointments],
+    [appointments, defaultLocation],
   );
 
   const updateAppointment = useCallback(
@@ -339,7 +400,6 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const prevAppt = appointments.find((a) => a.id === id);
       if (!prevAppt) return false;
       const updated: Appointment = { ...prevAppt, ...input };
-      // Optimistic update, re-sorted so it lands in the right day/time slot
       setAppointments((prev) =>
         prev
           .map((a) => (a.id === id ? updated : a))
@@ -377,7 +437,6 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     async (id: string): Promise<boolean> => {
       const prevAppt = appointments.find((a) => a.id === id);
       if (!prevAppt) return false;
-      // Optimistic removal so the schedule and dashboard update instantly
       setAppointments((prev) => prev.filter((a) => a.id !== id));
       const { error } = await supabase.from('appointments').delete().eq('id', id);
       if (error) {
@@ -404,7 +463,6 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setBrides((prev) => prev.map((b) => (b.id === bride.id ? { ...b, spendCents: newSpend } : b)));
       const { error } = await supabase.from('brides').update({ spend_cents: newSpend }).eq('id', bride.id);
       if (error) {
-        // Roll back the local spend bump; the invoice payment itself already succeeded
         setBrides((prev) =>
           prev.map((b) => (b.id === bride.id ? { ...b, spendCents: bride.spendCents } : b)),
         );
@@ -431,6 +489,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         paidCents: deposit,
         dueDate: input.dueDate,
         status,
+        location: input.location ?? defaultLocation,
       };
       const { error } = await supabase.from('invoices').insert({
         id: newInvoice.id,
@@ -440,6 +499,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         paid_cents: newInvoice.paidCents,
         due_date: newInvoice.dueDate,
         status: newInvoice.status,
+        location: newInvoice.location,
       });
       if (error) {
         dbErrorToast('create invoice', error.message);
@@ -451,7 +511,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (deposit > 0) await bumpBrideSpend(newInvoice.customer, deposit);
       return true;
     },
-    [invoices, bumpBrideSpend],
+    [invoices, bumpBrideSpend, defaultLocation],
   );
 
   const recordPayment = useCallback(
@@ -498,14 +558,18 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // ─── Gown inventory mutations ───
 
+  const nextGownId = useCallback(() => {
+    const maxNum = gowns.reduce((max, g) => {
+      const m = /^G-(\d+)$/.exec(g.id);
+      return m ? Math.max(max, parseInt(m[1], 10)) : max;
+    }, 1000);
+    return `G-${maxNum + 1}`;
+  }, [gowns]);
+
   const addGown = useCallback(
     async (input: GownInput): Promise<boolean> => {
-      const maxNum = gowns.reduce((max, g) => {
-        const m = /^G-(\d+)$/.exec(g.id);
-        return m ? Math.max(max, parseInt(m[1], 10)) : max;
-      }, 1000);
       const newGown: Gown = {
-        id: `G-${maxNum + 1}`,
+        id: nextGownId(),
         name: input.name,
         designer: input.designer,
         style: input.style,
@@ -515,6 +579,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         stock: input.stock,
         status: gownStatusForStock(input.stock),
         image: input.image,
+        location: input.location ?? defaultLocation,
       };
       const { error } = await supabase.from('gowns').insert({
         id: newGown.id,
@@ -527,6 +592,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         stock: newGown.stock,
         status: newGown.status,
         image: newGown.image,
+        location: newGown.location,
       });
       if (error) {
         dbErrorToast('add gown', error.message);
@@ -535,7 +601,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setGowns((prev) => [...prev, newGown].sort((a, b) => a.id.localeCompare(b.id)));
       return true;
     },
-    [gowns],
+    [nextGownId, defaultLocation],
   );
 
   const updateGown = useCallback(
@@ -545,6 +611,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const updated: Gown = {
         ...prevGown,
         ...input,
+        location: input.location ?? prevGown.location,
         status: gownStatusForStock(input.stock),
       };
       setGowns((prev) => prev.map((g) => (g.id === id ? updated : g)));
@@ -560,6 +627,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           stock: updated.stock,
           status: updated.status,
           image: updated.image,
+          location: updated.location,
         })
         .eq('id', id);
       if (error) {
@@ -590,15 +658,194 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [gowns],
   );
 
+  // ─── Inter-store transfer mutations ───
+
+  const addTransfer = useCallback(
+    async (input: NewTransferInput): Promise<boolean> => {
+      const source = gowns.find((g) => g.id === input.gownId);
+      if (!source) {
+        dbErrorToast('start transfer', 'Gown not found.');
+        return false;
+      }
+      const qty = Math.max(1, Math.round(input.qty));
+      if (qty > source.stock) {
+        dbErrorToast('start transfer', `Only ${source.stock} piece(s) available at ${locationById(source.location).short}.`);
+        return false;
+      }
+      if (input.to === source.location) {
+        dbErrorToast('start transfer', 'Destination must be a different store.');
+        return false;
+      }
+      const maxNum = transfers.reduce((max, t) => {
+        const m = /^T-(\d+)$/.exec(t.id);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 8000);
+      const newTransfer: Transfer = {
+        id: `T-${maxNum + 1}`,
+        gownId: source.id,
+        gownName: source.name,
+        from: source.location,
+        to: input.to,
+        qty,
+        status: 'In Transit',
+        requested: todayIso(),
+        received: null,
+        note: input.note?.trim() ?? '',
+      };
+      // Pull stock out of the source store immediately so it can't be double-sold.
+      const newStock = source.stock - qty;
+      const newStatus = gownStatusForStock(newStock);
+      setGowns((prev) =>
+        prev.map((g) => (g.id === source.id ? { ...g, stock: newStock, status: newStatus } : g)),
+      );
+      setTransfers((prev) => [newTransfer, ...prev]);
+
+      const { error: stockErr } = await supabase
+        .from('gowns')
+        .update({ stock: newStock, status: newStatus })
+        .eq('id', source.id);
+      if (stockErr) {
+        dbErrorToast('start transfer', stockErr.message);
+        setGowns((prev) => prev.map((g) => (g.id === source.id ? source : g)));
+        setTransfers((prev) => prev.filter((t) => t.id !== newTransfer.id));
+        return false;
+      }
+      const { error } = await supabase.from('transfers').insert({
+        id: newTransfer.id,
+        gown_id: newTransfer.gownId,
+        gown_name: newTransfer.gownName,
+        from_location: newTransfer.from,
+        to_location: newTransfer.to,
+        qty: newTransfer.qty,
+        status: newTransfer.status,
+        requested: newTransfer.requested,
+        received: null,
+        note: newTransfer.note,
+      });
+      if (error) {
+        // Roll the stock back so nothing is lost in limbo.
+        dbErrorToast('start transfer', error.message);
+        await supabase.from('gowns').update({ stock: source.stock, status: source.status }).eq('id', source.id);
+        setGowns((prev) => prev.map((g) => (g.id === source.id ? source : g)));
+        setTransfers((prev) => prev.filter((t) => t.id !== newTransfer.id));
+        return false;
+      }
+      return true;
+    },
+    [gowns, transfers],
+  );
+
+  const receiveTransfer = useCallback(
+    async (id: string): Promise<boolean> => {
+      const transfer = transfers.find((t) => t.id === id);
+      if (!transfer || transfer.status !== 'In Transit') return false;
+      const sourceGown = gowns.find((g) => g.id === transfer.gownId);
+
+      // Find (or create) the matching gown record at the destination store.
+      const destGown = gowns.find(
+        (g) =>
+          g.location === transfer.to &&
+          (sourceGown
+            ? g.name === sourceGown.name &&
+              g.designer === sourceGown.designer &&
+              g.size === sourceGown.size &&
+              g.color === sourceGown.color
+            : g.name === transfer.gownName),
+      );
+
+      const receivedDate = todayIso();
+
+      if (destGown) {
+        const newStock = destGown.stock + transfer.qty;
+        const newStatus = gownStatusForStock(newStock);
+        const { error } = await supabase
+          .from('gowns')
+          .update({ stock: newStock, status: newStatus })
+          .eq('id', destGown.id);
+        if (error) {
+          dbErrorToast('receive transfer', error.message);
+          return false;
+        }
+        setGowns((prev) =>
+          prev.map((g) => (g.id === destGown.id ? { ...g, stock: newStock, status: newStatus } : g)),
+        );
+      } else if (sourceGown) {
+        const newGown: Gown = {
+          ...sourceGown,
+          id: nextGownId(),
+          stock: transfer.qty,
+          status: gownStatusForStock(transfer.qty),
+          location: transfer.to,
+        };
+        const { error } = await supabase.from('gowns').insert({
+          id: newGown.id,
+          name: newGown.name,
+          designer: newGown.designer,
+          style: newGown.style,
+          size: newGown.size,
+          color: newGown.color,
+          price_cents: newGown.priceCents,
+          stock: newGown.stock,
+          status: newGown.status,
+          image: newGown.image,
+          location: newGown.location,
+        });
+        if (error) {
+          dbErrorToast('receive transfer', error.message);
+          return false;
+        }
+        setGowns((prev) => [...prev, newGown].sort((a, b) => a.id.localeCompare(b.id)));
+      } else {
+        dbErrorToast('receive transfer', 'The original gown record no longer exists.');
+        return false;
+      }
+
+      const { error: tErr } = await supabase
+        .from('transfers')
+        .update({ status: 'Received', received: receivedDate })
+        .eq('id', id);
+      if (tErr) {
+        dbErrorToast('receive transfer', tErr.message);
+        await refresh(); // stock already moved — resync everything
+        return false;
+      }
+      setTransfers((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, status: 'Received' as const, received: receivedDate } : t)),
+      );
+      return true;
+    },
+    [transfers, gowns, nextGownId, refresh],
+  );
+
+  // ─── Location scoping: every view sees only the active store's records ───
+
+  const scoped = useMemo(() => {
+    if (activeLocation === 'all') {
+      return { brides, appointments, invoices, purchaseOrders, gowns, transfers };
+    }
+    return {
+      brides: brides.filter((b) => b.location === activeLocation),
+      appointments: appointments.filter((a) => a.location === activeLocation),
+      invoices: invoices.filter((i) => i.location === activeLocation),
+      purchaseOrders: purchaseOrders.filter((p) => p.location === activeLocation),
+      gowns: gowns.filter((g) => g.location === activeLocation),
+      transfers: transfers.filter((t) => t.from === activeLocation || t.to === activeLocation),
+    };
+  }, [activeLocation, brides, appointments, invoices, purchaseOrders, gowns, transfers]);
+
   return (
     <VowosDataContext.Provider
       value={{
-        brides,
+        brides: scoped.brides,
         leads,
-        appointments,
-        invoices,
-        purchaseOrders,
-        gowns,
+        appointments: scoped.appointments,
+        invoices: scoped.invoices,
+        purchaseOrders: scoped.purchaseOrders,
+        gowns: scoped.gowns,
+        transfers: scoped.transfers,
+        allGowns: gowns,
+        activeLocation,
+        setActiveLocation,
         loading,
         refresh,
         addBride,
@@ -613,10 +860,11 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addGown,
         updateGown,
         adjustGownStock,
+        addTransfer,
+        receiveTransfer,
       }}
     >
       {children}
     </VowosDataContext.Provider>
   );
 };
-

@@ -3,6 +3,7 @@ import {
   Users,
   Sparkles,
   Shirt,
+  ArrowLeftRight,
   CalendarDays,
   Receipt,
   PackageSearch,
@@ -18,6 +19,7 @@ export type ViewKey =
   | 'customers'
   | 'leads'
   | 'inventory'
+  | 'transfers'
   | 'appointments'
   | 'invoices'
   | 'purchases'
@@ -30,11 +32,13 @@ export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = 
   { key: 'customers', label: 'Brides', icon: Users },
   { key: 'leads', label: 'Leads', icon: Sparkles },
   { key: 'inventory', label: 'Gown Inventory', icon: Shirt },
+  { key: 'transfers', label: 'Store Transfers', icon: ArrowLeftRight },
   { key: 'appointments', label: 'Appointments', icon: CalendarDays },
   { key: 'invoices', label: 'Invoices', icon: Receipt },
   { key: 'purchases', label: 'Purchase Orders', icon: PackageSearch },
   { key: 'reports', label: 'Reports', icon: BarChart3 },
 ];
+
 
 export default function Sidebar({
   view,

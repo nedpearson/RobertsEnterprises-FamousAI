@@ -1,17 +1,20 @@
 import { useMemo, useState } from 'react';
-import { Search, Plus, Pencil, PackagePlus, Loader2 } from 'lucide-react';
-import { Gown, GOWN_STYLES, formatCents } from '@/data/vowosData';
+import { Search, Plus, Pencil, PackagePlus, Loader2, ArrowLeftRight } from 'lucide-react';
+import { Gown, GOWN_STYLES, formatCents, locationById } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, inputCls, btnPrimary } from './ui';
 import { GownFormModal, AdjustStockModal } from './GownModals';
+import { TransferModal } from './TransfersView';
+import { LocationBadge } from './LocationSelect';
 
 export default function InventoryView() {
-  const { gowns, loading } = useVowosData();
+  const { gowns, loading, activeLocation } = useVowosData();
   const [query, setQuery] = useState('');
   const [styleFilter, setStyleFilter] = useState('All');
   const [formOpen, setFormOpen] = useState(false);
   const [editingGown, setEditingGown] = useState<Gown | null>(null);
   const [stockGown, setStockGown] = useState<Gown | null>(null);
+  const [transferGown, setTransferGown] = useState<Gown | null>(null);
 
   const styles = useMemo(
     () => ['All', ...Array.from(new Set([...GOWN_STYLES, ...gowns.map((g) => g.style)]))],
@@ -23,6 +26,9 @@ export default function InventoryView() {
       (styleFilter === 'All' || g.style === styleFilter) &&
       (g.name.toLowerCase().includes(query.toLowerCase()) || g.designer.toLowerCase().includes(query.toLowerCase())),
   );
+
+  const scopeLabel =
+    activeLocation === 'all' ? 'across all four stores' : `at ${locationById(activeLocation).short}`;
 
   const openAdd = () => {
     setEditingGown(null);
@@ -38,7 +44,7 @@ export default function InventoryView() {
     <div>
       <PageHeader
         title="Gown Inventory"
-        subtitle={`${gowns.length} styles · ${gowns.reduce((s, g) => s + g.stock, 0)} pieces on the floor`}
+        subtitle={`${gowns.length} styles · ${gowns.reduce((s, g) => s + g.stock, 0)} pieces ${scopeLabel}`}
         action={
           <button onClick={openAdd} className={btnPrimary}>
             <Plus className="h-4 w-4" />
@@ -90,6 +96,9 @@ export default function InventoryView() {
                 <div className="absolute left-3 top-3">
                   <StatusBadge status={g.status} />
                 </div>
+                <div className="absolute bottom-3 left-3">
+                  <LocationBadge id={g.location} className="bg-white/90 shadow-sm" />
+                </div>
               </div>
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -110,17 +119,26 @@ export default function InventoryView() {
                 <div className="mt-3 flex gap-2 border-t border-stone-100 pt-3">
                   <button
                     onClick={() => openEdit(g)}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50"
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                     Edit
                   </button>
                   <button
                     onClick={() => setStockGown(g)}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-100"
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-100"
                   >
                     <PackagePlus className="h-3.5 w-3.5" />
-                    Adjust Stock
+                    Stock
+                  </button>
+                  <button
+                    onClick={() => setTransferGown(g)}
+                    disabled={g.stock <= 0}
+                    title={g.stock <= 0 ? 'No stock available to transfer' : 'Transfer to another store'}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2 py-1.5 text-xs font-medium text-violet-600 transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                    Transfer
                   </button>
                 </div>
               </div>
@@ -128,7 +146,7 @@ export default function InventoryView() {
           ))}
           {filtered.length === 0 && (
             <p className="col-span-full rounded-2xl border border-dashed border-stone-300 py-16 text-center text-stone-500">
-              No gowns match your filters.
+              No gowns match your filters {scopeLabel}.
             </p>
           )}
         </div>
@@ -136,6 +154,7 @@ export default function InventoryView() {
 
       <GownFormModal open={formOpen} gown={editingGown} onClose={() => setFormOpen(false)} />
       <AdjustStockModal gown={stockGown} onClose={() => setStockGown(null)} />
+      <TransferModal open={!!transferGown} gown={transferGown} onClose={() => setTransferGown(null)} />
     </div>
   );
 }

@@ -3,14 +3,19 @@ import { Menu, Bell, Search, LogIn, LogOut, Lock, ShieldCheck } from 'lucide-rea
 import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS } from '@/components/vowos/Sidebar';
 import AuthModal from '@/components/vowos/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useVowosData } from '@/contexts/VowosDataContext';
+import { locationById } from '@/data/vowosData';
+import { LocationSwitcher } from '@/components/vowos/LocationSelect';
 import DashboardView from '@/components/vowos/DashboardView';
 import CustomersView from '@/components/vowos/CustomersView';
 import LeadsView from '@/components/vowos/LeadsView';
 import InventoryView from '@/components/vowos/InventoryView';
+import TransfersView from '@/components/vowos/TransfersView';
 import AppointmentsView from '@/components/vowos/AppointmentsView';
 import InvoicesView from '@/components/vowos/InvoicesView';
 import PurchasesView from '@/components/vowos/PurchasesView';
 import ReportsView from '@/components/vowos/ReportsView';
+
 
 function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void }) {
   return (
@@ -42,6 +47,8 @@ export default function AppLayout() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const { session, profile, loading, signOut } = useAuth();
+  const { activeLocation } = useVowosData();
+
 
   const currentLabel = NAV_ITEMS.find((n) => n.key === view)?.label ?? 'Dashboard';
   const isLocked = !session && !PUBLIC_VIEWS.includes(view);
@@ -78,6 +85,10 @@ export default function AppLayout() {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
+              {/* Store / location switcher — scopes every view */}
+              <LocationSwitcher />
+
+
               <button
                 onClick={() => setView('customers')}
                 className="hidden items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-400 transition-colors hover:border-stone-300 sm:flex"
@@ -182,16 +193,21 @@ export default function AppLayout() {
               {view === 'customers' && <CustomersView />}
               {view === 'leads' && <LeadsView />}
               {view === 'inventory' && <InventoryView />}
+              {view === 'transfers' && <TransfersView />}
               {view === 'appointments' && <AppointmentsView />}
               {view === 'invoices' && <InvoicesView />}
               {view === 'purchases' && <PurchasesView />}
               {view === 'reports' && <ReportsView />}
             </>
+
           )}
 
           <footer className="mt-10 border-t border-stone-200 pt-6 pb-4 text-center text-xs text-stone-400">
-            VowOS — Bridal Retail Operating System · © 2026 Roberts Enterprises · All data synced to Main Boutique
+            VowOS — Bridal Retail Operating System · © 2026 Roberts Enterprises · I Do Bridal Couture
+            + Proper & Company · Baton Rouge & Covington, LA ·{' '}
+            {activeLocation === 'all' ? 'Viewing all locations' : `Viewing ${locationById(activeLocation).short}`}
           </footer>
+
         </main>
       </div>
 

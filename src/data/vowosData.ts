@@ -1,7 +1,7 @@
 // ─── VowOS by Roberts Enterprises — Shared Data Module ───
-// Types, static catalog data, and formatting helpers.
-// Business records (brides, leads, appointments, invoices, purchase orders)
-// now live in database tables and are loaded via VowosDataContext.
+// Types, static catalog data, location directory, and formatting helpers.
+// Business records (brides, leads, appointments, invoices, purchase orders,
+// gowns, transfers) live in database tables and are loaded via VowosDataContext.
 
 export const HERO_IMAGE =
   'https://d64gsuwffb70l.cloudfront.net/6a5d5dc9d84ad34d886e72c1_1784503896604_2a0f57cd.jpg';
@@ -17,6 +17,76 @@ export const GOWN_IMAGES = [
   'https://d64gsuwffb70l.cloudfront.net/6a5d5dc9d84ad34d886e72c1_1784503880714_6e806d03.png',
 ];
 
+// ─── Multi-Location Directory ───
+// Roberts Enterprises operates two boutique brands, each with a Baton Rouge
+// and a Covington, Louisiana storefront (owner: Ramsey Sims).
+
+export type LocationId = 'ido-br' | 'ido-cov' | 'pc-br' | 'pc-cov';
+
+export interface BoutiqueLocation {
+  id: LocationId;
+  business: 'I Do Bridal Couture' | 'Proper & Company';
+  /** Compact label for chips, badges, and dropdowns. */
+  short: string;
+  city: 'Baton Rouge' | 'Covington';
+  address: string;
+  phone: string;
+  hours: string;
+  /** Brand accent: I Do Bridal Couture = rose, Proper & Company = violet. */
+  accent: 'rose' | 'violet';
+}
+
+export const LOCATIONS: BoutiqueLocation[] = [
+  {
+    id: 'ido-br',
+    business: 'I Do Bridal Couture',
+    short: 'I Do · Baton Rouge',
+    city: 'Baton Rouge',
+    address: '4343 Perkins Rd, Baton Rouge, LA 70808',
+    phone: '(225) 361-0377',
+    hours: 'Tue–Sat · 10am–5pm',
+    accent: 'rose',
+  },
+  {
+    id: 'ido-cov',
+    business: 'I Do Bridal Couture',
+    short: 'I Do · Covington',
+    city: 'Covington',
+    address: '316 Lee Ln, Covington, LA 70433',
+    phone: '(985) 327-5598',
+    hours: 'Tue–Sat · 10am–4pm',
+    accent: 'rose',
+  },
+  {
+    id: 'pc-br',
+    business: 'Proper & Company',
+    short: 'Proper & Co · Baton Rouge',
+    city: 'Baton Rouge',
+    address: 'Perkins Rd, Baton Rouge, LA 70808',
+    phone: '(225) 361-0377',
+    hours: 'Tue–Sat · 10am–5pm',
+    accent: 'violet',
+  },
+  {
+    id: 'pc-cov',
+    business: 'Proper & Company',
+    short: 'Proper & Co · Covington',
+    city: 'Covington',
+    address: 'Downtown Covington, LA 70433',
+    phone: '(985) 327-5598',
+    hours: 'Tue–Sat · 10am–4pm',
+    accent: 'violet',
+  },
+];
+
+/** Look up a location by id, falling back to the first location. */
+export function locationById(id: string | null | undefined): BoutiqueLocation {
+  return LOCATIONS.find((l) => l.id === id) ?? LOCATIONS[0];
+}
+
+/** "All locations" filter value used across the app. */
+export type LocationFilter = LocationId | 'all';
+
 export type GownStatus = 'In Stock' | 'Low Stock' | 'On Order';
 
 export interface Gown {
@@ -30,6 +100,7 @@ export interface Gown {
   stock: number;
   status: GownStatus;
   image: string;
+  location: LocationId;
 }
 
 /** Derive gown availability status from quantity on hand. */
@@ -41,9 +112,22 @@ export function gownStatusForStock(stock: number): GownStatus {
 
 export const GOWN_STYLES = ['A-Line', 'Mermaid', 'Ballgown', 'Sheath', 'Fit & Flare', 'Trumpet'];
 
-// NOTE: The gown catalog now lives in the `gowns` database table and is
-// loaded via VowosDataContext. It was seeded with the original 8 styles.
+// ─── Inter-store Transfers ───
 
+export type TransferStatus = 'In Transit' | 'Received';
+
+export interface Transfer {
+  id: string;
+  gownId: string;
+  gownName: string;
+  from: LocationId;
+  to: LocationId;
+  qty: number;
+  status: TransferStatus;
+  requested: string; // ISO date
+  received: string | null; // ISO date once marked received
+  note: string;
+}
 
 export interface Customer {
   id: string;
@@ -54,6 +138,7 @@ export interface Customer {
   stylist: string;
   status: 'Active' | 'Purchased' | 'Alterations' | 'Picked Up';
   spendCents: number;
+  location: LocationId;
 }
 
 export type LeadStage = 'New' | 'Contacted' | 'Appointment Set' | 'Won';
@@ -77,6 +162,7 @@ export interface Invoice {
   paidCents: number;
   dueDate: string;
   status: 'Paid' | 'Partial' | 'Open' | 'Overdue';
+  location: LocationId;
 }
 
 export interface Appointment {
@@ -87,6 +173,7 @@ export interface Appointment {
   time: string;
   stylist: string;
   status: 'Confirmed' | 'Pending' | 'Completed';
+  location: LocationId;
 }
 
 export interface PurchaseOrder {
@@ -97,6 +184,7 @@ export interface PurchaseOrder {
   ordered: string;
   expectedDelivery: string;
   status: 'Ordered' | 'In Transit' | 'Delivered' | 'Delayed';
+  location: LocationId;
 }
 
 export const revenueByMonth = [
@@ -115,6 +203,6 @@ export function formatCents(cents: number): string {
 }
 
 export function formatDate(iso: string): string {
-  const d = new Date(iso + 'T12:00:00');
+  const d = new Date(iso.slice(0, 10) + 'T12:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
