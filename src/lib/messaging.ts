@@ -1,13 +1,35 @@
 // ─── VowOS Messaging — single source of truth for outbound bride communications ───
 // Sends via the `send-message` edge function (SendGrid email / Twilio SMS) and
 // logs every attempt to the `messages` table so the Communications hub shows a
-// full conversation history per bride.
+// full conversation history per bride. Inbound texts arrive via the `sms-inbound`
+// Twilio webhook and appear in the same thread (direction = 'inbound').
 
 import { supabase } from '@/lib/supabase';
-import { Appointment, Invoice, locationById, formatCents, formatDate } from '@/data/vowosData';
+import { Appointment, Customer, Invoice, locationById, formatCents, formatDate } from '@/data/vowosData';
 
 export type MessageChannel = 'sms' | 'email';
-export type MessageKind = 'confirmation' | 'reschedule' | 'payment' | 'reminder' | 'general';
+export type MessageKind =
+  | 'confirmation'
+  | 'reschedule'
+  | 'payment'
+  | 'reminder'
+  | 'chase'
+  | 'thank_you'
+  | 'review'
+  | 'photo'
+  | 'general';
+
+export const KIND_LABELS: Record<MessageKind, string> = {
+  confirmation: 'Confirmation',
+  reschedule: 'Reschedule',
+  payment: 'Payment link',
+  reminder: 'Reminder',
+  chase: 'Overdue chase',
+  thank_you: 'Thank-you note',
+  review: 'Review request',
+  photo: 'Wedding photos',
+  general: 'General',
+};
 
 export interface MessageRecord {
   id: string;
@@ -20,6 +42,7 @@ export interface MessageRecord {
   status: 'sent' | 'failed';
   error: string | null;
   createdAt: string;
+  direction: 'outbound' | 'inbound';
 }
 
 const mapMessage = (r: any): MessageRecord => ({
@@ -33,6 +56,7 @@ const mapMessage = (r: any): MessageRecord => ({
   status: r.status,
   error: r.error,
   createdAt: r.created_at,
+  direction: r.direction === 'inbound' ? 'inbound' : 'outbound',
 });
 
 /** Load the conversation log — optionally for one bride only. */
@@ -86,9 +110,101 @@ export async function sendAndLogMessage(
     kind: input.kind,
     status: ok ? 'sent' : 'failed',
     error: errMsg,
+    direction: 'outbound',
   });
 
   return { ok, error: errMsg };
+}
+
+// ─── Site origin registration (used by the nightly auto-chase to build pay links) ───
+
+let originRegistered = false;
+/** Store this deployment's origin so server-side automations can build /pay links. */
+export async function registerSiteOrigin(): Promise<void> {
+  if (originRegistered || typeof window === 'undefined') return;
+  originRegistered = true;
+  try {
+    await supabase.from('app_settings').upsert({
+      key: 'site_origin',
+      value: window.location.origin,
+      updated_at: new Date().toISOString(),
+    });
+  } catch {
+    // non-fatal — chase messages fall back to "call the boutique"
+  }
+}
+
+// ─── Automation runs (dedupe log shared with the auto-comms cron) ───
+
+export interface AutomationRun {
+  kind: string;
+  refId: string;
+  customer: string;
+  createdAt: string;
+}
+
+/** All automation runs (reminders, chases, photo emails, checklist items). */
+export async function fetchAutomationRuns(): Promise<AutomationRun[]> {
+  const { data, error } = await supabase
+    .from('automation_runs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(500);
+  if (error || !data) return [];
+  return data.map((r: any) => ({
+    kind: r.kind,
+    refId: r.ref_id,
+    customer: r.customer,
+    createdAt: r.created_at,
+  }));
+}
+
+// ─── AI note generation (thank-you notes & review requests) ───
+
+/** Compact plain-text dossier about a bride for the AI note writer. */
+export function buildBrideContext(
+  bride: Customer,
+  appointments: Appointment[],
+  invoices: Invoice[],
+): string {
+  const loc = locationById(bride.location);
+  const visits = appointments
+    .filter((a) => a.customer === bride.name)
+    .map((a) => `- ${a.type} on ${formatDate(a.date)} at ${a.time} with ${a.stylist} (${a.status})`);
+  const purchases = invoices
+    .filter((i) => i.customer === bride.name)
+    .map(
+      (i) =>
+        `- ${i.description}: ${formatCents(i.amountCents)} total, ${formatCents(i.paidCents)} paid (${i.status})`,
+    );
+  return [
+    `Bride: ${bride.name}`,
+    `Boutique: ${loc.business}, ${loc.city} (${loc.address}, ${loc.phone})`,
+    `Her stylist: ${bride.stylist}`,
+    `Wedding date: ${formatDate(bride.weddingDate)}`,
+    `Client status: ${bride.status}`,
+    `Lifetime spend: ${formatCents(bride.spendCents)}`,
+    visits.length ? `Appointments:\n${visits.join('\n')}` : 'Appointments: none on file',
+    purchases.length ? `Purchases / invoices:\n${purchases.join('\n')}` : 'Purchases: none on file',
+  ].join('\n');
+}
+
+/** Ask the AI to write a thank-you note or review request from the bride's history. */
+export async function generateAiNote(
+  mode: 'thank_you' | 'review',
+  context: string,
+  channel: MessageChannel,
+): Promise<{ ok: boolean; text: string; error: string | null }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-note', {
+      body: { mode, context, channel },
+    });
+    if (error) return { ok: false, text: '', error: error.message };
+    if (data?.ok && data.text) return { ok: true, text: data.text, error: null };
+    return { ok: false, text: '', error: data?.error || 'The AI did not return a note.' };
+  } catch (e: any) {
+    return { ok: false, text: '', error: e?.message || 'Network error' };
+  }
 }
 
 // ─── Template builders ───
@@ -172,6 +288,26 @@ export function paymentLinkTemplates(inv: Invoice): MessageTemplates {
   };
 }
 
+/** Friendly overdue-balance chase (also sent automatically every 4 days by auto-comms). */
+export function overdueChaseTemplates(inv: Invoice): MessageTemplates {
+  const loc = locationById(inv.location);
+  const balance = formatCents(inv.amountCents - inv.paidCents);
+  const url = paymentLinkUrl(inv);
+  return {
+    emailSubject: `Friendly reminder: ${balance} past due on invoice ${inv.id}`,
+    emailText: `Hi ${inv.customer},\n\nWe hope wedding planning is going beautifully! This is a friendly reminder that invoice ${inv.id} (${inv.description}) has an outstanding balance of ${balance}, which was due ${formatDate(inv.dueDate)}.\n\nPay securely online: ${url}\n\nIf you've already sent payment, please disregard this note.\n\nWarmly,\n${loc.business}\n${loc.address}\nTel ${loc.phone}`,
+    emailHtml: emailShell(
+      'A friendly balance reminder',
+      `<p>Hi ${inv.customer},</p>
+       <p>Invoice <strong>${inv.id}</strong> (${inv.description}) has an outstanding balance of <strong>${balance}</strong>, due ${formatDate(inv.dueDate)}.</p>
+       <p style="margin:20px 0"><a href="${url}" style="background:#e11d48;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-family:Arial,sans-serif;font-size:14px">Pay ${balance} securely</a></p>
+       <p>If you've already sent payment, please disregard this note.</p>`,
+      `${loc.business} · ${loc.address} · ${loc.phone}`,
+    ),
+    sms: `${loc.business}: Hi ${inv.customer.split(' ')[0]}, a friendly note — your balance of ${balance} on invoice ${inv.id} was due ${formatDate(inv.dueDate)}. Pay securely: ${url}`,
+  };
+}
+
 /** Gentle reminder for an upcoming visit. */
 export function reminderTemplates(a: Appointment): MessageTemplates {
   const loc = locationById(a.location);
@@ -187,6 +323,26 @@ export function reminderTemplates(a: Appointment): MessageTemplates {
       `${loc.business} · ${loc.address} · ${loc.phone}`,
     ),
     sms: `${loc.business}: Reminder — ${a.customer}, your ${a.type.toLowerCase()} is ${when} with ${a.stylist}. See you soon!`,
+  };
+}
+
+/** The "I Do Team" wedding photo request — auto-sent 2 months after the wedding. */
+export function weddingPhotoTemplates(bride: Customer): MessageTemplates {
+  const loc = locationById(bride.location);
+  const first = bride.name.split(' ')[0];
+  const bodyText = `Hi ${first}!\n\nThe I Do Team wanted to congratulate you on your recent wedding celebration. We would love to see some photos of you in your gorgeous gown on your special day and share them on our Instagram and Facebook page. We'd love it if you shared your album or gallery link with us at ido@idobridalcouture.com along with your photographer's name and any other vendors you'd like to share. We can't wait to see!\n\nXo,\nThe I Do Team\n\n\n${loc.business}\n${loc.address}\nTel ${loc.phone}\nidobridalcouture.com`;
+  return {
+    emailSubject: `We'd love to see your wedding photos, ${first}!`,
+    emailText: bodyText,
+    emailHtml: emailShell(
+      `Congratulations, ${first}!`,
+      `<p>Hi ${first}!</p>
+       <p>The I Do Team wanted to congratulate you on your recent wedding celebration. We would love to see some photos of you in your gorgeous gown on your special day and share them on our Instagram and Facebook page.</p>
+       <p>We'd love it if you shared your album or gallery link with us at <a href="mailto:ido@idobridalcouture.com">ido@idobridalcouture.com</a> along with your photographer's name and any other vendors you'd like to share. We can't wait to see!</p>
+       <p>Xo,<br/>The I Do Team</p>`,
+      `${loc.business} · ${loc.address} · Tel ${loc.phone} · idobridalcouture.com`,
+    ),
+    sms: `${loc.business}: Hi ${first}! Congratulations on your recent wedding! We'd love to see photos of you in your gown — share your gallery link with us at ido@idobridalcouture.com. Xo, The I Do Team`,
   };
 }
 

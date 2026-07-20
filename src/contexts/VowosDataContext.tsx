@@ -16,6 +16,8 @@ import {
   locationById,
   gownStatusForStock,
 } from '@/data/vowosData';
+import { registerSiteOrigin } from '@/lib/messaging';
+
 
 // ─── Row mappers: database snake_case → app camelCase ───
 
@@ -281,6 +283,9 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     refresh();
+    // Publish this deployment's origin so server-side automations (overdue
+    // auto-chase) can build working /pay/:id payment links in their messages.
+    registerSiteOrigin();
     // Keep data fresh across staff sessions: refetch when the tab regains focus
     const onVisible = () => {
       if (document.visibilityState === 'visible') refresh();
@@ -288,6 +293,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [refresh]);
+
 
   // ─── Mutations (optimistic UI + database persistence) ───
 

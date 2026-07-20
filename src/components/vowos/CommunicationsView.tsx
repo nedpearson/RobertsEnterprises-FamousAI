@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   MessageSquare,
   Mail,
@@ -11,24 +11,32 @@ import {
   Link2,
   BellRing,
   Sparkles,
+  Zap,
+  RefreshCw,
+  X,
+  ArrowDownLeft,
 } from 'lucide-react';
 import { Customer, formatCents, formatDate, locationById } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
+import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { PageHeader, inputCls } from './ui';
 import {
   MessageChannel,
   MessageKind,
   MessageRecord,
+  KIND_LABELS,
   fetchMessages,
   sendAndLogMessage,
   appointmentConfirmationTemplates,
   appointmentRescheduleTemplates,
   paymentLinkTemplates,
+  overdueChaseTemplates,
   reminderTemplates,
   isEmail,
   isPhone,
 } from '@/lib/messaging';
+import BrideChecklist, { ChecklistDraft } from './BrideChecklist';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -44,6 +52,9 @@ export default function CommunicationsView() {
   const [kind, setKind] = useState<MessageKind>('general');
   const [sending, setSending] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [runningAuto, setRunningAuto] = useState(false);
+  const [lastInboundCount, setLastInboundCount] = useState<Record<string, number>>({});
+  const pollRef = useRef<number | null>(null);
 
   const contacts = useMemo(
     () =>
@@ -69,15 +80,33 @@ export default function CommunicationsView() {
     else if (isEmail(selected.email)) setChannel('email');
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadThread = async (name: string) => {
-    setThreadLoading(true);
-    setThread(await fetchMessages(name));
-    setThreadLoading(false);
+  const loadThread = async (name: string, showSpinner = true) => {
+    if (showSpinner) setThreadLoading(true);
+    const msgs = await fetchMessages(name);
+    setThread(msgs);
+    if (showSpinner) setThreadLoading(false);
+    // Surface new inbound replies as a toast while the hub is open
+    const inbound = msgs.filter((m) => m.direction === 'inbound').length;
+    setLastInboundCount((prev) => {
+      if (prev[name] !== undefined && inbound > prev[name]) {
+        toast({ title: `New text from ${name}`, description: msgs.find((m) => m.direction === 'inbound')?.body?.slice(0, 120) });
+      }
+      return { ...prev, [name]: inbound };
+    });
   };
 
   useEffect(() => {
     if (selected) loadThread(selected.name);
     else setThread([]);
+  }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Two-way texting: poll the thread every 12s so bride replies appear live ──
+  useEffect(() => {
+    if (!selected) return;
+    pollRef.current = window.setInterval(() => loadThread(selected.name, false), 12000);
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+    };
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Upcoming appointments awaiting confirmation (across all stores)
@@ -99,16 +128,16 @@ export default function CommunicationsView() {
       .filter((i) => i.customer === name && i.amountCents > i.paidCents)
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0] ?? null;
 
-  const applyTemplate = (t: 'confirm' | 'reschedule' | 'payment' | 'reminder') => {
+  const applyTemplate = (t: 'confirm' | 'reschedule' | 'payment' | 'chase' | 'reminder') => {
     if (!selected) return;
-    if (t === 'payment') {
+    if (t === 'payment' || t === 'chase') {
       const inv = openInvoiceFor(selected.name);
       if (!inv) {
         toast({ title: 'No open balance', description: `${selected.name} has no unpaid invoices.` });
         return;
       }
-      const tpl = paymentLinkTemplates(inv);
-      setKind('payment');
+      const tpl = t === 'chase' ? overdueChaseTemplates(inv) : paymentLinkTemplates(inv);
+      setKind(t === 'chase' ? 'chase' : 'payment');
       setSubject(tpl.emailSubject);
       setBody(channel === 'sms' ? tpl.sms : tpl.emailText);
       return;
@@ -127,6 +156,14 @@ export default function CommunicationsView() {
     setKind(t === 'confirm' ? 'confirmation' : t === 'reschedule' ? 'reschedule' : 'reminder');
     setSubject(tpl.emailSubject);
     setBody(channel === 'sms' ? tpl.sms : tpl.emailText);
+  };
+
+  /** Checklist hands us an AI/template draft — load it into the composer. */
+  const handleChecklistDraft = (draft: ChecklistDraft) => {
+    setChannel(draft.channel);
+    setKind(draft.kind);
+    setSubject(draft.subject);
+    setBody(draft.body);
   };
 
   const handleSend = async () => {
@@ -207,10 +244,31 @@ export default function CommunicationsView() {
     if (selected && selected.name === appt.customer) loadThread(appt.customer);
   };
 
-  const templateChips: { key: 'confirm' | 'reschedule' | 'payment' | 'reminder'; label: string; icon: typeof CalendarCheck }[] = [
+  /** Manually trigger the nightly automation sweep (reminders / chases / photo emails). */
+  const handleRunAutomations = async () => {
+    setRunningAuto(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('auto-comms', { body: {} });
+      if (error || !data?.ok) {
+        toast({ title: 'Automation run failed', description: error?.message ?? data?.error ?? 'Unknown error', variant: 'destructive' });
+      } else {
+        toast({
+          title: 'Automations ran',
+          description: `${data.reminders} reminder(s) · ${data.chases} overdue chase(s) · ${data.photos} photo email(s) sent.`,
+        });
+        if (selected) loadThread(selected.name, false);
+      }
+    } catch (e: any) {
+      toast({ title: 'Automation run failed', description: e?.message ?? 'Network error', variant: 'destructive' });
+    }
+    setRunningAuto(false);
+  };
+
+  const templateChips: { key: 'confirm' | 'reschedule' | 'payment' | 'chase' | 'reminder'; label: string; icon: typeof CalendarCheck }[] = [
     { key: 'confirm', label: 'Confirm appointment', icon: CalendarCheck },
     { key: 'reschedule', label: 'Reschedule notice', icon: BellRing },
     { key: 'payment', label: 'Payment link', icon: Link2 },
+    { key: 'chase', label: 'Overdue chase', icon: AlertCircle },
     { key: 'reminder', label: 'Visit reminder', icon: Sparkles },
   ];
 
@@ -218,8 +276,29 @@ export default function CommunicationsView() {
     <div>
       <PageHeader
         title="Communications"
-        subtitle={`Text and email brides · ${pendingConfirmations.length} appointment${pendingConfirmations.length === 1 ? '' : 's'} awaiting confirmation`}
+        subtitle={`Two-way texting and email · ${pendingConfirmations.length} appointment${pendingConfirmations.length === 1 ? '' : 's'} awaiting confirmation`}
       />
+
+      {/* Auto-pilot strip */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-gradient-to-r from-stone-900 to-stone-800 px-5 py-4 text-white shadow-sm">
+        <div className="flex items-start gap-3">
+          <Zap className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
+          <div>
+            <p className="text-sm font-semibold">Auto-pilot is on — runs every morning at 9am</p>
+            <p className="text-xs text-stone-400">
+              Visit reminders 24h before · overdue balances chased every 4 days (max 4) · wedding photo email 2 months after the big day · bride replies flow back in below
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleRunAutomations}
+          disabled={runningAuto}
+          className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-stone-900 transition-colors hover:bg-amber-400 disabled:opacity-60"
+        >
+          {runningAuto ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+          Run now
+        </button>
+      </div>
 
       {/* Pending confirmations strip */}
       {pendingConfirmations.length > 0 && (
@@ -290,120 +369,164 @@ export default function CommunicationsView() {
           </div>
         </div>
 
-        {/* Conversation + composer */}
-        <div className="flex flex-col rounded-2xl border border-stone-200/80 bg-white shadow-sm lg:col-span-2">
-          {selected ? (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 px-5 py-4">
-                <div>
-                  <p className="font-serif text-lg text-stone-900">{selected.name}</p>
-                  <p className="text-xs text-stone-500">
-                    {locationById(selected.location).short} · Wedding {formatDate(selected.weddingDate)}
-                    {openInvoiceFor(selected.name) &&
-                      ` · Balance ${formatCents(openInvoiceFor(selected.name)!.amountCents - openInvoiceFor(selected.name)!.paidCents)}`}
-                  </p>
-                </div>
-                <div className="flex rounded-lg border border-stone-200 p-0.5">
-                  {(['sms', 'email'] as MessageChannel[]).map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setChannel(c)}
-                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        channel === c ? 'bg-stone-900 text-white' : 'text-stone-500 hover:text-stone-800'
-                      }`}
-                    >
-                      {c === 'sms' ? <MessageSquare className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
-                      {c === 'sms' ? 'Text' : 'Email'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Thread */}
-              <div className="max-h-[300px] flex-1 space-y-3 overflow-y-auto px-5 py-4">
-                {threadLoading && (
-                  <div className="py-8 text-center">
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-rose-400" />
+        {/* Conversation + composer + checklist */}
+        <div className="space-y-6 lg:col-span-2">
+          <div className="flex flex-col rounded-2xl border border-stone-200/80 bg-white shadow-sm">
+            {selected ? (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 px-5 py-4">
+                  <div>
+                    <p className="font-serif text-lg text-stone-900">{selected.name}</p>
+                    <p className="text-xs text-stone-500">
+                      {locationById(selected.location).short} · Wedding {formatDate(selected.weddingDate)}
+                      {openInvoiceFor(selected.name) &&
+                        ` · Balance ${formatCents(openInvoiceFor(selected.name)!.amountCents - openInvoiceFor(selected.name)!.paidCents)}`}
+                    </p>
                   </div>
-                )}
-                {!threadLoading && thread.length === 0 && (
-                  <p className="py-8 text-center text-sm text-stone-400">
-                    No messages yet — start the conversation below.
-                  </p>
-                )}
-                {!threadLoading &&
-                  [...thread].reverse().map((m) => (
-                    <div key={m.id} className="flex justify-end">
-                      <div
-                        className={`max-w-[85%] rounded-2xl rounded-br-sm px-4 py-2.5 text-sm shadow-sm ${
-                          m.status === 'sent' ? 'bg-stone-900 text-white' : 'bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200'
-                        }`}
-                      >
-                        {m.subject && <p className="mb-0.5 text-xs font-semibold opacity-80">{m.subject}</p>}
-                        <p className="whitespace-pre-wrap leading-relaxed">{m.body}</p>
-                        <p className={`mt-1.5 flex items-center gap-1 text-[10px] ${m.status === 'sent' ? 'text-stone-400' : 'text-rose-500'}`}>
-                          {m.status === 'sent' ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                          {m.channel === 'sms' ? 'Text' : 'Email'} · {m.toAddress} ·{' '}
-                          {new Date(m.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                          {m.status === 'failed' && ' · failed'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-
-              {/* Composer */}
-              <div className="border-t border-stone-100 p-4">
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {templateChips.map(({ key, label, icon: Icon }) => (
+                  <div className="flex items-center gap-2">
                     <button
-                      key={key}
-                      onClick={() => applyTemplate(key)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+                      onClick={() => loadThread(selected.name)}
+                      title="Refresh conversation"
+                      className="rounded-lg border border-stone-200 p-2 text-stone-500 transition-colors hover:border-rose-300 hover:text-rose-600"
                     >
-                      <Icon className="h-3.5 w-3.5" /> {label}
+                      <RefreshCw className={`h-3.5 w-3.5 ${threadLoading ? 'animate-spin' : ''}`} />
                     </button>
-                  ))}
+                    <div className="flex rounded-lg border border-stone-200 p-0.5">
+                      {(['sms', 'email'] as MessageChannel[]).map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => setChannel(c)}
+                          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                            channel === c ? 'bg-stone-900 text-white' : 'text-stone-500 hover:text-stone-800'
+                          }`}
+                        >
+                          {c === 'sms' ? <MessageSquare className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
+                          {c === 'sms' ? 'Text' : 'Email'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                {channel === 'email' && (
-                  <input
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Subject"
-                    className={`${inputCls} mb-2`}
-                  />
-                )}
-                <div className="flex items-end gap-2">
-                  <textarea
-                    value={body}
-                    onChange={(e) => setBody(e.target.value)}
-                    rows={3}
-                    placeholder={
-                      channel === 'sms'
-                        ? `Text ${selected.name.split(' ')[0]} at ${isPhone(selected.phone) ? selected.phone : '(no phone on file)'}...`
-                        : `Email ${selected.name.split(' ')[0]} at ${isEmail(selected.email) ? selected.email : '(no email on file)'}...`
-                    }
-                    className={`${inputCls} resize-none`}
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={sending || !body.trim()}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-rose-500 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-rose-600 disabled:opacity-50"
-                  >
-                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Send
-                  </button>
+
+                {/* Thread — outbound right, inbound bride replies left */}
+                <div className="max-h-[300px] flex-1 space-y-3 overflow-y-auto px-5 py-4">
+                  {threadLoading && (
+                    <div className="py-8 text-center">
+                      <Loader2 className="mx-auto h-5 w-5 animate-spin text-rose-400" />
+                    </div>
+                  )}
+                  {!threadLoading && thread.length === 0 && (
+                    <p className="py-8 text-center text-sm text-stone-400">
+                      No messages yet — start the conversation below. Bride replies appear here automatically.
+                    </p>
+                  )}
+                  {!threadLoading &&
+                    [...thread].reverse().map((m) =>
+                      m.direction === 'inbound' ? (
+                        <div key={m.id} className="flex justify-start">
+                          <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-stone-100 px-4 py-2.5 text-sm text-stone-800 shadow-sm ring-1 ring-inset ring-stone-200">
+                            <p className="whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                            <p className="mt-1.5 flex items-center gap-1 text-[10px] text-stone-400">
+                              <ArrowDownLeft className="h-3 w-3 text-emerald-500" />
+                              Reply · {m.toAddress} ·{' '}
+                              {new Date(m.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div key={m.id} className="flex justify-end">
+                          <div
+                            className={`max-w-[85%] rounded-2xl rounded-br-sm px-4 py-2.5 text-sm shadow-sm ${
+                              m.status === 'sent' ? 'bg-stone-900 text-white' : 'bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200'
+                            }`}
+                          >
+                            {m.subject && <p className="mb-0.5 text-xs font-semibold opacity-80">{m.subject}</p>}
+                            <p className="whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                            <p className={`mt-1.5 flex items-center gap-1 text-[10px] ${m.status === 'sent' ? 'text-stone-400' : 'text-rose-500'}`}>
+                              {m.status === 'sent' ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                              {m.channel === 'sms' ? 'Text' : 'Email'}
+                              {m.kind !== 'general' && ` · ${KIND_LABELS[m.kind] ?? m.kind}`} · {m.toAddress} ·{' '}
+                              {new Date(m.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                              {m.status === 'failed' && ' · failed'}
+                            </p>
+                          </div>
+                        </div>
+                      ),
+                    )}
                 </div>
-                <p className="mt-2 text-[11px] text-stone-400">
-                  Every message is saved to the conversation log. Texts include opt-out language automatically when using templates.
-                </p>
+
+                {/* Composer */}
+                <div className="border-t border-stone-100 p-4">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    {templateChips.map(({ key, label, icon: Icon }) => (
+                      <button
+                        key={key}
+                        onClick={() => applyTemplate(key)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        <Icon className="h-3.5 w-3.5" /> {label}
+                      </button>
+                    ))}
+                    {kind !== 'general' && (
+                      <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white">
+                        {KIND_LABELS[kind]}
+                        <button onClick={() => setKind('general')} className="text-stone-400 hover:text-white">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                  {channel === 'email' && (
+                    <input
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      placeholder="Subject"
+                      className={`${inputCls} mb-2`}
+                    />
+                  )}
+                  <div className="flex items-end gap-2">
+                    <textarea
+                      value={body}
+                      onChange={(e) => setBody(e.target.value)}
+                      rows={3}
+                      placeholder={
+                        channel === 'sms'
+                          ? `Text ${selected.name.split(' ')[0]} at ${isPhone(selected.phone) ? selected.phone : '(no phone on file)'}...`
+                          : `Email ${selected.name.split(' ')[0]} at ${isEmail(selected.email) ? selected.email : '(no email on file)'}...`
+                      }
+                      className={`${inputCls} resize-none`}
+                    />
+                    <button
+                      onClick={handleSend}
+                      disabled={sending || !body.trim()}
+                      className="inline-flex h-10 items-center gap-2 rounded-lg bg-rose-500 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-rose-600 disabled:opacity-50"
+                    >
+                      {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      Send
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[11px] text-stone-400">
+                    Two-way texting is live — replies land in this thread within seconds. Point your Twilio number's inbound webhook at the sms-inbound function to activate.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
+                <MessageSquare className="h-8 w-8 text-stone-300" />
+                <p className="mt-3 text-sm text-stone-400">Select a bride to view her conversation.</p>
               </div>
-            </>
-          ) : (
-            <div className="flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
-              <MessageSquare className="h-8 w-8 text-stone-300" />
-              <p className="mt-3 text-sm text-stone-400">Select a bride to view her conversation.</p>
-            </div>
+            )}
+          </div>
+
+          {/* Post-visit checklist */}
+          {selected && (
+            <BrideChecklist
+              bride={selected}
+              thread={thread}
+              appointments={allAppointments}
+              invoices={allInvoices}
+              onDraft={handleChecklistDraft}
+            />
           )}
         </div>
       </div>
