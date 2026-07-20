@@ -35,12 +35,16 @@ export default function BookAppointmentModal({
   open,
   onClose,
   appointment,
+  defaults,
 }: {
   open: boolean;
   onClose: () => void;
   /** When provided, the modal becomes an edit/reschedule form for this appointment. */
   appointment?: Appointment | null;
+  /** Prefills for new bookings (e.g. clicking a calendar cell books that day/stylist). */
+  defaults?: { date?: string; time?: string; stylist?: string } | null;
 }) {
+
   const {
     brides,
     leads,
@@ -88,9 +92,10 @@ export default function BookAppointmentModal({
       setType('Bridal Consultation');
       // Book into the store the staffer is currently viewing
       setLocation(activeLocation === 'all' ? 'ido-br' : activeLocation);
-      setDate('');
-      setTime('');
-      setStylist(teamMembers[0]);
+      // Calendar cells pass prefills (book this day / this stylist / this slot)
+      setDate(defaults?.date ?? '');
+      setTime(defaults?.time ?? '');
+      setStylist(defaults?.stylist ?? teamMembers[0]);
       setLookingFor('');
       setBudgetCents(0);
       setFeeCollected(true);
@@ -98,7 +103,8 @@ export default function BookAppointmentModal({
     setNotify(true);
     setError('');
 
-  }, [open, appointment, activeLocation]);
+  }, [open, appointment, activeLocation, defaults]);
+
 
 
   const customerName = isEdit

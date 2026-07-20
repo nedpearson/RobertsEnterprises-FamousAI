@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  CalendarDays, CalendarPlus, Check, Copy, ExternalLink, Loader2, Pencil, Printer, QrCode, Trash2,
-  Search, Wallet, CreditCard,
+  CalendarDays, CalendarPlus, CalendarRange, Check, Copy, ExternalLink, LayoutList, Loader2,
+  Pencil, Printer, QrCode, Trash2, Search, Wallet, CreditCard,
 } from 'lucide-react';
 import {
   Appointment,
@@ -16,6 +16,7 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
 import { PageHeader, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
 import BookAppointmentModal from './BookAppointmentModal';
+import CoverageCalendar from './CoverageCalendar';
 import { LocationBadge } from './LocationSelect';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -51,9 +52,13 @@ function printBookingQr(url: string) {
   w.document.close();
 }
 
+type ViewMode = 'calendar' | 'list';
+
 export default function AppointmentsView() {
   const { appointments: list, loading, setAppointmentStatus, deleteAppointment } = useVowosData();
+  const [view, setView] = useState<ViewMode>('calendar');
   const [bookOpen, setBookOpen] = useState(false);
+  const [bookDefaults, setBookDefaults] = useState<{ date?: string; stylist?: string } | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [editing, setEditing] = useState<Appointment | null>(null);
   const [cancelling, setCancelling] = useState<Appointment | null>(null);
@@ -62,6 +67,12 @@ export default function AppointmentsView() {
   const bookUrl = bookingPageUrl();
 
   const days = Array.from(new Set(list.map((a) => a.date))).sort();
+
+  /** Open the booking modal, optionally prefilled from a calendar cell. */
+  const openBooking = (defaults?: { date?: string; stylist?: string }) => {
+    setBookDefaults(defaults ?? null);
+    setBookOpen(true);
+  };
 
   const copyBookingLink = async () => {
     try {
@@ -99,10 +110,31 @@ export default function AppointmentsView() {
 
         action={
           <div className="flex flex-wrap items-center gap-2">
+            {/* Calendar / list toggle */}
+            <div className="flex overflow-hidden rounded-lg border border-stone-200 bg-white">
+              <button
+                onClick={() => setView('calendar')}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                  view === 'calendar' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-50'
+                }`}
+                title="Bride calendar with team coverage"
+              >
+                <CalendarRange className="h-3.5 w-3.5" /> Calendar
+              </button>
+              <button
+                onClick={() => setView('list')}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                  view === 'list' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-50'
+                }`}
+                title="Card list by day"
+              >
+                <LayoutList className="h-3.5 w-3.5" /> List
+              </button>
+            </div>
             <button onClick={() => setQrOpen(true)} className={btnSecondary}>
               <QrCode className="h-4 w-4" /> Booking QR
             </button>
-            <button onClick={() => setBookOpen(true)} className={btnPrimary}>
+            <button onClick={() => openBooking()} className={btnPrimary}>
               <CalendarPlus className="h-4 w-4" /> Book Appointment
             </button>
           </div>
@@ -114,6 +146,15 @@ export default function AppointmentsView() {
         <div className="flex flex-col items-center rounded-2xl border border-stone-200/80 bg-white py-16 shadow-sm">
           <Loader2 className="h-6 w-6 animate-spin text-rose-400" />
           <p className="mt-3 text-sm text-stone-500">Loading appointments...</p>
+        </div>
+      ) : view === 'calendar' ? (
+        <div className="space-y-3">
+          <CoverageCalendar onBook={openBooking} onEdit={setEditing} />
+          <p className="text-xs text-stone-400">
+            Every team member shares this calendar so managers can confirm each bride's appointment is
+            covered. Click any cell to book a bride with that stylist, or click an appointment to
+            reschedule or reassign it.
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -225,8 +266,15 @@ export default function AppointmentsView() {
         </div>
       )}
 
-      {/* Book new appointment */}
-      <BookAppointmentModal open={bookOpen} onClose={() => setBookOpen(false)} />
+      {/* Book new appointment (calendar cells prefill date + stylist) */}
+      <BookAppointmentModal
+        open={bookOpen}
+        onClose={() => {
+          setBookOpen(false);
+          setBookDefaults(null);
+        }}
+        defaults={bookDefaults}
+      />
 
       {/* Edit / reschedule an existing appointment */}
       <BookAppointmentModal

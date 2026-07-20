@@ -14,19 +14,22 @@ import {
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, btnSecondary } from './ui';
 import SalesGoalsTab from './SalesGoalsTab';
+import SalesByRangeTab from './SalesByRangeTab';
 
 
-type TabKey = 'revenue' | 'goals' | 'locations' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups';
+type TabKey = 'revenue' | 'goals' | 'sales-range' | 'locations' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'revenue', label: 'Revenue' },
   { key: 'goals', label: 'Sales Goals' },
+  { key: 'sales-range', label: 'Sales by Date Range' },
   { key: 'locations', label: 'By Location' },
   { key: 'open-orders', label: 'Open Orders' },
   { key: 'deliveries', label: 'Expected Deliveries' },
   { key: 'bookings', label: 'Bookings' },
   { key: 'follow-ups', label: 'Follow-Ups' },
 ];
+
 
 
 function downloadCsv(filename: string, rows: (string | number)[][]) {
@@ -186,11 +189,14 @@ export default function ReportsView() {
         title="Reports"
         subtitle="Bridal retail analytics across sales, orders, stores, and follow-ups"
         action={
-          <button onClick={() => downloadCsv(exportData.name, exportData.rows)} className={btnSecondary}>
-            <Download className="h-4 w-4" /> Export CSV
-          </button>
+          tab === 'sales-range' ? undefined : (
+            <button onClick={() => downloadCsv(exportData.name, exportData.rows)} className={btnSecondary}>
+              <Download className="h-4 w-4" /> Export CSV
+            </button>
+          )
         }
       />
+
 
       <div className="mb-6 flex flex-wrap gap-2 border-b border-stone-200 pb-px">
         {TABS.map((t) => (
@@ -242,6 +248,9 @@ export default function ReportsView() {
       )}
 
       {tab === 'goals' && <SalesGoalsTab />}
+
+      {tab === 'sales-range' && <SalesByRangeTab />}
+
 
 
       {tab === 'locations' && (

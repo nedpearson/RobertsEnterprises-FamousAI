@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Search, Plus, Pencil, PackagePlus, Loader2, ArrowLeftRight, AlertTriangle, Boxes, DollarSign, TrendingUp,
+  Check, X,
 } from 'lucide-react';
 import {
   Gown,
@@ -11,10 +12,12 @@ import {
   marginPct,
 } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
+import { toast } from '@/components/ui/use-toast';
 import { PageHeader, StatusBadge, inputCls, btnPrimary } from './ui';
 import { GownFormModal, AdjustStockModal } from './GownModals';
 import { TransferModal } from './TransfersView';
 import { LocationBadge } from './LocationSelect';
+
 
 const CONDITION_BADGE: Record<string, string> = {
   New: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
@@ -24,7 +27,7 @@ const CONDITION_BADGE: Record<string, string> = {
 };
 
 export default function InventoryView() {
-  const { gowns, loading, activeLocation } = useVowosData();
+  const { gowns, loading, activeLocation, adjustGownPrice } = useVowosData();
   const [query, setQuery] = useState('');
   const [styleFilter, setStyleFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -33,6 +36,11 @@ export default function InventoryView() {
   const [editingGown, setEditingGown] = useState<Gown | null>(null);
   const [stockGown, setStockGown] = useState<Gown | null>(null);
   const [transferGown, setTransferGown] = useState<Gown | null>(null);
+  // Inline "change price on the fly" editor state
+  const [priceEditId, setPriceEditId] = useState<string | null>(null);
+  const [priceValue, setPriceValue] = useState('');
+  const [priceSaving, setPriceSaving] = useState(false);
+
 
   const styles = useMemo(
     () => ['All', ...Array.from(new Set([...GOWN_STYLES, ...gowns.map((g) => g.style)]))],
@@ -77,6 +85,35 @@ export default function InventoryView() {
     setEditingGown(g);
     setFormOpen(true);
   };
+
+  // ── On-the-fly retail price changes ──
+  const startPriceEdit = (g: Gown) => {
+    setPriceEditId(g.id);
+    setPriceValue((g.priceCents / 100).toString());
+  };
+
+  const savePrice = async (g: Gown) => {
+    const cents = Math.round(parseFloat(priceValue || '0') * 100);
+    if (!Number.isFinite(cents) || cents < 0) {
+      toast({ title: 'Invalid price', description: 'Enter a valid dollar amount.', variant: 'destructive' });
+      return;
+    }
+    if (cents === g.priceCents) {
+      setPriceEditId(null);
+      return;
+    }
+    setPriceSaving(true);
+    const ok = await adjustGownPrice(g.id, cents);
+    setPriceSaving(false);
+    if (ok) {
+      toast({
+        title: 'Price updated',
+        description: `${g.name} is now ${formatCents(cents)} (was ${formatCents(g.priceCents)}).`,
+      });
+      setPriceEditId(null);
+    }
+  };
+
 
   return (
     <div>
@@ -203,11 +240,61 @@ export default function InventoryView() {
                       <p className="text-xs text-stone-500">{g.designer}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium text-stone-900">{formatCents(g.priceCents)}</p>
+                      {priceEditId === g.id ? (
+                        <div className="flex items-center gap-1">
+                          <div className="relative w-24">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-stone-400">$</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={priceValue}
+                              onChange={(e) => setPriceValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  savePrice(g);
+                                }
+                                if (e.key === 'Escape') setPriceEditId(null);
+                              }}
+                              className="w-full rounded-lg border border-rose-300 py-1 pl-5 pr-1 text-right text-xs text-stone-900 focus:border-rose-400 focus:outline-none"
+                              autoFocus
+                            />
+                          </div>
+                          <button
+                            onClick={() => savePrice(g)}
+                            disabled={priceSaving}
+                            className="rounded-lg bg-emerald-600 p-1 text-white hover:bg-emerald-700 disabled:opacity-60"
+                            title="Save new price"
+                            aria-label={`Save new price for ${g.name}`}
+                          >
+                            {priceSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                          </button>
+                          <button
+                            onClick={() => setPriceEditId(null)}
+                            className="rounded-lg border border-stone-200 p-1 text-stone-500 hover:bg-stone-50"
+                            title="Cancel"
+                            aria-label="Cancel price edit"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => startPriceEdit(g)}
+                          className="group/price inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 transition-colors hover:bg-rose-50"
+                          title="Change retail price on the fly"
+                          aria-label={`Change price of ${g.name}`}
+                        >
+                          <span className="font-medium text-stone-900">{formatCents(g.priceCents)}</span>
+                          <Pencil className="h-3 w-3 text-stone-300 transition-colors group-hover/price:text-rose-400" />
+                        </button>
+                      )}
                       {g.msrpCents > 0 && g.msrpCents !== g.priceCents && (
                         <p className="text-[10px] text-stone-400">MSRP {formatCents(g.msrpCents)}</p>
                       )}
                     </div>
+
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] text-stone-500">
                     <span className="rounded-full bg-stone-100 px-2 py-0.5">{g.category}</span>

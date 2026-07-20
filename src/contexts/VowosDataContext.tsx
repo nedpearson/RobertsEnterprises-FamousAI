@@ -253,6 +253,9 @@ interface VowosDataContextType {
   addGown: (input: GownInput) => Promise<boolean>;
   updateGown: (id: string, input: GownInput) => Promise<boolean>;
   adjustGownStock: (id: string, newStock: number) => Promise<boolean>;
+  /** Change a gown's retail price on the fly (persists immediately). */
+  adjustGownPrice: (id: string, newPriceCents: number) => Promise<boolean>;
+
   addTransfer: (input: NewTransferInput) => Promise<boolean>;
   receiveTransfer: (id: string) => Promise<boolean>;
 }
@@ -287,6 +290,8 @@ const VowosDataContext = createContext<VowosDataContextType>({
   addGown: async () => false,
   updateGown: async () => false,
   adjustGownStock: async () => false,
+  adjustGownPrice: async () => false,
+
   addTransfer: async () => false,
   receiveTransfer: async () => false,
 });
@@ -741,6 +746,26 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [gowns],
   );
 
+
+  /** Change the retail price on the fly (quick repricing from the sales floor). */
+  const adjustGownPrice = useCallback(
+    async (id: string, newPriceCents: number): Promise<boolean> => {
+      const prevGown = gowns.find((g) => g.id === id);
+      if (!prevGown) return false;
+      const priceCents = Math.max(0, Math.round(newPriceCents));
+      setGowns((prev) => prev.map((g) => (g.id === id ? { ...g, priceCents } : g)));
+      const { error } = await supabase.from('gowns').update({ price_cents: priceCents }).eq('id', id);
+      if (error) {
+        dbErrorToast('change price', error.message);
+        setGowns((prev) => prev.map((g) => (g.id === id ? prevGown : g)));
+        return false;
+      }
+      return true;
+    },
+    [gowns],
+  );
+
+
   // ─── Inter-store transfer mutations ───
 
   const addTransfer = useCallback(
@@ -937,6 +962,8 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addGown,
         updateGown,
         adjustGownStock,
+        adjustGownPrice,
+
         addTransfer,
         receiveTransfer,
       }}
