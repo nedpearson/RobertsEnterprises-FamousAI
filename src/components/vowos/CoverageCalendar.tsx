@@ -1,9 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ChevronLeft, ChevronRight, Plus, Users2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { AlertTriangle, CalendarCog, ChevronLeft, ChevronRight, Plus, Users2 } from 'lucide-react';
 import { Appointment, teamMembers, locationById } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-
+import {
+  ScheduleData,
+  dutyFor,
+  apptOutsideShift,
+  shiftShortLabel,
+  minutesToLabel,
+  fetchSchedules,
+} from '@/lib/schedules';
+import ScheduleModal from './ScheduleModal';
 
 const TYPE_DOT: Record<string, string> = {
   'Bridal Consultation': 'bg-rose-400',
@@ -11,6 +20,12 @@ const TYPE_DOT: Record<string, string> = {
   Alterations: 'bg-amber-400',
   Pickup: 'bg-emerald-400',
   Accessories: 'bg-sky-400',
+};
+
+/** Diagonal-stripe shading for cells where the stylist is off. */
+const OFF_STRIPES: CSSProperties = {
+  backgroundImage:
+    'repeating-linear-gradient(135deg, rgba(120,113,108,0.08) 0px, rgba(120,113,108,0.08) 6px, transparent 6px, transparent 12px)',
 };
 
 const isoDate = (d: Date) => {
@@ -42,8 +57,12 @@ export default function CoverageCalendar({
   onEdit: (appt: Appointment) => void;
 }) {
   const { appointments } = useVowosData();
+  const { profile } = useAuth();
+  const canManageSchedules = profile?.role === 'Owner' || profile?.role === 'Manager';
   const [weekStart, setWeekStart] = useState<Date>(() => weekStartOf(new Date()));
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleData>({ shifts: [], timeOff: [] });
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   // Pull every employee account so the manager sees the whole team on one calendar,
   // even employees with zero appointments (coverage gaps are the whole point).
@@ -53,6 +72,14 @@ export default function CoverageCalendar({
       if (data) setStaff(data.map((r: any) => ({ name: r.name, role: r.role ?? 'Stylist' })));
     })();
   }, []);
+
+  const reloadSchedules = useCallback(async () => {
+    setSchedules(await fetchSchedules());
+  }, []);
+
+  useEffect(() => {
+    reloadSchedules();
+  }, [reloadSchedules]);
 
   const days = useMemo(
     () =>
@@ -113,6 +140,19 @@ export default function CoverageCalendar({
   const totalWeek = weekAppts.length;
   const coveredStylists = new Set(weekAppts.map((a) => a.stylist)).size;
 
+  /** How many team members are on duty (working a shift) on a given day. */
+  const onDutyCount = (day: string) =>
+    roster.filter((m) => dutyFor(schedules, m.name, day).status === 'on').length;
+
+  /** Count of this week's appointments that fall outside the assigned stylist's shift. */
+  const outsideShiftCount = useMemo(
+    () =>
+      weekAppts.filter(
+        (a) => a.status !== 'Completed' && apptOutsideShift(dutyFor(schedules, a.stylist, a.date), a.time),
+      ).length,
+    [weekAppts, schedules],
+  );
+
   return (
     <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
       {/* Week navigation */}
@@ -140,10 +180,26 @@ export default function CoverageCalendar({
           </button>
           <h2 className="ml-2 font-serif text-lg text-stone-900">{weekLabel}</h2>
         </div>
-        <p className="flex items-center gap-1.5 text-xs text-stone-500">
-          <Users2 className="h-3.5 w-3.5 text-stone-400" />
-          {totalWeek} appointment{totalWeek === 1 ? '' : 's'} · {coveredStylists} of {roster.length} team members covering
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="flex items-center gap-1.5 text-xs text-stone-500">
+            <Users2 className="h-3.5 w-3.5 text-stone-400" />
+            {totalWeek} appointment{totalWeek === 1 ? '' : 's'} · {coveredStylists} of {roster.length} team members covering
+          </p>
+          {outsideShiftCount > 0 && (
+            <p className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
+              <AlertTriangle className="h-3 w-3" /> {outsideShiftCount} outside shift
+            </p>
+          )}
+          {canManageSchedules && (
+            <button
+              onClick={() => setScheduleOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50"
+              title="Set working days, hours, and time off per team member"
+            >
+              <CalendarCog className="h-3.5 w-3.5" /> Schedules
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -157,6 +213,7 @@ export default function CoverageCalendar({
                 const key = dayKeys[i];
                 const isToday = key === todayKey;
                 const dayCount = weekAppts.filter((a) => a.date === key).length;
+                const duty = onDutyCount(key);
                 return (
                   <th key={key} className={`px-2 py-2 text-center ${isToday ? 'bg-rose-50/70' : ''}`}>
                     <button
@@ -176,6 +233,16 @@ export default function CoverageCalendar({
                       </span>
                       <span className="block text-[10px] text-stone-400">
                         {dayCount > 0 ? `${dayCount} appt${dayCount === 1 ? '' : 's'}` : '—'}
+                      </span>
+                      <span
+                        className={`mx-auto mt-0.5 inline-block rounded-full px-1.5 py-px text-[9px] font-semibold ${
+                          duty === 0
+                            ? 'bg-rose-100 text-rose-600'
+                            : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100'
+                        }`}
+                        title={`${duty} team member${duty === 1 ? '' : 's'} scheduled to work this day`}
+                      >
+                        {duty} on duty
                       </span>
                     </button>
                   </th>
@@ -205,41 +272,81 @@ export default function CoverageCalendar({
                     const list = cellAppts(member.name, day);
                     const doubled = hasDoubleBooking(list);
                     const isToday = day === todayKey;
+                    const duty = dutyFor(schedules, member.name, day);
+                    const isOff = duty.status !== 'on';
+                    const cellTitle =
+                      duty.status === 'on'
+                        ? `${member.name} works ${minutesToLabel(duty.startMinutes)} – ${minutesToLabel(duty.endMinutes)}${duty.scheduled ? '' : ' (default hours — no schedule set)'}`
+                        : duty.status === 'time_off'
+                          ? `${member.name} is off: ${duty.reason}`
+                          : `${member.name} does not work this day`;
                     return (
-                      <td key={day} className={`group/cell px-1.5 py-2 ${isToday ? 'bg-rose-50/40' : ''}`}>
+                      <td
+                        key={day}
+                        className={`group/cell px-1.5 py-2 ${isOff ? 'bg-stone-50' : isToday ? 'bg-rose-50/40' : ''}`}
+                        style={isOff ? OFF_STRIPES : undefined}
+                        title={cellTitle}
+                      >
                         <div className="min-h-[52px] space-y-1">
+                          {isOff && (
+                            <p className="rounded-md bg-stone-200/70 px-1.5 py-0.5 text-center text-[9px] font-semibold uppercase tracking-wider text-stone-500">
+                              {duty.status === 'time_off' ? duty.reason : 'Off'}
+                            </p>
+                          )}
+                          {!isOff && duty.scheduled && (
+                            <p className="text-center text-[9px] font-medium text-stone-300">
+                              {shiftShortLabel(duty.startMinutes, duty.endMinutes)}
+                            </p>
+                          )}
                           {doubled && (
                             <p className="flex items-center gap-1 rounded-md bg-rose-100 px-1.5 py-0.5 text-[9px] font-semibold text-rose-700">
                               <AlertTriangle className="h-2.5 w-2.5" /> Double-booked
                             </p>
                           )}
-                          {list.map((a) => (
-                            <button
-                              key={a.id}
-                              onClick={() => onEdit(a)}
-                              title={`${a.customer} · ${a.type} · ${a.time} · ${locationById(a.location).short}${a.feePaid ? ' · fee paid' : ' · fee due'}`}
-                              className={`block w-full rounded-lg border px-1.5 py-1 text-left transition-colors ${
-                                a.status === 'Completed'
-                                  ? 'border-stone-100 bg-stone-50 opacity-60'
-                                  : a.status === 'Pending'
-                                    ? 'border-amber-200 bg-amber-50 hover:bg-amber-100'
-                                    : 'border-stone-200 bg-white hover:border-rose-200 hover:bg-rose-50'
-                              }`}
-                            >
-                              <span className="flex items-center gap-1">
-                                <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${TYPE_DOT[a.type] ?? 'bg-stone-300'}`} />
-                                <span className="truncate text-[10px] font-semibold text-stone-800">{a.time}</span>
-                                {!a.feePaid && a.status !== 'Completed' && (
-                                  <span className="ml-auto h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-400" title="Booking fee due" />
+                          {list.map((a) => {
+                            const outside = a.status !== 'Completed' && apptOutsideShift(duty, a.time);
+                            return (
+                              <button
+                                key={a.id}
+                                onClick={() => onEdit(a)}
+                                title={`${a.customer} · ${a.type} · ${a.time} · ${locationById(a.location).short}${a.feePaid ? ' · fee paid' : ' · fee due'}${outside ? ` · WARNING: outside ${member.name}'s shift — reassign or reschedule` : ''}`}
+                                className={`block w-full rounded-lg border px-1.5 py-1 text-left transition-colors ${
+                                  a.status === 'Completed'
+                                    ? 'border-stone-100 bg-stone-50 opacity-60'
+                                    : outside
+                                      ? 'border-amber-300 bg-amber-50 ring-1 ring-amber-300 hover:bg-amber-100'
+                                      : a.status === 'Pending'
+                                        ? 'border-amber-200 bg-amber-50 hover:bg-amber-100'
+                                        : 'border-stone-200 bg-white hover:border-rose-200 hover:bg-rose-50'
+                                }`}
+                              >
+                                <span className="flex items-center gap-1">
+                                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${TYPE_DOT[a.type] ?? 'bg-stone-300'}`} />
+                                  <span className="truncate text-[10px] font-semibold text-stone-800">{a.time}</span>
+                                  {outside && (
+                                    <AlertTriangle className="h-2.5 w-2.5 flex-shrink-0 text-amber-500" aria-label="Booked outside this stylist's shift" />
+                                  )}
+                                  {!a.feePaid && a.status !== 'Completed' && (
+                                    <span className="ml-auto h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-400" title="Booking fee due" />
+                                  )}
+                                </span>
+                                <span className="block truncate text-[10px] text-stone-600">{a.customer}</span>
+                                {outside && (
+                                  <span className="block truncate text-[9px] font-semibold text-amber-600">
+                                    Outside shift
+                                  </span>
                                 )}
-                              </span>
-                              <span className="block truncate text-[10px] text-stone-600">{a.customer}</span>
-                            </button>
-                          ))}
+                              </button>
+                            );
+                          })}
                           <button
                             onClick={() => onBook({ date: day, stylist: member.name })}
                             className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-transparent py-1 text-[10px] font-medium text-transparent transition-colors group-hover/cell:border-stone-200 group-hover/cell:text-stone-400 hover:!border-rose-300 hover:bg-rose-50 hover:!text-rose-500"
-                            title={`Book a bride with ${member.name} on this day`}
+                            title={
+                              isOff
+                                ? `${member.name} is off this day — booking here will be flagged`
+                                : `Book a bride with ${member.name} on this day`
+                            }
                           >
                             <Plus className="h-3 w-3" /> Book
                           </button>
@@ -271,11 +378,25 @@ export default function CoverageCalendar({
         <span className="inline-flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-amber-400" /> Fee due at check-in
         </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm border border-stone-200" style={OFF_STRIPES} /> Off / vacation
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <AlertTriangle className="h-2.5 w-2.5 text-amber-500" /> Booked outside shift
+        </span>
         <span className="ml-auto inline-flex items-center gap-1.5">
           Hover a cell to book that stylist · click a day number to book that day
         </span>
-
       </div>
+
+      {/* Owner/Manager: working days, hours & time off */}
+      <ScheduleModal
+        open={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        roster={roster}
+        data={schedules}
+        onChanged={reloadSchedules}
+      />
     </div>
   );
 }
