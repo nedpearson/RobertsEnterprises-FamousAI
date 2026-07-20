@@ -17,6 +17,8 @@ export const GOWN_IMAGES = [
   'https://d64gsuwffb70l.cloudfront.net/6a5d5dc9d84ad34d886e72c1_1784503880714_6e806d03.png',
 ];
 
+export type GownStatus = 'In Stock' | 'Low Stock' | 'On Order';
+
 export interface Gown {
   id: string;
   name: string;
@@ -26,20 +28,22 @@ export interface Gown {
   color: string;
   priceCents: number;
   stock: number;
-  status: 'In Stock' | 'Low Stock' | 'On Order';
+  status: GownStatus;
   image: string;
 }
 
-export const gowns: Gown[] = [
-  { id: 'G-1001', name: 'Seraphina', designer: 'Maggie Sottero', style: 'A-Line', size: '8', color: 'Ivory', priceCents: 289900, stock: 3, status: 'In Stock', image: GOWN_IMAGES[0] },
-  { id: 'G-1002', name: 'Elowen', designer: 'Pronovias', style: 'Mermaid', size: '10', color: 'Champagne', priceCents: 345000, stock: 2, status: 'In Stock', image: GOWN_IMAGES[1] },
-  { id: 'G-1003', name: 'Aurelia', designer: 'Essense of Australia', style: 'Ballgown', size: '6', color: 'Ivory/Nude', priceCents: 412500, stock: 1, status: 'Low Stock', image: GOWN_IMAGES[2] },
-  { id: 'G-1004', name: 'Celestine', designer: 'Stella York', style: 'Sheath', size: '12', color: 'Pearl', priceCents: 198000, stock: 4, status: 'In Stock', image: GOWN_IMAGES[3] },
-  { id: 'G-1005', name: 'Isadora', designer: 'Morilee', style: 'Fit & Flare', size: '8', color: 'Ivory', priceCents: 265000, stock: 0, status: 'On Order', image: GOWN_IMAGES[4] },
-  { id: 'G-1006', name: 'Vivienne', designer: 'Allure Bridals', style: 'A-Line', size: '14', color: 'Blush', priceCents: 312000, stock: 2, status: 'In Stock', image: GOWN_IMAGES[5] },
-  { id: 'G-1007', name: 'Odette', designer: 'Justin Alexander', style: 'Trumpet', size: '10', color: 'Ivory/Silver', priceCents: 378500, stock: 1, status: 'Low Stock', image: GOWN_IMAGES[6] },
-  { id: 'G-1008', name: 'Rosalind', designer: 'Casablanca Bridal', style: 'Ballgown', size: '6', color: 'Champagne', priceCents: 295000, stock: 3, status: 'In Stock', image: GOWN_IMAGES[7] },
-];
+/** Derive gown availability status from quantity on hand. */
+export function gownStatusForStock(stock: number): GownStatus {
+  if (stock <= 0) return 'On Order';
+  if (stock === 1) return 'Low Stock';
+  return 'In Stock';
+}
+
+export const GOWN_STYLES = ['A-Line', 'Mermaid', 'Ballgown', 'Sheath', 'Fit & Flare', 'Trumpet'];
+
+// NOTE: The gown catalog now lives in the `gowns` database table and is
+// loaded via VowosDataContext. It was seeded with the original 8 styles.
+
 
 export interface Customer {
   id: string;

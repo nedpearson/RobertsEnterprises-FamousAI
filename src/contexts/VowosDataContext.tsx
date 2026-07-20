@@ -9,6 +9,8 @@ import {
   Appointment,
   Invoice,
   PurchaseOrder,
+  Gown,
+  gownStatusForStock,
 } from '@/data/vowosData';
 
 // ─── Row mappers: database snake_case → app camelCase ───
@@ -64,6 +66,20 @@ const mapPo = (r: any): PurchaseOrder => ({
   status: r.status,
 });
 
+const mapGown = (r: any): Gown => ({
+  id: r.id,
+  name: r.name,
+  designer: r.designer,
+  style: r.style,
+  size: r.size,
+  color: r.color,
+  priceCents: r.price_cents,
+  stock: r.stock,
+  status: r.status,
+  image: r.image,
+});
+
+
 export interface NewBrideInput {
   name: string;
   email: string;
@@ -88,12 +104,24 @@ export interface NewAppointmentInput {
   stylist: string;
 }
 
+export interface GownInput {
+  name: string;
+  designer: string;
+  style: string;
+  size: string;
+  color: string;
+  priceCents: number;
+  stock: number;
+  image: string;
+}
+
 interface VowosDataContextType {
   brides: Customer[];
   leads: Lead[];
   appointments: Appointment[];
   invoices: Invoice[];
   purchaseOrders: PurchaseOrder[];
+  gowns: Gown[];
   loading: boolean;
   refresh: () => Promise<void>;
   addBride: (input: NewBrideInput) => Promise<boolean>;
@@ -103,6 +131,9 @@ interface VowosDataContextType {
   addInvoice: (input: NewInvoiceInput) => Promise<boolean>;
   recordPayment: (id: string, paymentCents: number) => Promise<boolean>;
   markPoDelivered: (id: string) => Promise<void>;
+  addGown: (input: GownInput) => Promise<boolean>;
+  updateGown: (id: string, input: GownInput) => Promise<boolean>;
+  adjustGownStock: (id: string, newStock: number) => Promise<boolean>;
 }
 
 const VowosDataContext = createContext<VowosDataContextType>({
@@ -111,6 +142,7 @@ const VowosDataContext = createContext<VowosDataContextType>({
   appointments: [],
   invoices: [],
   purchaseOrders: [],
+  gowns: [],
   loading: true,
   refresh: async () => {},
   addBride: async () => false,
@@ -120,9 +152,13 @@ const VowosDataContext = createContext<VowosDataContextType>({
   addInvoice: async () => false,
   recordPayment: async () => false,
   markPoDelivered: async () => {},
+  addGown: async () => false,
+  updateGown: async () => false,
+  adjustGownStock: async () => false,
 });
 
 export const useVowosData = () => useContext(VowosDataContext);
+
 
 function dbErrorToast(action: string, message?: string) {
   toast({
@@ -138,23 +174,27 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [gowns, setGowns] = useState<Gown[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [bridesRes, leadsRes, apptsRes, invRes, poRes] = await Promise.all([
+    const [bridesRes, leadsRes, apptsRes, invRes, poRes, gownsRes] = await Promise.all([
       supabase.from('brides').select('*').order('created_at', { ascending: false }),
       supabase.from('leads').select('*').order('created_at', { ascending: true }),
       supabase.from('appointments').select('*').order('date', { ascending: true }),
       supabase.from('invoices').select('*').order('due_date', { ascending: true }),
       supabase.from('purchase_orders').select('*').order('expected_delivery', { ascending: true }),
+      supabase.from('gowns').select('*').order('id', { ascending: true }),
     ]);
     if (!bridesRes.error && bridesRes.data) setBrides(bridesRes.data.map(mapBride));
     if (!leadsRes.error && leadsRes.data) setLeads(leadsRes.data.map(mapLead));
     if (!apptsRes.error && apptsRes.data) setAppointments(apptsRes.data.map(mapAppointment));
     if (!invRes.error && invRes.data) setInvoices(invRes.data.map(mapInvoice));
     if (!poRes.error && poRes.data) setPurchaseOrders(poRes.data.map(mapPo));
+    if (!gownsRes.error && gownsRes.data) setGowns(gownsRes.data.map(mapGown));
     setLoading(false);
   }, []);
+
 
   useEffect(() => {
     refresh();
@@ -384,6 +424,100 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [purchaseOrders],
   );
 
+  // ─── Gown inventory mutations ───
+
+  const addGown = useCallback(
+    async (input: GownInput): Promise<boolean> => {
+      const maxNum = gowns.reduce((max, g) => {
+        const m = /^G-(\d+)$/.exec(g.id);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 1000);
+      const newGown: Gown = {
+        id: `G-${maxNum + 1}`,
+        name: input.name,
+        designer: input.designer,
+        style: input.style,
+        size: input.size,
+        color: input.color,
+        priceCents: input.priceCents,
+        stock: input.stock,
+        status: gownStatusForStock(input.stock),
+        image: input.image,
+      };
+      const { error } = await supabase.from('gowns').insert({
+        id: newGown.id,
+        name: newGown.name,
+        designer: newGown.designer,
+        style: newGown.style,
+        size: newGown.size,
+        color: newGown.color,
+        price_cents: newGown.priceCents,
+        stock: newGown.stock,
+        status: newGown.status,
+        image: newGown.image,
+      });
+      if (error) {
+        dbErrorToast('add gown', error.message);
+        return false;
+      }
+      setGowns((prev) => [...prev, newGown].sort((a, b) => a.id.localeCompare(b.id)));
+      return true;
+    },
+    [gowns],
+  );
+
+  const updateGown = useCallback(
+    async (id: string, input: GownInput): Promise<boolean> => {
+      const prevGown = gowns.find((g) => g.id === id);
+      if (!prevGown) return false;
+      const updated: Gown = {
+        ...prevGown,
+        ...input,
+        status: gownStatusForStock(input.stock),
+      };
+      setGowns((prev) => prev.map((g) => (g.id === id ? updated : g)));
+      const { error } = await supabase
+        .from('gowns')
+        .update({
+          name: updated.name,
+          designer: updated.designer,
+          style: updated.style,
+          size: updated.size,
+          color: updated.color,
+          price_cents: updated.priceCents,
+          stock: updated.stock,
+          status: updated.status,
+          image: updated.image,
+        })
+        .eq('id', id);
+      if (error) {
+        dbErrorToast('update gown', error.message);
+        setGowns((prev) => prev.map((g) => (g.id === id ? prevGown : g)));
+        return false;
+      }
+      return true;
+    },
+    [gowns],
+  );
+
+  const adjustGownStock = useCallback(
+    async (id: string, newStock: number): Promise<boolean> => {
+      const prevGown = gowns.find((g) => g.id === id);
+      if (!prevGown) return false;
+      const stock = Math.max(0, Math.round(newStock));
+      const status = gownStatusForStock(stock);
+      setGowns((prev) => prev.map((g) => (g.id === id ? { ...g, stock, status } : g)));
+      const { error } = await supabase.from('gowns').update({ stock, status }).eq('id', id);
+      if (error) {
+        dbErrorToast('adjust stock', error.message);
+        setGowns((prev) => prev.map((g) => (g.id === id ? prevGown : g)));
+        return false;
+      }
+      return true;
+    },
+    [gowns],
+  );
+
   return (
     <VowosDataContext.Provider
       value={{
@@ -392,6 +526,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         appointments,
         invoices,
         purchaseOrders,
+        gowns,
         loading,
         refresh,
         addBride,
@@ -401,9 +536,13 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addInvoice,
         recordPayment,
         markPoDelivered,
+        addGown,
+        updateGown,
+        adjustGownStock,
       }}
     >
       {children}
     </VowosDataContext.Provider>
   );
 };
+

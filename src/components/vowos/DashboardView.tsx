@@ -1,5 +1,5 @@
 import { DollarSign, Users, CalendarDays, Shirt, ArrowRight } from 'lucide-react';
-import { gowns, revenueByMonth, formatCents, formatDate, HERO_IMAGE } from '@/data/vowosData';
+import { revenueByMonth, formatCents, formatDate, HERO_IMAGE } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { StatCard, StatusBadge } from './ui';
 import { ViewKey } from './Sidebar';
@@ -7,7 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const { session, profile } = useAuth();
-  const { brides: customers, invoices, appointments, purchaseOrders } = useVowosData();
+  const { brides: customers, invoices, appointments, purchaseOrders, gowns } = useVowosData();
+
   const totalRevenue = invoices.reduce((s, i) => s + i.paidCents, 0);
   const outstanding = invoices.reduce((s, i) => s + (i.amountCents - i.paidCents), 0);
   const upcoming = appointments.filter((a) => a.status !== 'Completed').slice(0, 5);
