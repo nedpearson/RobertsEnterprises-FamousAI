@@ -39,8 +39,9 @@ export function ReportingSettingsTab({
   const loadSettings = async () => {
     setLoading(true);
     const data = await fetchJsonSetting<ReportingConfig>('reporting_settings', DEFAULT_REPORTING_CONFIG);
-    setSettings(data);
-    setDbSettings(data);
+    const fallback = { ...DEFAULT_REPORTING_CONFIG, ...data };
+    setSettings(fallback);
+    setDbSettings(fallback);
     setLoading(false);
   };
 
@@ -93,6 +94,8 @@ export function ReportingSettingsTab({
     );
   }
 
+  const safeSettings = settings || DEFAULT_REPORTING_CONFIG;
+
   return (
     <div className="space-y-6">
       <SettingsCard
@@ -106,8 +109,8 @@ export function ReportingSettingsTab({
             description="Preset range applied on page load."
           >
             <select
-              value={settings.defaultDateRange}
-              onChange={(e) => setSettings({ ...settings, defaultDateRange: e.target.value })}
+              value={safeSettings.defaultDateRange}
+              onChange={(e) => setSettings({ ...safeSettings, defaultDateRange: e.target.value })}
               className={inputCls}
             >
               <option value="this_month">This Month</option>
@@ -124,8 +127,8 @@ export function ReportingSettingsTab({
             <div className="flex items-center justify-between h-9 px-1">
               <span className="text-xs text-stone-500 font-medium">Managers view costs</span>
               <Switch
-                checked={settings.costVisibilityAllowed}
-                onCheckedChange={(checked) => setSettings({ ...settings, costVisibilityAllowed: checked })}
+                checked={safeSettings.costVisibilityAllowed}
+                onCheckedChange={(checked) => setSettings({ ...safeSettings, costVisibilityAllowed: checked })}
                 className="data-[state=checked]:bg-rose-500"
               />
             </div>
@@ -138,8 +141,8 @@ export function ReportingSettingsTab({
             <div className="flex items-center justify-between h-9 px-1">
               <span className="text-xs text-stone-500 font-medium">Stylists view commissions</span>
               <Switch
-                checked={settings.commissionVisibilityAllowed}
-                onCheckedChange={(checked) => setSettings({ ...settings, commissionVisibilityAllowed: checked })}
+                checked={safeSettings.commissionVisibilityAllowed}
+                onCheckedChange={(checked) => setSettings({ ...safeSettings, commissionVisibilityAllowed: checked })}
                 className="data-[state=checked]:bg-rose-500"
               />
             </div>
@@ -152,8 +155,8 @@ export function ReportingSettingsTab({
             <div className="flex items-center justify-between h-9 px-1">
               <span className="text-xs text-stone-500 font-medium">Group reports by location</span>
               <Switch
-                checked={settings.defaultLocationGrouping}
-                onCheckedChange={(checked) => setSettings({ ...settings, defaultLocationGrouping: checked })}
+                checked={safeSettings.defaultLocationGrouping}
+                onCheckedChange={(checked) => setSettings({ ...safeSettings, defaultLocationGrouping: checked })}
                 className="data-[state=checked]:bg-rose-500"
               />
             </div>

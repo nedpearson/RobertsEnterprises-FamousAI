@@ -45,8 +45,14 @@ export function NotificationsSettingsTab({
   const loadSettings = async () => {
     setLoading(true);
     const data = await fetchJsonSetting<NotificationSettings>('notification_settings', DEFAULT_NOTIFICATION_SETTINGS);
-    setSettings(data);
-    setDbSettings(data);
+    const fallback = {
+      appointments: { ...DEFAULT_NOTIFICATION_SETTINGS.appointments, ...data?.appointments },
+      sales: { ...DEFAULT_NOTIFICATION_SETTINGS.sales, ...data?.sales },
+      inventory: { ...DEFAULT_NOTIFICATION_SETTINGS.inventory, ...data?.inventory },
+      transfers: { ...DEFAULT_NOTIFICATION_SETTINGS.transfers, ...data?.transfers },
+    };
+    setSettings(fallback);
+    setDbSettings(fallback);
     setLoading(false);
   };
 
@@ -135,7 +141,7 @@ export function NotificationsSettingsTab({
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-stone-500 font-medium">In-app</span>
                   <Switch
-                    checked={settings[key].inApp}
+                    checked={settings[key]?.inApp}
                     onCheckedChange={(checked) => updatePreference(key, 'inApp', checked)}
                     className="data-[state=checked]:bg-rose-500"
                   />
@@ -144,7 +150,7 @@ export function NotificationsSettingsTab({
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-stone-500 font-medium">Email</span>
                   <Switch
-                    checked={settings[key].email}
+                    checked={settings[key]?.email}
                     onCheckedChange={(checked) => updatePreference(key, 'email', checked)}
                     className="data-[state=checked]:bg-rose-500"
                   />
@@ -153,7 +159,7 @@ export function NotificationsSettingsTab({
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-stone-500 font-medium">SMS</span>
                   <Switch
-                    checked={settings[key].sms}
+                    checked={settings[key]?.sms}
                     onCheckedChange={(checked) => updatePreference(key, 'sms', checked)}
                     className="data-[state=checked]:bg-rose-500"
                   />
