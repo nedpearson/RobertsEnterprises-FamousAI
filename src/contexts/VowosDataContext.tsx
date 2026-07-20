@@ -80,6 +80,14 @@ export interface NewInvoiceInput {
   dueDate: string;
 }
 
+export interface NewAppointmentInput {
+  customer: string;
+  type: Appointment['type'];
+  date: string;
+  time: string;
+  stylist: string;
+}
+
 interface VowosDataContextType {
   brides: Customer[];
   leads: Lead[];
@@ -91,6 +99,7 @@ interface VowosDataContextType {
   addBride: (input: NewBrideInput) => Promise<boolean>;
   advanceLead: (id: string) => Promise<void>;
   setAppointmentStatus: (id: string, status: Appointment['status']) => Promise<void>;
+  addAppointment: (input: NewAppointmentInput) => Promise<boolean>;
   addInvoice: (input: NewInvoiceInput) => Promise<boolean>;
   recordPayment: (id: string, paymentCents: number) => Promise<boolean>;
   markPoDelivered: (id: string) => Promise<void>;
@@ -107,6 +116,7 @@ const VowosDataContext = createContext<VowosDataContextType>({
   addBride: async () => false,
   advanceLead: async () => {},
   setAppointmentStatus: async () => {},
+  addAppointment: async () => false,
   addInvoice: async () => false,
   recordPayment: async () => false,
   markPoDelivered: async () => {},
@@ -221,6 +231,53 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         dbErrorToast('update appointment', error.message);
         setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status: prevAppt.status } : a)));
       }
+    },
+    [appointments],
+  );
+
+  /** Convert "1:30 PM" style times to minutes-since-midnight for schedule sorting. */
+  const timeToMinutes = (t: string): number => {
+    const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(t.trim());
+    if (!m) return 0;
+    let h = parseInt(m[1], 10) % 12;
+    if (m[3].toUpperCase() === 'PM') h += 12;
+    return h * 60 + parseInt(m[2], 10);
+  };
+
+  const addAppointment = useCallback(
+    async (input: NewAppointmentInput): Promise<boolean> => {
+      const maxNum = appointments.reduce((max, a) => {
+        const m = /(\d+)$/.exec(a.id);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 5000);
+      const newAppt: Appointment = {
+        id: `A-${maxNum + 1}`,
+        customer: input.customer,
+        type: input.type,
+        date: input.date,
+        time: input.time,
+        stylist: input.stylist,
+        status: 'Confirmed',
+      };
+      const { error } = await supabase.from('appointments').insert({
+        id: newAppt.id,
+        customer: newAppt.customer,
+        type: newAppt.type,
+        date: newAppt.date,
+        time: newAppt.time,
+        stylist: newAppt.stylist,
+        status: newAppt.status,
+      });
+      if (error) {
+        dbErrorToast('book appointment', error.message);
+        return false;
+      }
+      setAppointments((prev) =>
+        [...prev, newAppt].sort(
+          (a, b) => a.date.localeCompare(b.date) || timeToMinutes(a.time) - timeToMinutes(b.time),
+        ),
+      );
+      return true;
     },
     [appointments],
   );
@@ -340,6 +397,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addBride,
         advanceLead,
         setAppointmentStatus,
+        addAppointment,
         addInvoice,
         recordPayment,
         markPoDelivered,

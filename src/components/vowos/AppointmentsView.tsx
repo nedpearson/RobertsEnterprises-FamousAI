@@ -1,7 +1,9 @@
-import { CalendarDays, Check, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarDays, CalendarPlus, Check, Loader2 } from 'lucide-react';
 import { formatDate } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
-import { PageHeader, StatusBadge } from './ui';
+import { PageHeader, StatusBadge, btnPrimary } from './ui';
+import BookAppointmentModal from './BookAppointmentModal';
 
 const TYPE_COLORS: Record<string, string> = {
   'Bridal Consultation': 'bg-rose-100 text-rose-600',
@@ -13,6 +15,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 export default function AppointmentsView() {
   const { appointments: list, loading, setAppointmentStatus } = useVowosData();
+  const [bookOpen, setBookOpen] = useState(false);
 
   const days = Array.from(new Set(list.map((a) => a.date))).sort();
 
@@ -21,6 +24,11 @@ export default function AppointmentsView() {
       <PageHeader
         title="Appointments"
         subtitle={`${list.filter((a) => a.status !== 'Completed').length} upcoming this week · ${list.filter((a) => a.status === 'Pending').length} awaiting confirmation`}
+        action={
+          <button onClick={() => setBookOpen(true)} className={btnPrimary}>
+            <CalendarPlus className="h-4 w-4" /> Book Appointment
+          </button>
+        }
       />
 
       {loading ? (
@@ -82,6 +90,8 @@ export default function AppointmentsView() {
           )}
         </div>
       )}
+
+      <BookAppointmentModal open={bookOpen} onClose={() => setBookOpen(false)} />
     </div>
   );
 }
