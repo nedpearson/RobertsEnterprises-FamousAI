@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { AlertTriangle, CalendarCog, ChevronLeft, ChevronRight, Plus, Users2 } from 'lucide-react';
+import { AlertTriangle, CalendarCog, ChevronLeft, ChevronRight, Mail, Plus, Users2 } from 'lucide-react';
 import { Appointment, teamMembers, locationById } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,7 @@ import {
   fetchSchedules,
 } from '@/lib/schedules';
 import ScheduleModal from './ScheduleModal';
+import EmailScheduleModal from './EmailScheduleModal';
 
 const TYPE_DOT: Record<string, string> = {
   'Bridal Consultation': 'bg-rose-400',
@@ -63,6 +64,7 @@ export default function CoverageCalendar({
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [schedules, setSchedules] = useState<ScheduleData>({ shifts: [], timeOff: [] });
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   // Pull every employee account so the manager sees the whole team on one calendar,
   // even employees with zero appointments (coverage gaps are the whole point).
@@ -191,13 +193,22 @@ export default function CoverageCalendar({
             </p>
           )}
           {canManageSchedules && (
-            <button
-              onClick={() => setScheduleOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50"
-              title="Set working days, hours, and time off per team member"
-            >
-              <CalendarCog className="h-3.5 w-3.5" /> Schedules
-            </button>
+            <>
+              <button
+                onClick={() => setScheduleOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50"
+                title="Set working days, hours, and time off per team member"
+              >
+                <CalendarCog className="h-3.5 w-3.5" /> Schedules
+              </button>
+              <button
+                onClick={() => setEmailOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-50"
+                title="Email each team member their shifts for this week"
+              >
+                <Mail className="h-3.5 w-3.5" /> Email Schedule
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -397,6 +408,17 @@ export default function CoverageCalendar({
         data={schedules}
         onChanged={reloadSchedules}
       />
+
+      {/* Owner/Manager: email the visible week's shifts to the team */}
+      <EmailScheduleModal
+        open={emailOpen}
+        onClose={() => setEmailOpen(false)}
+        roster={roster}
+        weekDays={dayKeys}
+        weekLabel={weekLabel}
+        schedules={schedules}
+      />
+
     </div>
   );
 }

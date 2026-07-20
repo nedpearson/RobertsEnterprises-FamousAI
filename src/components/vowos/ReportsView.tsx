@@ -15,20 +15,25 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, btnSecondary } from './ui';
 import SalesGoalsTab from './SalesGoalsTab';
 import SalesByRangeTab from './SalesByRangeTab';
+import HoursReportTab from './HoursReportTab';
 
 
-type TabKey = 'revenue' | 'goals' | 'sales-range' | 'locations' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups';
+type TabKey = 'revenue' | 'goals' | 'sales-range' | 'hours' | 'locations' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'revenue', label: 'Revenue' },
   { key: 'goals', label: 'Sales Goals' },
   { key: 'sales-range', label: 'Sales by Date Range' },
+  { key: 'hours', label: 'Hours & Time Clock' },
   { key: 'locations', label: 'By Location' },
   { key: 'open-orders', label: 'Open Orders' },
   { key: 'deliveries', label: 'Expected Deliveries' },
   { key: 'bookings', label: 'Bookings' },
   { key: 'follow-ups', label: 'Follow-Ups' },
 ];
+
+/** Tabs that render their own export controls, so the header button hides. */
+const SELF_EXPORT_TABS: TabKey[] = ['sales-range', 'hours'];
 
 
 
@@ -189,7 +194,7 @@ export default function ReportsView() {
         title="Reports"
         subtitle="Bridal retail analytics across sales, orders, stores, and follow-ups"
         action={
-          tab === 'sales-range' ? undefined : (
+          SELF_EXPORT_TABS.includes(tab) ? undefined : (
             <button onClick={() => downloadCsv(exportData.name, exportData.rows)} className={btnSecondary}>
               <Download className="h-4 w-4" /> Export CSV
             </button>
@@ -250,6 +255,8 @@ export default function ReportsView() {
       {tab === 'goals' && <SalesGoalsTab />}
 
       {tab === 'sales-range' && <SalesByRangeTab />}
+
+      {tab === 'hours' && <HoursReportTab />}
 
 
 

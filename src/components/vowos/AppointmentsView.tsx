@@ -18,6 +18,8 @@ import { PageHeader, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
 import BookAppointmentModal from './BookAppointmentModal';
 import CoverageCalendar from './CoverageCalendar';
 import { LocationBadge } from './LocationSelect';
+import TimeClockCard from './TimeClockCard';
+
 
 const TYPE_COLORS: Record<string, string> = {
   'Bridal Consultation': 'bg-rose-100 text-rose-600',
@@ -140,6 +142,9 @@ export default function AppointmentsView() {
           </div>
         }
       />
+
+      {/* Punch in/out + live on-the-clock roster (signed-in staff only) */}
+      <TimeClockCard />
 
 
       {loading ? (
