@@ -9,6 +9,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import BookAppointment from "./pages/BookAppointment";
 import PayInvoice from "./pages/PayInvoice";
+import SignContract from "./pages/SignContract";
+import BridePortal from "./pages/BridePortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,9 +27,10 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/book" element={<BookAppointment />} />
               <Route path="/pay/:invoiceId" element={<PayInvoice />} />
+              <Route path="/sign/:contractId" element={<SignContract />} />
+              <Route path="/portal/:brideId" element={<BridePortal />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>

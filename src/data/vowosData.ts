@@ -140,6 +140,8 @@ export interface Customer {
 
   spendCents: number;
   location: LocationId;
+  /** Secret token that unlocks the bride's private /portal page. */
+  portalToken: string;
 }
 
 export type LeadStage = 'New' | 'Contacted' | 'Appointment Set' | 'Won';

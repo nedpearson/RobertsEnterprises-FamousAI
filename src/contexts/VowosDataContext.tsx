@@ -33,6 +33,7 @@ const mapBride = (r: any): Customer => ({
   status: r.status,
   spendCents: r.spend_cents,
   location: (r.location ?? 'ido-br') as LocationId,
+  portalToken: r.portal_token ?? '',
 });
 
 const mapLead = (r: any): Lead => ({
@@ -303,6 +304,10 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const m = /^C-(\d+)$/.exec(b.id);
         return m ? Math.max(max, parseInt(m[1], 10)) : max;
       }, 2000);
+      const portalToken =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const newBride: Customer = {
         id: `C-${maxNum + 1}`,
         name: input.name,
@@ -313,6 +318,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         status: 'Active',
         spendCents: 0,
         location: input.location ?? defaultLocation,
+        portalToken,
       };
       const { error } = await supabase.from('brides').insert({
         id: newBride.id,
@@ -324,6 +330,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         status: newBride.status,
         spend_cents: newBride.spendCents,
         location: newBride.location,
+        portal_token: portalToken,
       });
       if (error) {
         dbErrorToast('add bride', error.message);

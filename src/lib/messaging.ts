@@ -17,6 +17,9 @@ export type MessageKind =
   | 'thank_you'
   | 'review'
   | 'photo'
+  | 'contract'
+  | 'portal'
+  | 'pickup'
   | 'general';
 
 export const KIND_LABELS: Record<MessageKind, string> = {
@@ -28,6 +31,9 @@ export const KIND_LABELS: Record<MessageKind, string> = {
   thank_you: 'Thank-you note',
   review: 'Review request',
   photo: 'Wedding photos',
+  contract: 'Contract',
+  portal: 'Portal link',
+  pickup: 'Pickup ready',
   general: 'General',
 };
 
@@ -216,7 +222,7 @@ export interface MessageTemplates {
   sms: string;
 }
 
-const emailShell = (title: string, bodyHtml: string, storeLine: string) => `
+export const emailShell = (title: string, bodyHtml: string, storeLine: string) => `
 <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:24px;background:#faf8f5;border-radius:16px">
   <p style="letter-spacing:3px;font-size:11px;color:#e11d48;text-transform:uppercase;margin:0">VowOS · Roberts Enterprises Bridal</p>
   <h2 style="color:#1c1917;margin:8px 0 16px">${title}</h2>

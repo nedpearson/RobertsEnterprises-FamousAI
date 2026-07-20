@@ -16,6 +16,8 @@ import {
   CalendarHeart,
   ExternalLink,
   MessageSquare,
+  FileSignature,
+  Scissors,
 } from 'lucide-react';
 import { useAuth, StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 
@@ -27,6 +29,8 @@ export type ViewKey =
   | 'transfers'
   | 'appointments'
   | 'communications'
+  | 'contracts'
+  | 'alterations'
   | 'invoices'
   | 'purchases'
   | 'reports'
@@ -43,6 +47,8 @@ export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = 
   { key: 'transfers', label: 'Store Transfers', icon: ArrowLeftRight },
   { key: 'appointments', label: 'Appointments', icon: CalendarDays },
   { key: 'communications', label: 'Communications', icon: MessageSquare },
+  { key: 'contracts', label: 'Contracts', icon: FileSignature },
+  { key: 'alterations', label: 'Alterations', icon: Scissors },
   { key: 'invoices', label: 'Invoices', icon: Receipt },
   { key: 'purchases', label: 'Purchase Orders', icon: PackageSearch },
   { key: 'reports', label: 'Reports', icon: BarChart3 },
@@ -61,12 +67,15 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   transfers: ['Owner', 'Manager', 'Stylist'],
   appointments: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   communications: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  contracts: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  alterations: ['Owner', 'Manager', 'Stylist'],
   invoices: ['Owner', 'Manager', 'Front Desk'],
   purchases: ['Owner', 'Manager'],
   reports: ['Owner', 'Manager'],
   ledgers: ['Owner', 'Manager'],
   staff: ['Owner'],
 };
+
 
 
 /** Can a (possibly signed-out) user open a view? */

@@ -1,9 +1,12 @@
 import { useMemo, useState, FormEvent } from 'react';
 
-import { Search, UserPlus, CheckCircle2, Loader2 } from 'lucide-react';
-import { formatCents, formatDate, teamMembers } from '@/data/vowosData';
+import { Search, UserPlus, CheckCircle2, Loader2, Link2, Check, Mail, MessageSquare } from 'lucide-react';
+import { formatCents, formatDate, teamMembers, Customer } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
+import { sendAndLogMessage, isEmail, isPhone } from '@/lib/messaging';
+import { portalUrl, portalLinkTemplates } from '@/lib/contractsAlterations';
 import { PageHeader, StatusBadge, Modal, inputCls, btnPrimary } from './ui';
+import { toast } from '@/components/ui/use-toast';
 
 const STATUS_FILTERS = ['All', 'Active', 'Purchased', 'Alterations', 'Picked Up'] as const;
 
@@ -14,6 +17,8 @@ export default function CustomersView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copiedId, setCopiedId] = useState('');
+  const [sendingKey, setSendingKey] = useState('');
   const [form, setForm] = useState({ name: '', email: '', phone: '', weddingDate: '', stylist: teamMembers[0], smsOptIn: true });
 
   const filtered = useMemo(
@@ -25,6 +30,50 @@ export default function CustomersView() {
       ),
     [list, query, filter],
   );
+
+  const copyPortal = async (c: Customer) => {
+    if (!c.portalToken) {
+      toast({ title: 'No portal link yet', description: 'Refresh the page and try again.', variant: 'destructive' });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(portalUrl(c));
+      setCopiedId(c.id);
+      setTimeout(() => setCopiedId(''), 1600);
+    } catch {
+      toast({ title: 'Could not copy', description: portalUrl(c) });
+    }
+  };
+
+  /** Email or text the bride her private portal link. */
+  const sendPortal = async (c: Customer, channel: 'email' | 'sms') => {
+    if (!c.portalToken) {
+      toast({ title: 'No portal link yet', description: 'Refresh the page and try again.', variant: 'destructive' });
+      return;
+    }
+    const to = channel === 'email' ? c.email : c.phone;
+    if (channel === 'email' ? !isEmail(to) : !isPhone(to)) {
+      toast({
+        title: `No usable ${channel === 'email' ? 'email' : 'phone number'} on file`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSendingKey(`${c.id}-${channel}`);
+    const tpl = portalLinkTemplates(c);
+    const { ok, error } = await sendAndLogMessage({
+      channel,
+      to,
+      subject: channel === 'email' ? tpl.emailSubject : undefined,
+      body: channel === 'email' ? tpl.emailText : tpl.sms,
+      html: channel === 'email' ? tpl.emailHtml : undefined,
+      customer: c.name,
+      kind: 'portal',
+    });
+    setSendingKey('');
+    if (ok) toast({ title: `Portal link ${channel === 'email' ? 'emailed' : 'texted'} to ${c.name}` });
+    else toast({ title: 'Send failed', description: error ?? 'Unknown error', variant: 'destructive' });
+  };
 
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
@@ -105,7 +154,7 @@ export default function CustomersView() {
           <table className="min-w-full divide-y divide-stone-100 text-sm">
             <thead className="bg-stone-50/70">
               <tr>
-                {['Bride', 'Contact', 'Wedding Date', 'Stylist', 'Status', 'Spend'].map((h) => (
+                {['Bride', 'Contact', 'Wedding Date', 'Stylist', 'Status', 'Spend', 'Portal'].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
                     {h}
                   </th>
@@ -115,7 +164,7 @@ export default function CustomersView() {
             <tbody className="divide-y divide-stone-100">
               {loading && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-stone-500">
+                  <td colSpan={7} className="px-5 py-10 text-center text-stone-500">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-rose-400" />
                     <p className="mt-2 text-xs">Loading brides...</p>
                   </td>
@@ -147,11 +196,38 @@ export default function CustomersView() {
                     <td className="px-5 py-3.5 font-medium text-stone-800">
                       {c.spendCents > 0 ? formatCents(c.spendCents) : '—'}
                     </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => copyPortal(c)}
+                          title="Copy portal link"
+                          className="rounded-lg border border-stone-200 p-1.5 text-stone-500 transition-colors hover:bg-stone-50"
+                        >
+                          {copiedId === c.id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Link2 className="h-3.5 w-3.5" />}
+                        </button>
+                        <button
+                          onClick={() => sendPortal(c, 'email')}
+                          disabled={sendingKey === `${c.id}-email`}
+                          title="Email portal link"
+                          className="rounded-lg border border-stone-200 p-1.5 text-stone-500 transition-colors hover:bg-stone-50 disabled:opacity-50"
+                        >
+                          {sendingKey === `${c.id}-email` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+                        </button>
+                        <button
+                          onClick={() => sendPortal(c, 'sms')}
+                          disabled={sendingKey === `${c.id}-sms`}
+                          title="Text portal link"
+                          className="rounded-lg border border-stone-200 p-1.5 text-stone-500 transition-colors hover:bg-stone-50 disabled:opacity-50"
+                        >
+                          {sendingKey === `${c.id}-sms` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-stone-500">
+                  <td colSpan={7} className="px-5 py-10 text-center text-stone-500">
                     No brides match your search.
                   </td>
                 </tr>
