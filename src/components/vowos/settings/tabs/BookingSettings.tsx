@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Loader2, MousePointerClick, Plus, Trash2, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react';
+import { Loader2, MousePointerClick, Plus, Trash2, ArrowUp, ArrowDown, DollarSign } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { inputCls, btnSecondary, btnPrimary } from '@/components/vowos/ui';
+import { inputCls, btnPrimary } from '@/components/vowos/ui';
 import { Switch } from '@/components/ui/switch';
 import {
   BookingSettings,
   BookingQuestion,
+  BookingFeeSettings,
   DEFAULT_BOOKING_SETTINGS,
   DEFAULT_BOOKING_QUESTIONS,
+  DEFAULT_BOOKING_FEE_SETTINGS,
   fetchJsonSetting,
   saveJsonSetting,
 } from '@/lib/settings';
@@ -35,6 +37,9 @@ export function BookingSettingsTab({
   const [questions, setQuestions] = useState<BookingQuestion[]>(DEFAULT_BOOKING_QUESTIONS);
   const [dbQuestions, setDbQuestions] = useState<BookingQuestion[]>(DEFAULT_BOOKING_QUESTIONS);
 
+  const [feeSettings, setFeeSettings] = useState<BookingFeeSettings>(DEFAULT_BOOKING_FEE_SETTINGS);
+  const [dbFeeSettings, setDbFeeSettings] = useState<BookingFeeSettings>(DEFAULT_BOOKING_FEE_SETTINGS);
+
   // Form state for adding questions
   const [newQText, setNewQText] = useState('');
   const [newQType, setNewQType] = useState<BookingQuestion['type']>('text');
@@ -48,10 +53,13 @@ export function BookingSettingsTab({
     setDbBooking(bookingData);
 
     const questionsData = await fetchJsonSetting<BookingQuestion[]>('booking_questions', DEFAULT_BOOKING_QUESTIONS);
-    // Sort questions by displayOrder
     const sorted = [...questionsData].sort((a, b) => a.displayOrder - b.displayOrder);
     setQuestions(sorted);
     setDbQuestions(JSON.parse(JSON.stringify(sorted)));
+
+    const feeData = await fetchJsonSetting<BookingFeeSettings>('booking_fee_settings', DEFAULT_BOOKING_FEE_SETTINGS);
+    setFeeSettings(feeData);
+    setDbFeeSettings(feeData);
 
     setLoading(false);
   };
@@ -62,42 +70,54 @@ export function BookingSettingsTab({
 
   const isDirty =
     JSON.stringify(booking) !== JSON.stringify(dbBooking) ||
-    JSON.stringify(questions) !== JSON.stringify(dbQuestions);
+    JSON.stringify(questions) !== JSON.stringify(dbQuestions) ||
+    JSON.stringify(feeSettings) !== JSON.stringify(dbFeeSettings);
 
   useEffect(() => {
     onDirtyChange(isDirty);
   }, [isDirty]);
 
-  const handleSave = async (): Promise<boolean> => {
+  const handleSave = async (reason?: string): Promise<boolean> => {
     setSaving(true);
     // Standardize display orders
     const orderedQuestions = questions.map((q, idx) => ({ ...q, displayOrder: idx + 1 }));
     const bErr = await saveJsonSetting('booking_settings', booking);
     const qErr = await saveJsonSetting('booking_questions', orderedQuestions);
+    const fErr = await saveJsonSetting('booking_fee_settings', feeSettings);
+    
+    if (reason && !bErr && !qErr && !fErr) {
+      await saveJsonSetting('audit_last_change_reason', {
+        tab: 'booking',
+        reason,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     setSaving(false);
 
-    if (bErr || qErr) {
+    if (bErr || qErr || fErr) {
       toast({
         title: 'Could not save booking settings',
-        description: bErr || qErr || 'Error occurred.',
+        description: bErr || qErr || fErr || 'Error occurred.',
         variant: 'destructive',
       });
       return false;
     } else {
       toast({
         title: 'Settings saved',
-        description: 'Online booking rules and intake questions updated.',
+        description: 'Online booking rules, questions, and fee policies updated.',
       });
       setDbBooking(booking);
       setDbQuestions(JSON.parse(JSON.stringify(orderedQuestions)));
       setQuestions(orderedQuestions);
+      setDbFeeSettings(feeSettings);
       return true;
     }
   };
 
   useEffect(() => {
     registerSaveRef(handleSave);
-  }, [booking, questions]);
+  }, [booking, questions, feeSettings]);
 
   const addQuestion = () => {
     if (!newQText.trim()) {
@@ -220,6 +240,73 @@ export function BookingSettingsTab({
               <Switch
                 checked={booking.autoAssignmentEnabled}
                 onCheckedChange={(checked) => setBooking({ ...booking, autoAssignmentEnabled: checked })}
+                className="data-[state=checked]:bg-emerald-500"
+              />
+            </div>
+          </div>
+        </div>
+      </SettingsCard>
+
+      {/* Booking Fee Card */}
+      <SettingsCard
+        title="Booking Fee Policies"
+        description="Configure appointment reservation fee defaults, waivers, and refund deadlines."
+        icon={<DollarSign className="h-5 w-5" />}
+        enabled={feeSettings.enabled}
+        onToggleEnabled={(enabled) => setFeeSettings({ ...feeSettings, enabled })}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SettingsField label="Default booking fee ($)">
+            <input
+              type="number"
+              min="0"
+              value={feeSettings.amountCents / 100}
+              onChange={(e) =>
+                setFeeSettings({
+                  ...feeSettings,
+                  amountCents: Math.round(parseFloat(e.target.value) * 100) || 0,
+                })
+              }
+              className={inputCls}
+            />
+          </SettingsField>
+
+          <SettingsField label="Cancellation deadline (hours)" description="Hours prior to start to receive refunds/waivers.">
+            <input
+              type="number"
+              min="0"
+              value={feeSettings.cancelDeadlineHours}
+              onChange={(e) =>
+                setFeeSettings({
+                  ...feeSettings,
+                  cancelDeadlineHours: parseInt(e.target.value) || 0,
+                })
+              }
+              className={inputCls}
+            />
+          </SettingsField>
+
+          <div className="sm:col-span-2 space-y-3 rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-stone-800">Refundable Booking Fee</p>
+                <p className="text-[11px] text-stone-400">Determines if cancellations before deadline receive a full refund.</p>
+              </div>
+              <Switch
+                checked={feeSettings.refundable}
+                onCheckedChange={(checked) => setFeeSettings({ ...feeSettings, refundable: checked })}
+                className="data-[state=checked]:bg-emerald-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-between border-t border-stone-200 pt-3">
+              <div>
+                <p className="text-xs font-semibold text-stone-800">Credit Toward Purchase</p>
+                <p className="text-[11px] text-stone-400">Automatically marks the fee as store credit upon showroom checkout.</p>
+              </div>
+              <Switch
+                checked={feeSettings.creditTowardPurchase}
+                onCheckedChange={(checked) => setFeeSettings({ ...feeSettings, creditTowardPurchase: checked })}
                 className="data-[state=checked]:bg-emerald-500"
               />
             </div>

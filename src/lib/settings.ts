@@ -419,3 +419,18 @@ export async function saveJsonSetting<T>(key: string, value: T): Promise<string 
     return err.message || 'Error saving setting';
   }
 }
+
+export async function fetchBookingFeeCents(locationId?: LocationId): Promise<number> {
+  try {
+    const settings = await fetchJsonSetting<BookingFeeSettings>('booking_fee_settings', DEFAULT_BOOKING_FEE_SETTINGS);
+    if (!settings.enabled) return 0;
+    if (locationId && settings.locationOverrides && settings.locationOverrides[locationId] !== undefined) {
+      return settings.locationOverrides[locationId];
+    }
+    return settings.amountCents;
+  } catch (err) {
+    console.error('Error fetching booking fee cents:', err);
+    return 7500;
+  }
+}
+
