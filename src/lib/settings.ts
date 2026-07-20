@@ -384,6 +384,50 @@ export const DEFAULT_AI_SETTINGS: AISettings = {
   humanApprovalRequired: true,
 };
 
+export const DEFAULT_INVENTORY_SETTINGS: InventorySettings = {
+  trackingEnabled: true,
+  preventNegative: false,
+  lowStockThreshold: 5,
+  reorderThreshold: 10,
+  barcodeFormat: 'CODE128',
+  skuGenerationPattern: '{DESIGNER}-{COLOR}-{SIZE}',
+};
+
+export const DEFAULT_PURCHASING_SETTINGS: PurchasingSettings = {
+  vendors: [
+    { id: '1', name: 'Monique Lhuillier', email: 'orders@moniquelhuillier.com', phone: '(212) 683-3332', leadTimeDays: 120, rushLeadTimeDays: 60 },
+    { id: '2', name: 'Berta', email: 'info@berta.com', phone: '(305) 573-3333', leadTimeDays: 150, rushLeadTimeDays: 90 },
+    { id: '3', name: 'Pronovias', email: 'wholesale@pronovias.com', phone: '(800) 776-6684', leadTimeDays: 90, rushLeadTimeDays: 45 },
+  ],
+};
+
+export const DEFAULT_TRANSFER_SETTINGS: TransferSettings = {
+  enabled: true,
+  approvalRequired: true,
+  approvalThresholdCents: 100000, // $1000
+  minSourceStock: 2,
+  transitDaysDefault: 3,
+  trackingRequired: true,
+  scanRequired: true,
+};
+
+export const DEFAULT_TWILIO_SETTINGS: TwilioSettings = {
+  connected: true,
+  messagingServiceSid: 'MG1a2b3c4d5e6f7g8h9i0j',
+  webhookStatus: 'active',
+};
+
+export const DEFAULT_AUTOMATIONS: AutomationRule[] = [
+  { id: '1', name: 'Send 7-Day Confirmation Request', trigger: '7_days_before_appointment', delayHours: 0, templateId: '1', active: true },
+  { id: '2', name: 'DNB Recovery Follow-up', trigger: '3_days_after_dnb', delayHours: 72, templateId: '2', active: false },
+];
+
+export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
+  { id: '1', name: 'Virtual Atelier Fitting Room', description: 'Enable experimental virtual walkthroughs for brides.', enabled: false, rolloutPct: 0 },
+  { id: '2', name: 'AI Stylist Recommender', description: 'Power stylist matching using machine learning.', enabled: true, rolloutPct: 100 },
+];
+
+
 // ─── Database Access Helpers ───
 
 export async function fetchJsonSetting<T>(key: string, defaultValue: T): Promise<T> {
