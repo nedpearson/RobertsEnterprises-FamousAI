@@ -97,7 +97,39 @@ const mapGown = (r: any): Gown => ({
   status: r.status,
   image: r.image,
   location: (r.location ?? 'ido-br') as LocationId,
+  sku: r.sku ?? '',
+  costCents: r.cost_cents ?? 0,
+  msrpCents: r.msrp_cents ?? 0,
+  category: r.category ?? 'Bridal Gown',
+  condition: r.condition ?? 'New',
+  vendor: r.vendor ?? r.designer ?? '',
+  reorderPoint: r.reorder_point ?? 1,
+  notes: r.notes ?? '',
 });
+
+/** Full DB payload for a gown record (single source of truth for inserts/updates). */
+const gownRow = (g: Gown) => ({
+  id: g.id,
+  name: g.name,
+  designer: g.designer,
+  style: g.style,
+  size: g.size,
+  color: g.color,
+  price_cents: g.priceCents,
+  stock: g.stock,
+  status: g.status,
+  image: g.image,
+  location: g.location,
+  sku: g.sku,
+  cost_cents: g.costCents,
+  msrp_cents: g.msrpCents,
+  category: g.category,
+  condition: g.condition,
+  vendor: g.vendor,
+  reorder_point: g.reorderPoint,
+  notes: g.notes,
+});
+
 
 const mapTransfer = (r: any): Transfer => ({
   id: r.id,
@@ -165,7 +197,20 @@ export interface GownInput {
   stock: number;
   image: string;
   location?: LocationId;
+  /** SKU / tag number — auto-generated from the id when blank. */
+  sku?: string;
+  /** Wholesale cost in cents. */
+  costCents?: number;
+  /** MSRP in cents (0 = not tracked). */
+  msrpCents?: number;
+  category?: string;
+  condition?: string;
+  /** Ordering vendor — defaults to the designer when blank. */
+  vendor?: string;
+  reorderPoint?: number;
+  notes?: string;
 }
+
 
 export interface NewTransferInput {
   gownId: string;
@@ -620,8 +665,9 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const addGown = useCallback(
     async (input: GownInput): Promise<boolean> => {
+      const id = nextGownId();
       const newGown: Gown = {
-        id: nextGownId(),
+        id,
         name: input.name,
         designer: input.designer,
         style: input.style,
@@ -632,20 +678,16 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         status: gownStatusForStock(input.stock),
         image: input.image,
         location: input.location ?? defaultLocation,
+        sku: input.sku?.trim() || id.replace('G-', 'IDB-'),
+        costCents: input.costCents ?? 0,
+        msrpCents: input.msrpCents ?? 0,
+        category: input.category || 'Bridal Gown',
+        condition: input.condition || 'New',
+        vendor: input.vendor?.trim() || input.designer,
+        reorderPoint: input.reorderPoint ?? 1,
+        notes: input.notes ?? '',
       };
-      const { error } = await supabase.from('gowns').insert({
-        id: newGown.id,
-        name: newGown.name,
-        designer: newGown.designer,
-        style: newGown.style,
-        size: newGown.size,
-        color: newGown.color,
-        price_cents: newGown.priceCents,
-        stock: newGown.stock,
-        status: newGown.status,
-        image: newGown.image,
-        location: newGown.location,
-      });
+      const { error } = await supabase.from('gowns').insert(gownRow(newGown));
       if (error) {
         dbErrorToast('add gown', error.message);
         return false;
@@ -655,6 +697,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     },
     [nextGownId, defaultLocation],
   );
+
 
   const updateGown = useCallback(
     async (id: string, input: GownInput): Promise<boolean> => {
@@ -667,21 +710,8 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         status: gownStatusForStock(input.stock),
       };
       setGowns((prev) => prev.map((g) => (g.id === id ? updated : g)));
-      const { error } = await supabase
-        .from('gowns')
-        .update({
-          name: updated.name,
-          designer: updated.designer,
-          style: updated.style,
-          size: updated.size,
-          color: updated.color,
-          price_cents: updated.priceCents,
-          stock: updated.stock,
-          status: updated.status,
-          image: updated.image,
-          location: updated.location,
-        })
-        .eq('id', id);
+      const { id: _ignored, ...payload } = gownRow(updated);
+      const { error } = await supabase.from('gowns').update(payload).eq('id', id);
       if (error) {
         dbErrorToast('update gown', error.message);
         setGowns((prev) => prev.map((g) => (g.id === id ? prevGown : g)));
@@ -691,6 +721,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     },
     [gowns],
   );
+
 
   const adjustGownStock = useCallback(
     async (id: string, newStock: number): Promise<boolean> => {
@@ -829,19 +860,8 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           status: gownStatusForStock(transfer.qty),
           location: transfer.to,
         };
-        const { error } = await supabase.from('gowns').insert({
-          id: newGown.id,
-          name: newGown.name,
-          designer: newGown.designer,
-          style: newGown.style,
-          size: newGown.size,
-          color: newGown.color,
-          price_cents: newGown.priceCents,
-          stock: newGown.stock,
-          status: newGown.status,
-          image: newGown.image,
-          location: newGown.location,
-        });
+        const { error } = await supabase.from('gowns').insert(gownRow(newGown));
+
         if (error) {
           dbErrorToast('receive transfer', error.message);
           return false;

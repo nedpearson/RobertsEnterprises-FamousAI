@@ -96,11 +96,28 @@ export interface Gown {
   style: string;
   size: string;
   color: string;
+  /** Retail selling price in cents. */
   priceCents: number;
   stock: number;
   status: GownStatus;
   image: string;
   location: LocationId;
+  /** Internal stock-keeping unit / tag number. */
+  sku: string;
+  /** Wholesale cost from the vendor, in cents. */
+  costCents: number;
+  /** Manufacturer's suggested retail price, in cents (0 = not set). */
+  msrpCents: number;
+  /** Merchandise category (bridal gown, bridesmaids, veil, …). */
+  category: string;
+  /** New / Sample / Consignment / Clearance. */
+  condition: string;
+  /** Ordering vendor (often, but not always, the designer). */
+  vendor: string;
+  /** Reorder when on-hand stock falls to this number or below. */
+  reorderPoint: number;
+  /** Free-form internal notes (fit runs small, discontinued fall '26, …). */
+  notes: string;
 }
 
 /** Derive gown availability status from quantity on hand. */
@@ -111,6 +128,33 @@ export function gownStatusForStock(stock: number): GownStatus {
 }
 
 export const GOWN_STYLES = ['A-Line', 'Mermaid', 'Ballgown', 'Sheath', 'Fit & Flare', 'Trumpet'];
+
+/** Merchandise categories carried across the boutiques. */
+export const GOWN_CATEGORIES = [
+  'Bridal Gown',
+  'Bridesmaids',
+  'Mother of the Bride',
+  'Veil',
+  'Accessories',
+  'Formal / Pageant',
+  'Suit & Tux',
+];
+
+/** Stock condition types for bridal retail. */
+export const GOWN_CONDITIONS = ['New', 'Sample', 'Consignment', 'Clearance'];
+
+/** Gross margin percent from cost + retail (0 when either is missing). */
+export function marginPct(costCents: number, priceCents: number): number {
+  if (!priceCents || priceCents <= 0 || costCents < 0) return 0;
+  return Math.round(((priceCents - costCents) / priceCents) * 100);
+}
+
+/** Markup multiple ("2.2×") from cost + retail, or null when cost is unset. */
+export function markupLabel(costCents: number, priceCents: number): string | null {
+  if (!costCents || costCents <= 0 || !priceCents) return null;
+  return `${(priceCents / costCents).toFixed(1)}×`;
+}
+
 
 // ─── Inter-store Transfers ───
 

@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Minus, Plus } from 'lucide-react';
-import { Gown, GOWN_IMAGES, GOWN_STYLES, LocationId, gownStatusForStock, formatCents } from '@/data/vowosData';
+import {
+  Gown,
+  GOWN_IMAGES,
+  GOWN_STYLES,
+  GOWN_CATEGORIES,
+  GOWN_CONDITIONS,
+  LocationId,
+  gownStatusForStock,
+  formatCents,
+  marginPct,
+  markupLabel,
+} from '@/data/vowosData';
 import { useVowosData, GownInput } from '@/contexts/VowosDataContext';
 import { Modal, StatusBadge, inputCls, btnPrimary, btnSecondary } from './ui';
 import { LocationSelect, LocationBadge } from './LocationSelect';
@@ -32,6 +43,14 @@ export function GownFormModal({
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   const [price, setPrice] = useState('');
+  const [cost, setCost] = useState('');
+  const [msrp, setMsrp] = useState('');
+  const [sku, setSku] = useState('');
+  const [category, setCategory] = useState(GOWN_CATEGORIES[0]);
+  const [condition, setCondition] = useState(GOWN_CONDITIONS[0]);
+  const [vendor, setVendor] = useState('');
+  const [reorderPoint, setReorderPoint] = useState('1');
+  const [notes, setNotes] = useState('');
   const [stock, setStock] = useState('1');
   const [image, setImage] = useState(GOWN_IMAGES[0]);
   const [location, setLocation] = useState<LocationId>('ido-br');
@@ -46,6 +65,14 @@ export function GownFormModal({
       setSize(gown?.size ?? '');
       setColor(gown?.color ?? '');
       setPrice(gown ? (gown.priceCents / 100).toFixed(2) : '');
+      setCost(gown && gown.costCents > 0 ? (gown.costCents / 100).toFixed(2) : '');
+      setMsrp(gown && gown.msrpCents > 0 ? (gown.msrpCents / 100).toFixed(2) : '');
+      setSku(gown?.sku ?? '');
+      setCategory(gown?.category ?? GOWN_CATEGORIES[0]);
+      setCondition(gown?.condition ?? GOWN_CONDITIONS[0]);
+      setVendor(gown?.vendor ?? '');
+      setReorderPoint(gown ? String(gown.reorderPoint) : '1');
+      setNotes(gown?.notes ?? '');
       setStock(gown ? String(gown.stock) : '1');
       setImage(gown?.image ?? GOWN_IMAGES[0]);
       // New gowns default to the store currently being viewed.
@@ -57,8 +84,18 @@ export function GownFormModal({
 
 
   const priceCents = dollarsToCents(price);
+  const costCents = cost.trim() === '' ? 0 : dollarsToCents(cost);
+  const msrpCents = msrp.trim() === '' ? 0 : dollarsToCents(msrp);
   const stockNum = parseInt(stock, 10);
+  const reorderNum = parseInt(reorderPoint, 10);
   const previewStatus = Number.isFinite(stockNum) && stockNum >= 0 ? gownStatusForStock(stockNum) : null;
+
+  const margin =
+    Number.isFinite(priceCents) && priceCents > 0 && Number.isFinite(costCents) && costCents > 0
+      ? marginPct(costCents, priceCents)
+      : null;
+  const markup =
+    Number.isFinite(priceCents) && Number.isFinite(costCents) ? markupLabel(costCents, priceCents) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,9 +105,15 @@ export function GownFormModal({
     if (!size.trim()) return setError('Please enter a size.');
     if (!color.trim()) return setError('Please enter a color.');
     if (!Number.isFinite(priceCents) || priceCents <= 0)
-      return setError('Please enter a valid price greater than $0.');
+      return setError('Please enter a valid retail price greater than $0.');
+    if (cost.trim() !== '' && (!Number.isFinite(costCents) || costCents < 0))
+      return setError('Cost must be a valid dollar amount (or left blank).');
+    if (msrp.trim() !== '' && (!Number.isFinite(msrpCents) || msrpCents < 0))
+      return setError('MSRP must be a valid dollar amount (or left blank).');
     if (!Number.isInteger(stockNum) || stockNum < 0)
       return setError('Quantity must be a whole number of 0 or more.');
+    if (!Number.isInteger(reorderNum) || reorderNum < 0)
+      return setError('Reorder point must be a whole number of 0 or more.');
 
     const input: GownInput = {
       name: name.trim(),
@@ -82,6 +125,14 @@ export function GownFormModal({
       stock: stockNum,
       image,
       location,
+      sku: sku.trim(),
+      costCents: Number.isFinite(costCents) ? costCents : 0,
+      msrpCents: Number.isFinite(msrpCents) ? msrpCents : 0,
+      category,
+      condition,
+      vendor: vendor.trim(),
+      reorderPoint: reorderNum,
+      notes: notes.trim(),
     };
 
     setSaving(true);
@@ -92,7 +143,7 @@ export function GownFormModal({
 
   return (
     <Modal open={open} onClose={onClose} title={gown ? `Edit Gown · ${gown.id}` : 'Add Gown'}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelCls} htmlFor="gown-name">Gown name</label>
@@ -118,65 +169,114 @@ export function GownFormModal({
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className={labelCls} htmlFor="gown-style">Style</label>
-            <select
-              id="gown-style"
-              value={style}
-              onChange={(e) => setStyle(e.target.value)}
-              className={inputCls}
-            >
+            <label className={labelCls} htmlFor="gown-category">Category</label>
+            <select id="gown-category" value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+              {GOWN_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="gown-style">Silhouette</label>
+            <select id="gown-style" value={style} onChange={(e) => setStyle(e.target.value)} className={inputCls}>
               {GOWN_STYLES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className={labelCls} htmlFor="gown-size">Size</label>
-            <input
-              id="gown-size"
-              value={size}
-              onChange={(e) => setSize(e.target.value)}
-              placeholder="e.g. 8"
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className={labelCls} htmlFor="gown-color">Color</label>
-            <input
-              id="gown-color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              placeholder="e.g. Ivory"
-              className={inputCls}
-            />
+            <label className={labelCls} htmlFor="gown-condition">Condition</label>
+            <select id="gown-condition" value={condition} onChange={(e) => setCondition(e.target.value)} className={inputCls}>
+              {GOWN_CONDITIONS.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className={labelCls} htmlFor="gown-price">Price ($)</label>
-            <input
-              id="gown-price"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="2890.00"
-              className={inputCls}
-            />
+            <label className={labelCls} htmlFor="gown-size">Size</label>
+            <input id="gown-size" value={size} onChange={(e) => setSize(e.target.value)} placeholder="e.g. 8" className={inputCls} />
           </div>
           <div>
-            <label className={labelCls} htmlFor="gown-stock">Quantity on hand</label>
-            <input
-              id="gown-stock"
-              type="number"
-              min="0"
-              step="1"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-              className={inputCls}
-            />
+            <label className={labelCls} htmlFor="gown-color">Color</label>
+            <input id="gown-color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="e.g. Ivory" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="gown-sku">SKU / tag #</label>
+            <input id="gown-sku" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="auto if blank" className={inputCls} />
+          </div>
+        </div>
+
+        {/* Costing */}
+        <div className="rounded-xl bg-stone-50 p-4 ring-1 ring-stone-200">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-stone-500">Costing</p>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={labelCls} htmlFor="gown-cost">Wholesale cost ($)</label>
+              <input
+                id="gown-cost"
+                type="number" min="0" step="0.01"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                placeholder="1300.00"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls} htmlFor="gown-price">Retail price ($)</label>
+              <input
+                id="gown-price"
+                type="number" min="0.01" step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="2890.00"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls} htmlFor="gown-msrp">MSRP ($)</label>
+              <input
+                id="gown-msrp"
+                type="number" min="0" step="0.01"
+                value={msrp}
+                onChange={(e) => setMsrp(e.target.value)}
+                placeholder="optional"
+                className={inputCls}
+              />
+            </div>
+          </div>
+          {(margin !== null || markup) && (
+            <p className="mt-2.5 text-xs text-stone-600">
+              {margin !== null && (
+                <>
+                  Gross margin{' '}
+                  <span className={`font-semibold ${margin >= 50 ? 'text-emerald-600' : margin >= 35 ? 'text-amber-600' : 'text-rose-600'}`}>
+                    {margin}%
+                  </span>
+                </>
+              )}
+              {markup && <> · Markup <span className="font-semibold text-stone-800">{markup}</span></>}
+              {margin !== null && Number.isFinite(priceCents) && Number.isFinite(costCents) && (
+                <> · {formatCents(priceCents - costCents)} profit per piece</>
+              )}
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className={labelCls} htmlFor="gown-stock">Qty on hand</label>
+            <input id="gown-stock" type="number" min="0" step="1" value={stock} onChange={(e) => setStock(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="gown-reorder">Reorder at</label>
+            <input id="gown-reorder" type="number" min="0" step="1" value={reorderPoint} onChange={(e) => setReorderPoint(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="gown-vendor">Vendor</label>
+            <input id="gown-vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="defaults to designer" className={inputCls} />
           </div>
         </div>
 
@@ -190,6 +290,17 @@ export function GownFormModal({
           )}
         </div>
 
+        <div>
+          <label className={labelCls} htmlFor="gown-notes">Internal notes</label>
+          <textarea
+            id="gown-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            placeholder="Runs small · reorder lead time 16 weeks · discontinued Fall '26…"
+            className={`${inputCls} resize-none`}
+          />
+        </div>
 
         <div>
           <label className={labelCls}>Catalog photo</label>
@@ -214,7 +325,10 @@ export function GownFormModal({
           <div className="flex items-center gap-2 rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-600 ring-1 ring-stone-200">
             <span>Status will be</span>
             <StatusBadge status={previewStatus} />
-            {Number.isFinite(priceCents) && priceCents > 0 && <span>· priced at {formatCents(priceCents)}</span>}
+            {Number.isFinite(priceCents) && priceCents > 0 && <span>· retails at {formatCents(priceCents)}</span>}
+            {Number.isInteger(stockNum) && Number.isInteger(reorderNum) && stockNum <= reorderNum && (
+              <span className="font-medium text-amber-600">· at/below reorder point</span>
+            )}
           </div>
         )}
 
@@ -281,11 +395,13 @@ export function AdjustStockModal({
             <p className="text-xs text-stone-500">
               {gown.designer} · {gown.style} · Size {gown.size} · {gown.color}
             </p>
+            <p className="text-xs text-stone-400">
+              SKU {gown.sku || gown.id} · {gown.condition} · Retail {formatCents(gown.priceCents)}
+            </p>
             <p className="mt-1 text-xs text-stone-400">
               Currently {gown.stock} on hand · <StatusBadge status={gown.status} />
             </p>
             <LocationBadge id={gown.location} className="mt-1.5" />
-
           </div>
         </div>
 
@@ -325,6 +441,7 @@ export function AdjustStockModal({
         <div className="flex items-center gap-2 rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-600 ring-1 ring-stone-200">
           <span>Status will become</span>
           <StatusBadge status={newStatus} />
+          {stock <= gown.reorderPoint && <span className="font-medium text-amber-600">· at/below reorder point ({gown.reorderPoint})</span>}
           {!changed && <span>· no change yet</span>}
         </div>
 

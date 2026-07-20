@@ -7,7 +7,10 @@ import {
   formatCents,
   formatDate,
   monthKey,
+  BOOKING_FEE_CENTS,
+  budgetLabel,
 } from '@/data/vowosData';
+
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, btnSecondary } from './ui';
 import SalesGoalsTab from './SalesGoalsTab';
@@ -159,7 +162,17 @@ export default function ReportsView() {
       case 'deliveries':
         return { name: 'expected-deliveries.csv', rows: [['PO', 'Vendor', 'Items', 'ETA', 'Status'], ...pendingDeliveries.map((p) => [p.id, p.vendor, p.items, p.expectedDelivery, p.status])] };
       case 'bookings':
-        return { name: 'bookings.csv', rows: [['ID', 'Customer', 'Type', 'Date', 'Time', 'Stylist', 'Status'], ...appointments.map((a) => [a.id, a.customer, a.type, a.date, a.time, a.stylist, a.status])] };
+        return {
+          name: 'bookings.csv',
+          rows: [
+            ['ID', 'Customer', 'Type', 'Looking For', 'Budget', 'Date', 'Time', 'Stylist', 'Fee Paid', 'Fee Amount', 'Status'],
+            ...appointments.map((a) => [
+              a.id, a.customer, a.type, a.lookingFor || '', budgetLabel(a.budgetCents), a.date, a.time,
+              a.stylist, a.feePaid ? 'Yes' : 'No', a.feePaid ? BOOKING_FEE_CENTS / 100 : 0, a.status,
+            ]),
+          ],
+        };
+
       case 'follow-ups':
       default:
         return { name: 'follow-ups.csv', rows: [['Lead', 'Email', 'Source', 'Budget', 'Stage'], ...followUps.map((l) => [l.name, l.email, l.source, l.budgetCents / 100, l.stage])] };
@@ -330,12 +343,78 @@ export default function ReportsView() {
         />
       )}
 
-      {tab === 'bookings' && (
-        <ReportTable
-          headers={['ID', 'Customer', 'Type', 'Date', 'Time', 'Stylist', 'Status']}
-          rows={appointments.map((a) => [a.id, a.customer, a.type, formatDate(a.date), a.time, a.stylist, <StatusBadge key={a.id} status={a.status} />])}
-        />
-      )}
+      {tab === 'bookings' && (() => {
+        const feePaidCount = appointments.filter((a) => a.feePaid).length;
+        const feesCollected = feePaidCount * BOOKING_FEE_CENTS;
+        const feesDue = (appointments.length - feePaidCount) * BOOKING_FEE_CENTS;
+        const withBudget = appointments.filter((a) => a.budgetCents > 0);
+        const avgBudget = withBudget.length
+          ? Math.round(withBudget.reduce((s, a) => s + a.budgetCents, 0) / withBudget.length)
+          : 0;
+        const byLooking = new Map<string, number>();
+        appointments.forEach((a) => {
+          const k = a.lookingFor || 'Not asked';
+          byLooking.set(k, (byLooking.get(k) ?? 0) + 1);
+        });
+        const lookingRows = [...byLooking.entries()].sort((a, b) => b[1] - a[1]);
+        const maxLook = Math.max(1, ...lookingRows.map(([, n]) => n));
+        return (
+          <div className="space-y-6">
+            {/* Booking KPIs */}
+            <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+              {[
+                { label: 'Total bookings', value: String(appointments.length) },
+                { label: `Fees collected (${feePaidCount} × ${formatCents(BOOKING_FEE_CENTS)})`, value: formatCents(feesCollected), tone: 'text-emerald-700' },
+                { label: 'Fees due at check-in', value: formatCents(feesDue), tone: feesDue > 0 ? 'text-amber-600' : undefined },
+                { label: 'Avg stated budget', value: avgBudget ? formatCents(avgBudget) : '—' },
+              ].map((s) => (
+                <div key={s.label} className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-wider text-stone-500">{s.label}</p>
+                  <p className={`mt-1 font-serif text-2xl ${s.tone ?? 'text-stone-900'}`}>{s.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* What brides are shopping for */}
+            <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm">
+              <h2 className="font-serif text-lg text-stone-900">What brides are booking for</h2>
+              <div className="mt-4 space-y-2.5">
+                {lookingRows.map(([label, n]) => (
+                  <div key={label} className="flex items-center gap-3">
+                    <span className="w-40 flex-shrink-0 truncate text-xs font-medium text-stone-600">{label}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-stone-100">
+                      <div className="h-full rounded-full bg-gradient-to-r from-rose-400 to-violet-400" style={{ width: `${Math.round((n / maxLook) * 100)}%` }} />
+                    </div>
+                    <span className="w-8 text-right text-xs font-semibold text-stone-800">{n}</span>
+                  </div>
+                ))}
+                {lookingRows.length === 0 && <p className="text-sm text-stone-500">No bookings yet.</p>}
+              </div>
+            </div>
+
+            <ReportTable
+              headers={['ID', 'Customer', 'Type', 'Looking For', 'Budget', 'Date', 'Time', 'Stylist', 'Fee', 'Status']}
+              rows={appointments.map((a) => [
+                a.id,
+                a.customer,
+                a.type,
+                a.lookingFor || '—',
+                budgetLabel(a.budgetCents),
+                formatDate(a.date),
+                a.time,
+                a.stylist,
+                a.feePaid ? (
+                  <span key={`${a.id}-fee`} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">Paid</span>
+                ) : (
+                  <span key={`${a.id}-fee`} className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Due</span>
+                ),
+                <StatusBadge key={a.id} status={a.status} />,
+              ])}
+            />
+          </div>
+        );
+      })()}
+
 
       {tab === 'follow-ups' && (
         <ReportTable

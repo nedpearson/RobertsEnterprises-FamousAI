@@ -21,6 +21,8 @@ import StaffView from '@/components/vowos/StaffView';
 import CommunicationsView from '@/components/vowos/CommunicationsView';
 import ContractsView from '@/components/vowos/ContractsView';
 import AlterationsView from '@/components/vowos/AlterationsView';
+import SettingsView from '@/components/vowos/SettingsView';
+
 
 
 function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void }) {
@@ -198,6 +200,8 @@ export default function AppLayout() {
               {view === 'reports' && <ReportsView />}
               {view === 'ledgers' && <LedgersView />}
               {view === 'staff' && <StaffView />}
+              {view === 'settings' && <SettingsView />}
+
             </>
           )}
 

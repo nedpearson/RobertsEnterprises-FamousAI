@@ -18,8 +18,10 @@ import {
   MessageSquare,
   FileSignature,
   Scissors,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth, StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
+
 
 export type ViewKey =
   | 'dashboard'
@@ -35,7 +37,8 @@ export type ViewKey =
   | 'purchases'
   | 'reports'
   | 'ledgers'
-  | 'staff';
+  | 'staff'
+  | 'settings';
 
 export const PUBLIC_VIEWS: ViewKey[] = ['dashboard'];
 
@@ -54,6 +57,7 @@ export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = 
   { key: 'reports', label: 'Reports', icon: BarChart3 },
   { key: 'ledgers', label: 'Ledgers', icon: BookOpenText },
   { key: 'staff', label: 'Staff & Roles', icon: ShieldCheck },
+  { key: 'settings', label: 'Settings', icon: SlidersHorizontal },
 ];
 
 // ─── Role-based access matrix ───
@@ -74,7 +78,9 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   reports: ['Owner', 'Manager'],
   ledgers: ['Owner', 'Manager'],
   staff: ['Owner'],
+  settings: ['Owner', 'Manager'],
 };
+
 
 
 

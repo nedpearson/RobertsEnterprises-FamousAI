@@ -2,9 +2,10 @@ import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Gem, MapPin, Clock, Phone, CalendarHeart, CheckCircle2, AlertCircle, Video, ArrowLeft,
-  CreditCard, Lock, Loader2, ChevronLeft,
+  CreditCard, ChevronLeft,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import CardPaymentForm, { CardPaymentResult } from '@/components/vowos/CardPaymentForm';
 import {
   LOCATIONS,
   LocationId,
@@ -20,6 +21,7 @@ import {
   formatDate,
   Appointment,
 } from '@/data/vowosData';
+
 
 const inputCls =
   'w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100';
@@ -41,11 +43,6 @@ export default function BookAppointment() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [step, setStep] = useState<'details' | 'pay'>('details');
-  // Card fields for the $75 booking fee
-  const [card, setCard] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null as string | null);
   const [confirmed, setConfirmed] = useState<{ id: string; store: LocationId; date: string; time: string } | null>(null);
 
@@ -72,14 +69,9 @@ export default function BookAppointment() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handlePayAndBook = async (e: FormEvent) => {
-    e.preventDefault();
+  /** Called by CardPaymentForm AFTER the card has actually been charged. */
+  const completeBooking = async (payment: CardPaymentResult) => {
     setError(null);
-    if (card.replace(/\s/g, '').length < 12 || !expiry || cvc.length < 3) {
-      setError('Please complete the card details to pay the booking fee.');
-      return;
-    }
-    setBusy(true);
 
     const suffix = Date.now().toString().slice(-6);
     const apptId = `A-${suffix}`;
@@ -99,8 +91,9 @@ export default function BookAppointment() {
       fee_paid: true,
     });
     if (apptErr) {
-      setBusy(false);
-      setError('We could not save your booking — please try again or call the boutique.');
+      setError(
+        `Your card was charged (ref ${payment.paymentIntentId}) but we could not save the booking — please call the boutique at ${locationById(store).phone} and we will finish it by hand.`,
+      );
       return;
     }
 
@@ -115,13 +108,13 @@ export default function BookAppointment() {
       stage: 'Appointment Set',
     });
 
-    // 3) Record the $75 booking fee in her communications timeline (best effort)
+    // 3) Record the real card payment in her communications timeline (best effort)
     await supabase.from('messages').insert({
       customer: name.trim(),
       channel: 'email',
       to_address: email.trim(),
       subject: `Booking fee received — ${apptId}`,
-      body: `${FEE_LABEL} booking fee paid online for ${type} on ${formatDate(date)} at ${time} (${locationById(store).short}). Looking for: ${lookingFor}. Budget: ${budgetLabel(budgetCents)}. Fee is credited toward her purchase.`,
+      body: `${formatCents(payment.totalCents)} charged to ${payment.brandLabel} (${FEE_LABEL} booking fee${payment.surchargeCents > 0 ? ` + ${formatCents(payment.surchargeCents)} ${payment.surchargePct}% card fee` : ''}) for ${type} on ${formatDate(date)} at ${time} (${locationById(store).short}). Looking for: ${lookingFor}. Budget: ${budgetLabel(budgetCents)}. Stripe ref ${payment.paymentIntentId}. Fee is credited toward her purchase.`,
       kind: 'payment',
       status: 'sent',
     });
@@ -144,9 +137,10 @@ export default function BookAppointment() {
       // CRM subscribe is best-effort; the appointment itself is already saved
     }
 
-    setBusy(false);
     setConfirmed({ id: apptId, store, date, time });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
 
   const loc = locationById(store);
 
@@ -198,8 +192,9 @@ export default function BookAppointment() {
                   setConfirmed(null);
                   setStep('details');
                   setName(''); setEmail(''); setPhone(''); setDate(''); setTime(''); setWeddingDate('');
-                  setLookingFor(''); setBudgetCents(0); setCard(''); setExpiry(''); setCvc('');
+                  setLookingFor(''); setBudgetCents(0);
                 }}
+
                 className="rounded-lg border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
               >
                 Book another visit
@@ -243,41 +238,10 @@ export default function BookAppointment() {
                 </div>
               </div>
 
-              <form onSubmit={handlePayAndBook} className="space-y-4 p-6">
+              <div className="space-y-4 p-6">
                 <div className="rounded-xl bg-rose-50/70 p-3 text-xs leading-relaxed text-rose-800 ring-1 ring-rose-100">
                   A flat <span className="font-semibold">{FEE_LABEL} booking fee</span> reserves your private
                   styling suite and stylist. It is <span className="font-semibold">fully credited toward your purchase</span> when you say yes.
-                </div>
-
-                <div>
-                  <label className={labelCls}>Card number</label>
-                  <div className="relative">
-                    <CreditCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                    <input
-                      inputMode="numeric"
-                      value={card}
-                      onChange={(e) => setCard(e.target.value.replace(/[^\d\s]/g, ''))}
-                      placeholder="4242 4242 4242 4242"
-                      className={`${inputCls} pl-9`}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelCls}>Expiry</label>
-                    <input value={expiry} onChange={(e) => setExpiry(e.target.value)} placeholder="MM/YY" className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>CVC</label>
-                    <input
-                      inputMode="numeric"
-                      value={cvc}
-                      onChange={(e) => setCvc(e.target.value.replace(/[^\d]/g, '').slice(0, 4))}
-                      placeholder="123"
-                      className={inputCls}
-                    />
-                  </div>
                 </div>
 
                 {error && (
@@ -286,18 +250,19 @@ export default function BookAppointment() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-rose-600 disabled:opacity-60"
-                >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                  {busy ? 'Processing…' : `Pay ${FEE_LABEL} & Reserve My Visit`}
-                </button>
-                <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-stone-400">
-                  <Lock className="h-3 w-3" /> Secure payment · Fee is credited toward your gown. Questions? Call {loc.phone}.
+                <CardPaymentForm
+                  baseCents={BOOKING_FEE_CENTS}
+                  baseLabel="booking fee"
+                  description={`Booking fee — ${type} · ${loc.short}`}
+                  metadata={{ kind: 'booking-fee', customer: name.trim(), store, date, time }}
+                  buttonLabel={`Pay & Reserve My Visit`}
+                  onSuccess={completeBooking}
+                />
+                <p className="text-center text-[11px] text-stone-400">
+                  Fee is credited toward your gown. Questions? Call {loc.phone}.
                 </p>
-              </form>
+              </div>
+
             </div>
           </div>
         ) : (

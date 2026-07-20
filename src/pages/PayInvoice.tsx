@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Gem, Loader2, Lock, CheckCircle2, AlertTriangle, CreditCard } from 'lucide-react';
+import { Gem, Loader2, Lock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import CardPaymentForm, { CardPaymentResult } from '@/components/vowos/CardPaymentForm';
 import { LocationId, locationById, formatCents, formatDate } from '@/data/vowosData';
 
 interface PayableInvoice {
@@ -30,12 +31,8 @@ export default function PayInvoice() {
   const [amount, setAmount] = useState('');
   const [payerName, setPayerName] = useState('');
   const [payerEmail, setPayerEmail] = useState('');
-  const [card, setCard] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
   const [error, setError] = useState('');
-  const [paying, setPaying] = useState(false);
-  const [paidCents, setPaidJustNow] = useState<number | null>(null);
+  const [receipt, setReceipt] = useState<CardPaymentResult | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -75,24 +72,15 @@ export default function PayInvoice() {
   const loc = useMemo(() => (invoice ? locationById(invoice.location) : null), [invoice]);
   const balance = invoice ? invoice.amountCents - invoice.paidCents : 0;
 
-  const handlePay = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // The amount being applied to the invoice (surcharge is added on top by the card form)
+  const payCents = Math.round(parseFloat(amount || '0') * 100);
+  const amountValid = Number.isFinite(payCents) && payCents > 0 && payCents <= balance;
+
+  /** Runs AFTER Stripe has actually charged the card. */
+  const recordPayment = async (payment: CardPaymentResult) => {
     if (!invoice) return;
-    const cents = Math.round(parseFloat(amount || '0') * 100);
-    if (!cents || cents <= 0) {
-      setError('Please enter a payment amount.');
-      return;
-    }
-    if (cents > balance) {
-      setError(`The balance is ${formatCents(balance)} — please enter that amount or less.`);
-      return;
-    }
-    if (card.replace(/\s/g, '').length < 12 || !expiry || cvc.length < 3) {
-      setError('Please complete the card details.');
-      return;
-    }
     setError('');
-    setPaying(true);
+    const cents = payment.baseCents; // the invoice portion (surcharge is the card fee)
 
     const newPaid = invoice.paidCents + cents;
     const newStatus = newPaid >= invoice.amountCents ? 'Paid' : 'Partial';
@@ -103,8 +91,9 @@ export default function PayInvoice() {
       .eq('pay_token', token);
 
     if (upErr) {
-      setPaying(false);
-      setError('We could not process the payment right now. Please try again or call the boutique.');
+      setError(
+        `Your card was charged (ref ${payment.paymentIntentId}) but the invoice could not be updated — please call the boutique so we can post it by hand.`,
+      );
       return;
     }
 
@@ -127,7 +116,7 @@ export default function PayInvoice() {
       channel: 'email',
       to_address: payerEmail || 'online payment',
       subject: `Payment received — ${invoice.id}`,
-      body: `${formatCents(cents)} paid online toward invoice ${invoice.id} (${invoice.description}). New balance: ${formatCents(invoice.amountCents - newPaid)}.`,
+      body: `${formatCents(payment.totalCents)} charged to ${payment.brandLabel} toward invoice ${invoice.id} (${invoice.description}): ${formatCents(cents)} applied to the balance${payment.surchargeCents > 0 ? ` + ${formatCents(payment.surchargeCents)} ${payment.surchargePct}% card processing fee` : ''}. Stripe ref ${payment.paymentIntentId}. New balance: ${formatCents(invoice.amountCents - newPaid)}.`,
       kind: 'payment',
       status: 'sent',
     });
@@ -151,8 +140,7 @@ export default function PayInvoice() {
     }
 
     setInvoice({ ...invoice, paidCents: newPaid, status: newStatus });
-    setPaidJustNow(cents);
-    setPaying(false);
+    setReceipt(payment);
   };
 
   return (
@@ -188,19 +176,25 @@ export default function PayInvoice() {
           </div>
         )}
 
-        {!loading && invoice && paidCents !== null && (
+        {!loading && invoice && receipt && (
           <div className="rounded-3xl border border-emerald-200 bg-white p-8 text-center shadow-sm">
             <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
             <h2 className="mt-4 font-serif text-2xl text-stone-900">Thank you, {payerName || invoice.customer}!</h2>
             <p className="mt-2 text-sm text-stone-600">
-              Your payment of <span className="font-semibold">{formatCents(paidCents)}</span> toward
-              invoice {invoice.id} has been received.
+              Your {receipt.brandLabel} card was charged{' '}
+              <span className="font-semibold">{formatCents(receipt.totalCents)}</span> toward invoice {invoice.id}.
             </p>
             <div className="mx-auto mt-6 max-w-xs rounded-2xl bg-stone-50 p-4 text-sm">
               <div className="flex justify-between text-stone-500">
-                <span>Invoice total</span>
-                <span>{formatCents(invoice.amountCents)}</span>
+                <span>Applied to invoice</span>
+                <span>{formatCents(receipt.baseCents)}</span>
               </div>
+              {receipt.surchargeCents > 0 && (
+                <div className="mt-1 flex justify-between text-stone-500">
+                  <span>Card fee ({receipt.surchargePct}%)</span>
+                  <span>{formatCents(receipt.surchargeCents)}</span>
+                </div>
+              )}
               <div className="mt-1 flex justify-between text-stone-500">
                 <span>Paid to date</span>
                 <span>{formatCents(invoice.paidCents)}</span>
@@ -211,12 +205,13 @@ export default function PayInvoice() {
               </div>
             </div>
             <p className="mt-6 text-xs text-stone-400">
-              A record of this payment has been sent to the boutique. Questions? Call {loc?.phone}.
+              Stripe reference {receipt.paymentIntentId}. A record of this payment has been sent to the
+              boutique. Questions? Call {loc?.phone}.
             </p>
           </div>
         )}
 
-        {!loading && invoice && paidCents === null && (
+        {!loading && invoice && !receipt && (
           <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
             <div className="border-b border-stone-100 bg-stone-50/60 px-6 py-5">
               <div className="flex items-center justify-between">
@@ -239,7 +234,7 @@ export default function PayInvoice() {
                 <p className="mt-1 text-sm text-stone-500">No payment is due. Thank you!</p>
               </div>
             ) : (
-              <form onSubmit={handlePay} className="space-y-4 p-6">
+              <div className="space-y-4 p-6">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500">Payment amount</label>
@@ -263,7 +258,7 @@ export default function PayInvoice() {
                     </button>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500">Name on card</label>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500">Your name</label>
                     <input value={payerName} onChange={(e) => setPayerName(e.target.value)} className={inputCls} />
                   </div>
                 </div>
@@ -279,57 +274,33 @@ export default function PayInvoice() {
                   />
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500">Card number</label>
-                  <div className="relative">
-                    <CreditCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                    <input
-                      inputMode="numeric"
-                      value={card}
-                      onChange={(e) => setCard(e.target.value.replace(/[^\d\s]/g, ''))}
-                      placeholder="4242 4242 4242 4242"
-                      className={`${inputCls} pl-9`}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500">Expiry</label>
-                    <input
-                      value={expiry}
-                      onChange={(e) => setExpiry(e.target.value)}
-                      placeholder="MM/YY"
-                      className={inputCls}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500">CVC</label>
-                    <input
-                      inputMode="numeric"
-                      value={cvc}
-                      onChange={(e) => setCvc(e.target.value.replace(/[^\d]/g, '').slice(0, 4))}
-                      placeholder="123"
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
-
+                {!amountValid && amount !== '' && (
+                  <p className="text-xs text-rose-600">
+                    Please enter an amount between $0.01 and {formatCents(balance)}.
+                  </p>
+                )}
                 {error && <p className="text-sm text-rose-600">{error}</p>}
 
-                <button
-                  type="submit"
-                  disabled={paying}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-rose-600 disabled:opacity-60"
-                >
-                  {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                  {paying ? 'Processing…' : `Pay ${amount ? `$${parseFloat(amount || '0').toFixed(2)}` : ''} securely`}
-                </button>
+                {amountValid ? (
+                  <CardPaymentForm
+                    key={payCents /* re-quote when the amount changes */}
+                    baseCents={payCents}
+                    baseLabel="invoice payment"
+                    description={`Invoice ${invoice.id} — ${invoice.customer}`}
+                    metadata={{ kind: 'invoice', invoice_id: invoice.id, customer: invoice.customer }}
+                    onSuccess={recordPayment}
+                  />
+                ) : (
+                  <div className="rounded-xl bg-stone-50 p-4 text-center text-sm text-stone-400 ring-1 ring-stone-200">
+                    Enter a payment amount above to continue to card details.
+                  </div>
+                )}
+
                 <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-stone-400">
                   <Lock className="h-3 w-3" /> Payments post directly to your boutique account. Prefer to
                   pay by phone? Call {loc?.phone}.
                 </p>
-              </form>
+              </div>
             )}
           </div>
         )}
