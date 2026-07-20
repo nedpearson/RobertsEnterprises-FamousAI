@@ -63,7 +63,9 @@ const mapInvoice = (r: any): Invoice => ({
   dueDate: r.due_date,
   status: r.status,
   location: (r.location ?? 'ido-br') as LocationId,
+  payToken: r.pay_token ?? '',
 });
+
 
 const mapPo = (r: any): PurchaseOrder => ({
   id: r.id,
@@ -503,6 +505,10 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         dueDate: input.dueDate,
         status,
         location: input.location ?? defaultLocation,
+        payToken:
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       };
       const { error } = await supabase.from('invoices').insert({
         id: newInvoice.id,
@@ -513,7 +519,9 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         due_date: newInvoice.dueDate,
         status: newInvoice.status,
         location: newInvoice.location,
+        pay_token: newInvoice.payToken,
       });
+
       if (error) {
         dbErrorToast('create invoice', error.message);
         return false;

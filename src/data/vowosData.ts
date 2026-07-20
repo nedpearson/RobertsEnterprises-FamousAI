@@ -164,7 +164,21 @@ export interface Invoice {
   dueDate: string;
   status: 'Paid' | 'Partial' | 'Open' | 'Overdue';
   location: LocationId;
+  /** Secret token that unlocks the public /pay/:id payment page. */
+  payToken: string;
 }
+
+/** Month key ("YYYY-MM") for sales-goal tracking. */
+export function monthKey(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Human label for a "YYYY-MM" month key. */
+export function monthLabel(key: string): string {
+  const d = new Date(`${key}-15T12:00:00`);
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
 
 export interface Appointment {
   id: string;

@@ -6,21 +6,25 @@ import {
   revenueByMonth,
   formatCents,
   formatDate,
+  monthKey,
 } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, btnSecondary } from './ui';
+import SalesGoalsTab from './SalesGoalsTab';
 
 
-type TabKey = 'revenue' | 'locations' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups';
+type TabKey = 'revenue' | 'goals' | 'locations' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'revenue', label: 'Revenue' },
+  { key: 'goals', label: 'Sales Goals' },
   { key: 'locations', label: 'By Location' },
   { key: 'open-orders', label: 'Open Orders' },
   { key: 'deliveries', label: 'Expected Deliveries' },
   { key: 'bookings', label: 'Bookings' },
   { key: 'follow-ups', label: 'Follow-Ups' },
 ];
+
 
 function downloadCsv(filename: string, rows: (string | number)[][]) {
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -112,6 +116,23 @@ export default function ReportsView() {
     switch (tab) {
       case 'revenue':
         return { name: 'revenue.csv', rows: [['Month', 'Revenue'], ...revenueByMonth.map((m) => [m.month, m.revenue])] };
+      case 'goals': {
+        const month = monthKey();
+        return {
+          name: 'sales-goals.csv',
+          rows: [
+            ['Store', 'Month', 'Collected'],
+            ...LOCATIONS.map((loc) => [
+              loc.short,
+              month,
+              allInvoices
+                .filter((i) => i.location === loc.id && i.dueDate.startsWith(month))
+                .reduce((s, i) => s + i.paidCents, 0) / 100,
+            ]),
+          ],
+        };
+      }
+
       case 'locations':
         return {
           name: 'location-report.csv',
@@ -206,6 +227,9 @@ export default function ReportsView() {
           </div>
         </div>
       )}
+
+      {tab === 'goals' && <SalesGoalsTab />}
+
 
       {tab === 'locations' && (
         <div className="space-y-6">

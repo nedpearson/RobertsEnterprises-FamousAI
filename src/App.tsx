@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import BookAppointment from "./pages/BookAppointment";
+import PayInvoice from "./pages/PayInvoice";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,8 +24,10 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/book" element={<BookAppointment />} />
+              <Route path="/pay/:invoiceId" element={<PayInvoice />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>

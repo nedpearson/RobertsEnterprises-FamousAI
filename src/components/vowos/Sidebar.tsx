@@ -15,6 +15,7 @@ import {
   LogOut,
   CalendarHeart,
   ExternalLink,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth, StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 
@@ -25,6 +26,7 @@ export type ViewKey =
   | 'inventory'
   | 'transfers'
   | 'appointments'
+  | 'communications'
   | 'invoices'
   | 'purchases'
   | 'reports'
@@ -40,6 +42,7 @@ export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = 
   { key: 'inventory', label: 'Gown Inventory', icon: Shirt },
   { key: 'transfers', label: 'Store Transfers', icon: ArrowLeftRight },
   { key: 'appointments', label: 'Appointments', icon: CalendarDays },
+  { key: 'communications', label: 'Communications', icon: MessageSquare },
   { key: 'invoices', label: 'Invoices', icon: Receipt },
   { key: 'purchases', label: 'Purchase Orders', icon: PackageSearch },
   { key: 'reports', label: 'Reports', icon: BarChart3 },
@@ -57,12 +60,14 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   inventory: ['Owner', 'Manager', 'Stylist'],
   transfers: ['Owner', 'Manager', 'Stylist'],
   appointments: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  communications: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   invoices: ['Owner', 'Manager', 'Front Desk'],
   purchases: ['Owner', 'Manager'],
   reports: ['Owner', 'Manager'],
   ledgers: ['Owner', 'Manager'],
   staff: ['Owner'],
 };
+
 
 /** Can a (possibly signed-out) user open a view? */
 export function canAccessView(role: StaffRole | null, view: ViewKey): boolean {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CalendarPlus, Loader2, Pencil } from 'lucide-react';
+import { AlertTriangle, CalendarPlus, Loader2, MailCheck, Pencil } from 'lucide-react';
 import {
   Appointment,
   LocationId,
@@ -12,6 +12,13 @@ import { useVowosData, NewAppointmentInput } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
 import { Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { LocationSelect } from './LocationSelect';
+import {
+  sendAndLogMessage,
+  appointmentConfirmationTemplates,
+  appointmentRescheduleTemplates,
+  isEmail,
+  isPhone,
+} from '@/lib/messaging';
 
 
 const OTHER = '__other__';
@@ -31,6 +38,7 @@ export default function BookAppointmentModal({
   const {
     brides,
     leads,
+    allBrides,
     allAppointments,
     activeLocation,
     addAppointment,
@@ -45,8 +53,10 @@ export default function BookAppointmentModal({
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [stylist, setStylist] = useState(teamMembers[0]);
+  const [notify, setNotify] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
 
   // Pre-fill the form when opening in edit mode; reset for booking mode
   useEffect(() => {
@@ -70,7 +80,9 @@ export default function BookAppointmentModal({
       setTime('');
       setStylist(teamMembers[0]);
     }
+    setNotify(true);
     setError('');
+
   }, [open, appointment, activeLocation]);
 
   const customerName = isEdit
@@ -100,6 +112,13 @@ export default function BookAppointmentModal({
     setError('');
     onClose();
   };
+
+  // Bride record (for email/phone) matching whoever the appointment is for
+  const contact = useMemo(
+    () => allBrides.find((b) => b.name === customerName) ?? null,
+    [allBrides, customerName],
+  );
+  const canNotify = !!contact && (isEmail(contact.email) || isPhone(contact.phone));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,15 +150,59 @@ export default function BookAppointmentModal({
       };
       ok = await addAppointment(input);
     }
+
+    // Email/text confirmation (new bookings) or reschedule notice (edits)
+    const sendResults: string[] = [];
+    if (ok && notify && canNotify && contact) {
+      const apptForMsg: Appointment = {
+        id: appointment?.id ?? 'new',
+        customer: customerName,
+        type,
+        date,
+        time,
+        stylist,
+        status: 'Confirmed',
+        location,
+      };
+      const tpl = isEdit
+        ? appointmentRescheduleTemplates(apptForMsg)
+        : appointmentConfirmationTemplates(apptForMsg);
+      if (isEmail(contact.email)) {
+        const r = await sendAndLogMessage({
+          channel: 'email',
+          to: contact.email,
+          subject: tpl.emailSubject,
+          body: tpl.emailText,
+          html: tpl.emailHtml,
+          customer: customerName,
+          kind: isEdit ? 'reschedule' : 'confirmation',
+        });
+        sendResults.push(r.ok ? 'email sent' : 'email failed');
+      }
+      if (isPhone(contact.phone)) {
+        const r = await sendAndLogMessage({
+          channel: 'sms',
+          to: contact.phone,
+          body: tpl.sms,
+          customer: customerName,
+          kind: isEdit ? 'reschedule' : 'confirmation',
+        });
+        sendResults.push(r.ok ? 'text sent' : 'text failed');
+      }
+    }
+
     setSaving(false);
     if (ok) {
       toast({
-        title: isEdit ? 'Appointment updated' : 'Appointment booked',
-        description: `${customerName} · ${type} with ${stylist} at ${time} — ${locationById(location).short}.`,
+        title: isEdit ? 'Appointment rescheduled — calendar updated' : 'Appointment booked',
+        description: `${customerName} · ${type} with ${stylist} at ${time} — ${locationById(location).short}${
+          sendResults.length > 0 ? ` · ${sendResults.join(' · ')}` : ''
+        }.`,
       });
       handleClose();
     }
   };
+
 
   return (
     <Modal
@@ -292,7 +355,36 @@ export default function BookAppointmentModal({
           </div>
         )}
 
+        {/* Confirmation / reschedule notice */}
+        {canNotify && contact ? (
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
+            <input
+              type="checkbox"
+              checked={notify}
+              onChange={(e) => setNotify(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-400"
+            />
+            <span className="text-xs leading-relaxed text-emerald-800">
+              <span className="flex items-center gap-1 font-semibold">
+                <MailCheck className="h-3.5 w-3.5" />
+                {isEdit ? 'Send reschedule notice' : 'Send booking confirmation'}
+              </span>
+              {isEmail(contact.email) && `Email to ${contact.email}`}
+              {isEmail(contact.email) && isPhone(contact.phone) && ' · '}
+              {isPhone(contact.phone) && `Text to ${contact.phone}`}
+            </span>
+          </label>
+        ) : (
+          customerName && (
+            <p className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-[11px] text-stone-500">
+              No email or phone on file for {customerName} — no confirmation will be sent. Add contact
+              details in Brides to enable automatic confirmations.
+            </p>
+          )
+        )}
+
         {error && <p className="text-sm text-rose-600">{error}</p>}
+
 
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" onClick={handleClose} className={btnSecondary}>

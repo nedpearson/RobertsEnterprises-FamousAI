@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Search, Receipt, Loader2, Plus } from 'lucide-react';
+import { Search, Receipt, Loader2, Plus, Link2 } from 'lucide-react';
 import { Invoice, formatCents, formatDate } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, inputCls, btnPrimary } from './ui';
 import { NewInvoiceModal, RecordPaymentModal } from './InvoiceModals';
+import PaymentLinkModal from './PaymentLinkModal';
 
 const FILTERS = ['All', 'Paid', 'Partial', 'Open', 'Overdue'] as const;
 
@@ -13,6 +14,8 @@ export default function InvoicesView() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
+  const [linkInvoiceId, setLinkInvoiceId] = useState<string | null>(null);
+
 
   const filtered = useMemo(
     () =>
@@ -105,14 +108,25 @@ export default function InvoicesView() {
                         <StatusBadge status={inv.status} />
                       </td>
                       <td className="px-5 py-3.5 text-right">
-                        {balance > 0 && (
-                          <button
-                            onClick={() => setPayingInvoiceId(inv.id)}
-                            className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-stone-700"
-                          >
-                            Record Payment
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-1.5">
+                          {balance > 0 && (
+                            <button
+                              onClick={() => setLinkInvoiceId(inv.id)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:border-rose-300 hover:text-rose-600"
+                              title="Copy, email, or text a payment link"
+                            >
+                              <Link2 className="h-3.5 w-3.5" /> Payment Link
+                            </button>
+                          )}
+                          {balance > 0 && (
+                            <button
+                              onClick={() => setPayingInvoiceId(inv.id)}
+                              className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-stone-700"
+                            >
+                              Record Payment
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -131,6 +145,13 @@ export default function InvoicesView() {
 
       <NewInvoiceModal open={showNewInvoice} onClose={() => setShowNewInvoice(false)} />
       <RecordPaymentModal invoice={payingInvoice} onClose={() => setPayingInvoiceId(null)} />
+      {linkInvoiceId && (
+        <PaymentLinkModal
+          invoice={list.find((i) => i.id === linkInvoiceId) ?? null}
+          onClose={() => setLinkInvoiceId(null)}
+        />
+      )}
     </div>
   );
 }
+
