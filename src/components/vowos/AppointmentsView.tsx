@@ -5,6 +5,7 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
 import { PageHeader, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
 import BookAppointmentModal from './BookAppointmentModal';
+import { LocationBadge } from './LocationSelect';
 
 const TYPE_COLORS: Record<string, string> = {
   'Bridal Consultation': 'bg-rose-100 text-rose-600',
@@ -68,7 +69,10 @@ export default function AppointmentsView() {
                   .map((a) => (
                     <div key={a.id} className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                       <div className="flex items-start justify-between">
-                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${TYPE_COLORS[a.type]}`}>{a.type}</span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${TYPE_COLORS[a.type]}`}>{a.type}</span>
+                          <LocationBadge id={a.location} />
+                        </div>
                         <div className="flex items-center gap-1.5">
                           <StatusBadge status={a.status} />
                           <button

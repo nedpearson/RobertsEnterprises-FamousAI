@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Menu, Bell, Search, LogIn, LogOut, Lock, ShieldCheck } from 'lucide-react';
+import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck } from 'lucide-react';
 import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS } from '@/components/vowos/Sidebar';
+import NotificationsBell from '@/components/vowos/NotificationsBell';
 import AuthModal from '@/components/vowos/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
@@ -44,7 +45,7 @@ function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void 
 export default function AppLayout() {
   const [view, setView] = useState<ViewKey>('dashboard');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+
   const [authOpen, setAuthOpen] = useState(false);
   const { session, profile, loading, signOut } = useAuth();
   const { activeLocation } = useVowosData();
@@ -97,38 +98,8 @@ export default function AppLayout() {
                 Search brides...
               </button>
 
-              <div className="relative">
-                <button
-                  onClick={() => setNotifOpen((o) => !o)}
-                  className="relative rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100"
-                  aria-label="Notifications"
-                >
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />
-                </button>
-                {notifOpen && (
-                  <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-stone-200 bg-white p-2 shadow-xl">
-                    <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-stone-500">Notifications</p>
-                    {[
-                      { t: 'PO-7105 from Justin Alexander is delayed', s: '2 hours ago' },
-                      { t: 'Lily Andersson requested a consultation', s: '5 hours ago' },
-                      { t: 'INV-4026 is now overdue', s: 'Yesterday' },
-                    ].map((n) => (
-                      <button
-                        key={n.t}
-                        onClick={() => {
-                          setNotifOpen(false);
-                          setView(n.t.includes('PO-') ? 'purchases' : n.t.includes('INV-') ? 'invoices' : 'appointments');
-                        }}
-                        className="w-full rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-stone-50"
-                      >
-                        <p className="text-sm text-stone-700">{n.t}</p>
-                        <p className="text-xs text-stone-400">{n.s}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Live alerts: in-transit transfers, overdue invoices, delayed POs */}
+              <NotificationsBell onNavigate={setView} />
 
               {/* Auth control */}
               {!loading && (

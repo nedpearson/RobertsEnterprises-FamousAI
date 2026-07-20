@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CalendarPlus, Loader2, Pencil } from 'lucide-react';
-import { Appointment, teamMembers } from '@/data/vowosData';
+import { Appointment, LocationId, locationById, teamMembers } from '@/data/vowosData';
 import { useVowosData, NewAppointmentInput } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
 import { Modal, inputCls, btnPrimary, btnSecondary } from './ui';
+import { LocationSelect } from './LocationSelect';
 
 const APPOINTMENT_TYPES: Appointment['type'][] = [
   'Bridal Consultation',
@@ -40,12 +41,20 @@ export default function BookAppointmentModal({
   /** When provided, the modal becomes an edit/reschedule form for this appointment. */
   appointment?: Appointment | null;
 }) {
-  const { brides, leads, appointments, addAppointment, updateAppointment } = useVowosData();
+  const {
+    brides,
+    leads,
+    allAppointments,
+    activeLocation,
+    addAppointment,
+    updateAppointment,
+  } = useVowosData();
   const isEdit = Boolean(appointment);
 
   const [brideChoice, setBrideChoice] = useState('');
   const [customName, setCustomName] = useState('');
   const [type, setType] = useState<Appointment['type']>('Bridal Consultation');
+  const [location, setLocation] = useState<LocationId>('ido-br');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [stylist, setStylist] = useState(teamMembers[0]);
@@ -59,6 +68,7 @@ export default function BookAppointmentModal({
       setBrideChoice('');
       setCustomName('');
       setType(appointment.type);
+      setLocation(appointment.location);
       setDate(appointment.date);
       // Existing times should always be one of our slots, but keep whatever it is
       setTime(appointment.time);
@@ -67,12 +77,14 @@ export default function BookAppointmentModal({
       setBrideChoice('');
       setCustomName('');
       setType('Bridal Consultation');
+      // Book into the store the staffer is currently viewing
+      setLocation(activeLocation === 'all' ? 'ido-br' : activeLocation);
       setDate('');
       setTime('');
       setStylist(teamMembers[0]);
     }
     setError('');
-  }, [open, appointment]);
+  }, [open, appointment, activeLocation]);
 
   const customerName = isEdit
     ? appointment!.customer
@@ -80,10 +92,11 @@ export default function BookAppointmentModal({
       ? customName.trim()
       : brideChoice;
 
+  // A stylist can only be in one place at a time, so check across every store.
   const conflict = useMemo(() => {
     if (!date || !time || !stylist) return null;
     return (
-      appointments.find(
+      allAppointments.find(
         (a) =>
           a.stylist === stylist &&
           a.date === date &&
@@ -92,7 +105,7 @@ export default function BookAppointmentModal({
           a.id !== appointment?.id, // an appointment never conflicts with itself
       ) || null
     );
-  }, [appointments, date, time, stylist, appointment]);
+  }, [allAppointments, date, time, stylist, appointment]);
 
   const handleClose = () => {
     setError('');
@@ -117,16 +130,23 @@ export default function BookAppointmentModal({
     setSaving(true);
     let ok: boolean;
     if (isEdit) {
-      ok = await updateAppointment(appointment!.id, { type, date, time, stylist });
+      ok = await updateAppointment(appointment!.id, { type, date, time, stylist, location });
     } else {
-      const input: NewAppointmentInput = { customer: customerName, type, date, time, stylist };
+      const input: NewAppointmentInput = {
+        customer: customerName,
+        type,
+        date,
+        time,
+        stylist,
+        location,
+      };
       ok = await addAppointment(input);
     }
     setSaving(false);
     if (ok) {
       toast({
         title: isEdit ? 'Appointment updated' : 'Appointment booked',
-        description: `${customerName} · ${type} with ${stylist} at ${time}.`,
+        description: `${customerName} · ${type} with ${stylist} at ${time} — ${locationById(location).short}.`,
       });
       handleClose();
     }
@@ -185,6 +205,16 @@ export default function BookAppointmentModal({
             )}
           </div>
         )}
+
+        <div>
+          <label htmlFor="ba-location" className={labelCls}>
+            Store location
+          </label>
+          <LocationSelect id="ba-location" value={location} onChange={setLocation} />
+          <p className="mt-1 text-[11px] text-stone-400">
+            {locationById(location).address} · {locationById(location).hours}
+          </p>
+        </div>
 
         <div>
           <label htmlFor="ba-type" className={labelCls}>
@@ -266,8 +296,9 @@ export default function BookAppointmentModal({
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
             <p className="text-xs leading-relaxed text-amber-800">
               <span className="font-semibold">Scheduling conflict:</span> {conflict.stylist} already
-              has {conflict.customer} ({conflict.type}) at {conflict.time} on this date. You can
-              still {isEdit ? 'save' : 'book'}, but consider another time or stylist.
+              has {conflict.customer} ({conflict.type}) at {conflict.time} on this date at{' '}
+              {locationById(conflict.location).short}. You can still {isEdit ? 'save' : 'book'}, but
+              consider another time or stylist.
             </p>
           </div>
         )}

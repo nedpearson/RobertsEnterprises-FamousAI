@@ -136,6 +136,7 @@ export interface AppointmentUpdateInput {
   date: string;
   time: string;
   stylist: string;
+  location: LocationId;
 }
 
 export interface GownInput {
@@ -168,6 +169,12 @@ interface VowosDataContextType {
   transfers: Transfer[];
   /** Complete, unscoped gown catalog across every store (for transfer pickers). */
   allGowns: Gown[];
+  /** Unscoped datasets for cross-location reporting and alerts. */
+  allBrides: Customer[];
+  allAppointments: Appointment[];
+  allInvoices: Invoice[];
+  allPurchaseOrders: PurchaseOrder[];
+  allTransfers: Transfer[];
   /** Active location filter shared by every view. */
   activeLocation: LocationFilter;
   setActiveLocation: (loc: LocationFilter) => void;
@@ -198,6 +205,11 @@ const VowosDataContext = createContext<VowosDataContextType>({
   gowns: [],
   transfers: [],
   allGowns: [],
+  allBrides: [],
+  allAppointments: [],
+  allInvoices: [],
+  allPurchaseOrders: [],
+  allTransfers: [],
   activeLocation: 'all',
   setActiveLocation: () => {},
   loading: true,
@@ -414,6 +426,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           date: updated.date,
           time: updated.time,
           stylist: updated.stylist,
+          location: updated.location,
         })
         .eq('id', id);
       if (error) {
@@ -844,6 +857,11 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         gowns: scoped.gowns,
         transfers: scoped.transfers,
         allGowns: gowns,
+        allBrides: brides,
+        allAppointments: appointments,
+        allInvoices: invoices,
+        allPurchaseOrders: purchaseOrders,
+        allTransfers: transfers,
         activeLocation,
         setActiveLocation,
         loading,
