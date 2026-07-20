@@ -21,7 +21,7 @@ import StaffView from '@/components/vowos/StaffView';
 import CommunicationsView from '@/components/vowos/CommunicationsView';
 import ContractsView from '@/components/vowos/ContractsView';
 import AlterationsView from '@/components/vowos/AlterationsView';
-import SettingsView from '@/components/vowos/SettingsView';
+import SettingsView from '@/components/vowos/settings/SettingsShell';
 
 
 
