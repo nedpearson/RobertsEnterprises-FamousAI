@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { AlertTriangle, CalendarPlus, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CalendarPlus, Loader2, Pencil } from 'lucide-react';
 import { Appointment, teamMembers } from '@/data/vowosData';
 import { useVowosData, NewAppointmentInput } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
@@ -33,11 +33,15 @@ const labelCls = 'mb-1 block text-xs font-medium uppercase tracking-wider text-s
 export default function BookAppointmentModal({
   open,
   onClose,
+  appointment,
 }: {
   open: boolean;
   onClose: () => void;
+  /** When provided, the modal becomes an edit/reschedule form for this appointment. */
+  appointment?: Appointment | null;
 }) {
-  const { brides, leads, appointments, addAppointment } = useVowosData();
+  const { brides, leads, appointments, addAppointment, updateAppointment } = useVowosData();
+  const isEdit = Boolean(appointment);
 
   const [brideChoice, setBrideChoice] = useState('');
   const [customName, setCustomName] = useState('');
@@ -48,30 +52,50 @@ export default function BookAppointmentModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const customerName = brideChoice === OTHER ? customName.trim() : brideChoice;
+  // Pre-fill the form when opening in edit mode; reset for booking mode
+  useEffect(() => {
+    if (!open) return;
+    if (appointment) {
+      setBrideChoice('');
+      setCustomName('');
+      setType(appointment.type);
+      setDate(appointment.date);
+      // Existing times should always be one of our slots, but keep whatever it is
+      setTime(appointment.time);
+      setStylist(appointment.stylist);
+    } else {
+      setBrideChoice('');
+      setCustomName('');
+      setType('Bridal Consultation');
+      setDate('');
+      setTime('');
+      setStylist(teamMembers[0]);
+    }
+    setError('');
+  }, [open, appointment]);
+
+  const customerName = isEdit
+    ? appointment!.customer
+    : brideChoice === OTHER
+      ? customName.trim()
+      : brideChoice;
 
   const conflict = useMemo(() => {
     if (!date || !time || !stylist) return null;
     return (
       appointments.find(
         (a) =>
-          a.stylist === stylist && a.date === date && a.time === time && a.status !== 'Completed',
+          a.stylist === stylist &&
+          a.date === date &&
+          a.time === time &&
+          a.status !== 'Completed' &&
+          a.id !== appointment?.id, // an appointment never conflicts with itself
       ) || null
     );
-  }, [appointments, date, time, stylist]);
-
-  const reset = () => {
-    setBrideChoice('');
-    setCustomName('');
-    setType('Bridal Consultation');
-    setDate('');
-    setTime('');
-    setStylist(teamMembers[0]);
-    setError('');
-  };
+  }, [appointments, date, time, stylist, appointment]);
 
   const handleClose = () => {
-    reset();
+    setError('');
     onClose();
   };
 
@@ -91,12 +115,17 @@ export default function BookAppointmentModal({
     }
     setError('');
     setSaving(true);
-    const input: NewAppointmentInput = { customer: customerName, type, date, time, stylist };
-    const ok = await addAppointment(input);
+    let ok: boolean;
+    if (isEdit) {
+      ok = await updateAppointment(appointment!.id, { type, date, time, stylist });
+    } else {
+      const input: NewAppointmentInput = { customer: customerName, type, date, time, stylist };
+      ok = await addAppointment(input);
+    }
     setSaving(false);
     if (ok) {
       toast({
-        title: 'Appointment booked',
+        title: isEdit ? 'Appointment updated' : 'Appointment booked',
         description: `${customerName} · ${type} with ${stylist} at ${time}.`,
       });
       handleClose();
@@ -104,45 +133,58 @@ export default function BookAppointmentModal({
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="Book Appointment">
+    <Modal
+      open={open}
+      onClose={handleClose}
+      title={isEdit ? 'Edit Appointment' : 'Book Appointment'}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="ba-bride" className={labelCls}>
-            Bride
-          </label>
-          <select
-            id="ba-bride"
-            value={brideChoice}
-            onChange={(e) => setBrideChoice(e.target.value)}
-            className={inputCls}
-          >
-            <option value="">Choose a bride…</option>
-            {brides.map((b) => (
-              <option key={b.id} value={b.name}>
-                {b.name} · {b.stylist}
-              </option>
-            ))}
-            <option value={OTHER}>Someone else (lead / walk-in)…</option>
-          </select>
-          {brideChoice === OTHER && (
-            <>
-              <input
-                type="text"
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                placeholder="Type the lead's name"
-                list="ba-lead-names"
-                className={`${inputCls} mt-2`}
-                autoFocus
-              />
-              <datalist id="ba-lead-names">
-                {leads.map((l) => (
-                  <option key={l.id} value={l.name} />
-                ))}
-              </datalist>
-            </>
-          )}
-        </div>
+        {isEdit ? (
+          <div>
+            <span className={labelCls}>Bride</span>
+            <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
+              {appointment!.customer}
+            </p>
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="ba-bride" className={labelCls}>
+              Bride
+            </label>
+            <select
+              id="ba-bride"
+              value={brideChoice}
+              onChange={(e) => setBrideChoice(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Choose a bride…</option>
+              {brides.map((b) => (
+                <option key={b.id} value={b.name}>
+                  {b.name} · {b.stylist}
+                </option>
+              ))}
+              <option value={OTHER}>Someone else (lead / walk-in)…</option>
+            </select>
+            {brideChoice === OTHER && (
+              <>
+                <input
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="Type the lead's name"
+                  list="ba-lead-names"
+                  className={`${inputCls} mt-2`}
+                  autoFocus
+                />
+                <datalist id="ba-lead-names">
+                  {leads.map((l) => (
+                    <option key={l.id} value={l.name} />
+                  ))}
+                </datalist>
+              </>
+            )}
+          </div>
+        )}
 
         <div>
           <label htmlFor="ba-type" className={labelCls}>
@@ -186,6 +228,8 @@ export default function BookAppointmentModal({
               className={inputCls}
             >
               <option value="">Pick a time…</option>
+              {/* Keep a non-standard existing time selectable when editing */}
+              {time && !TIME_SLOTS.includes(time) && <option value={time}>{time}</option>}
               {TIME_SLOTS.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -205,6 +249,10 @@ export default function BookAppointmentModal({
             onChange={(e) => setStylist(e.target.value)}
             className={inputCls}
           >
+            {/* Keep a stylist no longer on the roster selectable when editing */}
+            {stylist && !teamMembers.includes(stylist) && (
+              <option value={stylist}>{stylist}</option>
+            )}
             {teamMembers.map((m) => (
               <option key={m} value={m}>
                 {m}
@@ -219,7 +267,7 @@ export default function BookAppointmentModal({
             <p className="text-xs leading-relaxed text-amber-800">
               <span className="font-semibold">Scheduling conflict:</span> {conflict.stylist} already
               has {conflict.customer} ({conflict.type}) at {conflict.time} on this date. You can
-              still book, but consider another time or stylist.
+              still {isEdit ? 'save' : 'book'}, but consider another time or stylist.
             </p>
           </div>
         )}
@@ -233,10 +281,22 @@ export default function BookAppointmentModal({
           <button type="submit" disabled={saving} className={`${btnPrimary} disabled:opacity-60`}>
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isEdit ? (
+              <Pencil className="h-4 w-4" />
             ) : (
               <CalendarPlus className="h-4 w-4" />
             )}
-            {saving ? 'Booking…' : conflict ? 'Book Anyway' : 'Book Appointment'}
+            {saving
+              ? isEdit
+                ? 'Saving…'
+                : 'Booking…'
+              : conflict
+                ? isEdit
+                  ? 'Save Anyway'
+                  : 'Book Anyway'
+                : isEdit
+                  ? 'Save Changes'
+                  : 'Book Appointment'}
           </button>
         </div>
       </form>

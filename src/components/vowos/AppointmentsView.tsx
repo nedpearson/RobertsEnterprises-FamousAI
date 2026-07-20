@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { CalendarDays, CalendarPlus, Check, Loader2 } from 'lucide-react';
-import { formatDate } from '@/data/vowosData';
+import { CalendarDays, CalendarPlus, Check, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Appointment, formatDate } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
-import { PageHeader, StatusBadge, btnPrimary } from './ui';
+import { toast } from '@/components/ui/use-toast';
+import { PageHeader, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
 import BookAppointmentModal from './BookAppointmentModal';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -14,10 +15,27 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default function AppointmentsView() {
-  const { appointments: list, loading, setAppointmentStatus } = useVowosData();
+  const { appointments: list, loading, setAppointmentStatus, deleteAppointment } = useVowosData();
   const [bookOpen, setBookOpen] = useState(false);
+  const [editing, setEditing] = useState<Appointment | null>(null);
+  const [cancelling, setCancelling] = useState<Appointment | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const days = Array.from(new Set(list.map((a) => a.date))).sort();
+
+  const handleConfirmCancel = async () => {
+    if (!cancelling) return;
+    setDeleting(true);
+    const ok = await deleteAppointment(cancelling.id);
+    setDeleting(false);
+    if (ok) {
+      toast({
+        title: 'Appointment cancelled',
+        description: `${cancelling.customer} · ${cancelling.type} on ${formatDate(cancelling.date)} at ${cancelling.time} was removed.`,
+      });
+      setCancelling(null);
+    }
+  };
 
   return (
     <div>
@@ -51,7 +69,25 @@ export default function AppointmentsView() {
                     <div key={a.id} className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                       <div className="flex items-start justify-between">
                         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${TYPE_COLORS[a.type]}`}>{a.type}</span>
-                        <StatusBadge status={a.status} />
+                        <div className="flex items-center gap-1.5">
+                          <StatusBadge status={a.status} />
+                          <button
+                            onClick={() => setEditing(a)}
+                            className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
+                            title="Edit appointment"
+                            aria-label={`Edit appointment for ${a.customer}`}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setCancelling(a)}
+                            className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-rose-50 hover:text-rose-500"
+                            title="Cancel appointment"
+                            aria-label={`Cancel appointment for ${a.customer}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                       <p className="mt-3 font-serif text-lg text-stone-900">{a.customer}</p>
                       <p className="mt-0.5 text-sm text-stone-500">
@@ -91,7 +127,59 @@ export default function AppointmentsView() {
         </div>
       )}
 
+      {/* Book new appointment */}
       <BookAppointmentModal open={bookOpen} onClose={() => setBookOpen(false)} />
+
+      {/* Edit / reschedule an existing appointment */}
+      <BookAppointmentModal
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        appointment={editing}
+      />
+
+      {/* Cancel confirmation */}
+      <Modal
+        open={cancelling !== null}
+        onClose={() => (deleting ? undefined : setCancelling(null))}
+        title="Cancel Appointment?"
+      >
+        {cancelling && (
+          <div className="space-y-4">
+            <p className="text-sm leading-relaxed text-stone-600">
+              This will permanently remove{' '}
+              <span className="font-semibold text-stone-900">{cancelling.customer}</span>
+              &rsquo;s {cancelling.type.toLowerCase()} with {cancelling.stylist} on{' '}
+              <span className="font-medium text-stone-900">
+                {formatDate(cancelling.date)} at {cancelling.time}
+              </span>{' '}
+              from the schedule. This can&rsquo;t be undone.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setCancelling(null)}
+                disabled={deleting}
+                className={`${btnSecondary} disabled:opacity-60`}
+              >
+                Keep Appointment
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={deleting}
+                className="inline-flex items-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300 disabled:opacity-60"
+              >
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                {deleting ? 'Cancelling…' : 'Cancel Appointment'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

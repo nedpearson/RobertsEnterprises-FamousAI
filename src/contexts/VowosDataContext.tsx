@@ -104,6 +104,14 @@ export interface NewAppointmentInput {
   stylist: string;
 }
 
+/** Fields staff can change when rescheduling an existing appointment. */
+export interface AppointmentUpdateInput {
+  type: Appointment['type'];
+  date: string;
+  time: string;
+  stylist: string;
+}
+
 export interface GownInput {
   name: string;
   designer: string;
@@ -128,6 +136,8 @@ interface VowosDataContextType {
   advanceLead: (id: string) => Promise<void>;
   setAppointmentStatus: (id: string, status: Appointment['status']) => Promise<void>;
   addAppointment: (input: NewAppointmentInput) => Promise<boolean>;
+  updateAppointment: (id: string, input: AppointmentUpdateInput) => Promise<boolean>;
+  deleteAppointment: (id: string) => Promise<boolean>;
   addInvoice: (input: NewInvoiceInput) => Promise<boolean>;
   recordPayment: (id: string, paymentCents: number) => Promise<boolean>;
   markPoDelivered: (id: string) => Promise<void>;
@@ -149,6 +159,8 @@ const VowosDataContext = createContext<VowosDataContextType>({
   advanceLead: async () => {},
   setAppointmentStatus: async () => {},
   addAppointment: async () => false,
+  updateAppointment: async () => false,
+  deleteAppointment: async () => false,
   addInvoice: async () => false,
   recordPayment: async () => false,
   markPoDelivered: async () => {},
@@ -317,6 +329,66 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           (a, b) => a.date.localeCompare(b.date) || timeToMinutes(a.time) - timeToMinutes(b.time),
         ),
       );
+      return true;
+    },
+    [appointments],
+  );
+
+  const updateAppointment = useCallback(
+    async (id: string, input: AppointmentUpdateInput): Promise<boolean> => {
+      const prevAppt = appointments.find((a) => a.id === id);
+      if (!prevAppt) return false;
+      const updated: Appointment = { ...prevAppt, ...input };
+      // Optimistic update, re-sorted so it lands in the right day/time slot
+      setAppointments((prev) =>
+        prev
+          .map((a) => (a.id === id ? updated : a))
+          .sort(
+            (a, b) => a.date.localeCompare(b.date) || timeToMinutes(a.time) - timeToMinutes(b.time),
+          ),
+      );
+      const { error } = await supabase
+        .from('appointments')
+        .update({
+          type: updated.type,
+          date: updated.date,
+          time: updated.time,
+          stylist: updated.stylist,
+        })
+        .eq('id', id);
+      if (error) {
+        dbErrorToast('update appointment', error.message);
+        setAppointments((prev) =>
+          prev
+            .map((a) => (a.id === id ? prevAppt : a))
+            .sort(
+              (a, b) =>
+                a.date.localeCompare(b.date) || timeToMinutes(a.time) - timeToMinutes(b.time),
+            ),
+        );
+        return false;
+      }
+      return true;
+    },
+    [appointments],
+  );
+
+  const deleteAppointment = useCallback(
+    async (id: string): Promise<boolean> => {
+      const prevAppt = appointments.find((a) => a.id === id);
+      if (!prevAppt) return false;
+      // Optimistic removal so the schedule and dashboard update instantly
+      setAppointments((prev) => prev.filter((a) => a.id !== id));
+      const { error } = await supabase.from('appointments').delete().eq('id', id);
+      if (error) {
+        dbErrorToast('cancel appointment', error.message);
+        setAppointments((prev) =>
+          [...prev, prevAppt].sort(
+            (a, b) => a.date.localeCompare(b.date) || timeToMinutes(a.time) - timeToMinutes(b.time),
+          ),
+        );
+        return false;
+      }
       return true;
     },
     [appointments],
@@ -533,6 +605,8 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         advanceLead,
         setAppointmentStatus,
         addAppointment,
+        updateAppointment,
+        deleteAppointment,
         addInvoice,
         recordPayment,
         markPoDelivered,
