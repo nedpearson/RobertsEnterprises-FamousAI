@@ -4,7 +4,6 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { StatCard, StatusBadge } from './ui';
 import { ViewKey } from './Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import TimeClockCard from './TimeClockCard';
 
 export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const { session, profile } = useAuth();
@@ -43,8 +42,6 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
           </button>
         </div>
       </div>
-
-      <TimeClockCard />
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

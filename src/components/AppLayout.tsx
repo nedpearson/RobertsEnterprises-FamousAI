@@ -23,6 +23,7 @@ import ContractsView from '@/components/vowos/ContractsView';
 import AlterationsView from '@/components/vowos/AlterationsView';
 import SettingsView from '@/components/vowos/settings/SettingsShell';
 import PayrollView from '@/components/vowos/payroll/PayrollView';
+import TimeClockView from '@/components/vowos/TimeClockView';
 
 
 
@@ -203,6 +204,7 @@ export default function AppLayout() {
               {view === 'staff' && <StaffView />}
               {view === 'settings' && <SettingsView />}
               {view === 'payroll' && <PayrollView />}
+              {view === 'timeclock' && <TimeClockView />}
 
             </>
           )}

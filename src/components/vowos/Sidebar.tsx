@@ -19,6 +19,7 @@ import {
   FileSignature,
   Scissors,
   SlidersHorizontal,
+  AlarmClock,
 } from 'lucide-react';
 import { useAuth, StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 
@@ -39,7 +40,8 @@ export type ViewKey =
   | 'ledgers'
   | 'staff'
   | 'settings'
-  | 'payroll';
+  | 'payroll'
+  | 'timeclock';
 
 export const PUBLIC_VIEWS: ViewKey[] = ['dashboard'];
 
@@ -50,6 +52,7 @@ export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = 
   { key: 'inventory', label: 'Gown Inventory', icon: Shirt },
   { key: 'transfers', label: 'Store Transfers', icon: ArrowLeftRight },
   { key: 'appointments', label: 'Appointments', icon: CalendarDays },
+  { key: 'timeclock', label: 'Time Clock & Kiosk', icon: AlarmClock },
   { key: 'communications', label: 'Communications', icon: MessageSquare },
   { key: 'contracts', label: 'Contracts', icon: FileSignature },
   { key: 'alterations', label: 'Alterations', icon: Scissors },
@@ -72,6 +75,7 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   inventory: ['Owner', 'Manager', 'Stylist'],
   transfers: ['Owner', 'Manager', 'Stylist'],
   appointments: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  timeclock: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   communications: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   contracts: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   alterations: ['Owner', 'Manager', 'Stylist'],
