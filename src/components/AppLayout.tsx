@@ -77,7 +77,7 @@ export default function AppLayout() {
   const currentLabel = NAV_ITEMS.find((n) => n.key === view)?.label ?? 'Dashboard';
   const isGuestLocked = !session && !PUBLIC_VIEWS.includes(view);
   const role = session && profile ? profile.role : null;
-  const isRoleLocked = !!role && !canAccessView(role, view);
+  const isRoleLocked = !!role && !canAccessView(role, view, profile?.id);
 
   const initials = profile?.name
     ? profile.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()

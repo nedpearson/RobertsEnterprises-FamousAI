@@ -88,10 +88,26 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
 
 
 /** Can a (possibly signed-out) user open a view? */
-export function canAccessView(role: StaffRole | null, view: ViewKey): boolean {
+export function canAccessView(role: StaffRole | null, view: ViewKey, staffId?: string | null): boolean {
   if (PUBLIC_VIEWS.includes(view)) return true;
   if (!role) return false;
-  return VIEW_ACCESS[view].includes(role);
+  if (role === 'Owner') return true;
+
+  if (staffId) {
+    try {
+      const cached = localStorage.getItem('vowos_user_permissions');
+      if (cached) {
+        const map = JSON.parse(cached);
+        if (map && map[staffId] !== undefined) {
+          return map[staffId].includes(view);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  return VIEW_ACCESS[view]?.includes(role) ?? false;
 }
 
 export default function Sidebar({
@@ -129,7 +145,7 @@ export default function Sidebar({
       <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-3 pb-2">
         {NAV_ITEMS.map(({ key, label, icon: Icon }) => {
           const active = view === key;
-          const locked = !canAccessView(role, key);
+          const locked = !canAccessView(role, key, profile?.id);
           // Hide staff management entirely from non-owners who are signed in
           if (key === 'staff' && role && role !== 'Owner') return null;
           return (

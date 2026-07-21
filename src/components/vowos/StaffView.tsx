@@ -5,7 +5,9 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth, StaffRole, STAFF_ROLES, ROLE_DESCRIPTIONS, ROLE_BADGE_CLASSES, normalizeRole } from '@/contexts/AuthContext';
 import { PageHeader, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from './ui';
-import { NAV_ITEMS, VIEW_ACCESS } from './Sidebar';
+import { NAV_ITEMS, VIEW_ACCESS, ViewKey } from './Sidebar';
+import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
+import { Switch } from '@/components/ui/switch';
 
 interface StaffRow {
   id: string;
@@ -29,6 +31,10 @@ export default function StaffView() {
   const [addRole, setAddRole] = useState<StaffRole>('Stylist');
   const [addingStaff, setAddingStaff] = useState(false);
 
+  // User-specific customizable permission state
+  const [userPermissions, setUserPermissions] = useState<Record<string, ViewKey[]>>({});
+  const [matrixMode, setMatrixMode] = useState<'per-user' | 'role-defaults'>('per-user');
+
   const isOwner = profile?.role === 'Owner';
 
   const loadStaff = async () => {
@@ -40,12 +46,58 @@ export default function StaffView() {
     if (!error && data) {
       setStaff(data.map((r) => ({ ...r, role: normalizeRole(r.role) })));
     }
+    
+    // Load custom user-specific permission matrix
+    const permissionsMap = await fetchJsonSetting<Record<string, ViewKey[]>>('custom_user_permissions', {});
+    setUserPermissions(permissionsMap);
+    localStorage.setItem('vowos_user_permissions', JSON.stringify(permissionsMap));
     setLoading(false);
   };
 
   useEffect(() => {
     loadStaff();
   }, []);
+
+  const toggleUserPermission = async (staffId: string, staffName: string, staffRole: StaffRole, viewKey: ViewKey) => {
+    if (!isOwner) {
+      toast({ title: 'Authorization Blocked', description: 'Only Owners can modify custom user permissions.', variant: 'destructive' });
+      return;
+    }
+
+    let currentList = userPermissions[staffId];
+    if (!currentList) {
+      currentList = NAV_ITEMS.filter((item) => VIEW_ACCESS[item.key].includes(staffRole)).map((item) => item.key);
+    }
+
+    const hasAccess = currentList.includes(viewKey);
+    const updatedList = hasAccess
+      ? currentList.filter((k) => k !== viewKey)
+      : [...currentList, viewKey];
+
+    const newMap = { ...userPermissions, [staffId]: updatedList };
+    setUserPermissions(newMap);
+    localStorage.setItem('vowos_user_permissions', JSON.stringify(newMap));
+    await saveJsonSetting('custom_user_permissions', newMap);
+
+    const sectionLabel = NAV_ITEMS.find((n) => n.key === viewKey)?.label ?? viewKey;
+    toast({
+      title: hasAccess ? 'Access Revoked' : 'Access Granted',
+      description: `${hasAccess ? 'Disabled' : 'Enabled'} access to ${sectionLabel} for ${staffName}.`,
+    });
+  };
+
+  const resetUserPermissions = async (staffId: string, staffName: string) => {
+    if (!isOwner) return;
+    const newMap = { ...userPermissions };
+    delete newMap[staffId];
+    setUserPermissions(newMap);
+    localStorage.setItem('vowos_user_permissions', JSON.stringify(newMap));
+    await saveJsonSetting('custom_user_permissions', newMap);
+    toast({
+      title: 'Permissions Reset',
+      description: `Reset section access for ${staffName} to default role baseline.`,
+    });
+  };
 
   const changeRole = async (id: string, role: StaffRole) => {
     const prev = staff.find((s) => s.id === id);
@@ -281,33 +333,120 @@ export default function StaffView() {
         {/* Permission matrix */}
         <div className="xl:col-span-2">
           <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
-            <div className="border-b border-stone-100 px-5 py-4">
-              <h3 className="font-serif text-lg text-stone-900">Permission Matrix</h3>
-              <p className="text-xs text-stone-500">Which sections each role can open.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-stone-100 px-5 py-4 gap-3">
+              <div>
+                <h3 className="font-serif text-lg text-stone-900">Permission Matrix</h3>
+                <p className="text-xs text-stone-500">
+                  {matrixMode === 'per-user'
+                    ? 'Customize section permissions for each staff member individually.'
+                    : 'Default access baseline for standard roles.'}
+                </p>
+              </div>
+
+              {/* Mode Toggle Switcher */}
+              <div className="inline-flex rounded-xl bg-stone-100 p-1 text-xs font-medium self-start sm:self-auto">
+                <button
+                  onClick={() => setMatrixMode('per-user')}
+                  className={`rounded-lg px-3 py-1.5 transition-colors ${
+                    matrixMode === 'per-user'
+                      ? 'bg-white font-semibold text-stone-900 shadow-sm'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                >
+                  Per Staff Member
+                </button>
+                <button
+                  onClick={() => setMatrixMode('role-defaults')}
+                  className={`rounded-lg px-3 py-1.5 transition-colors ${
+                    matrixMode === 'role-defaults'
+                      ? 'bg-white font-semibold text-stone-900 shadow-sm'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                >
+                  Role Defaults
+                </button>
+              </div>
             </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-200 bg-stone-50/70 text-left text-[10px] font-semibold uppercase tracking-wider text-stone-500">
-                    <th className="px-4 py-3">Section</th>
-                    {STAFF_ROLES.map((r) => (
-                      <th key={r} className="px-2 py-3 text-center">{r === 'Front Desk' ? 'Desk' : r}</th>
-                    ))}
+                    <th className="px-4 py-3 min-w-[140px]">Section</th>
+                    {matrixMode === 'per-user' ? (
+                      staff.map((s) => {
+                        const hasCustom = !!userPermissions[s.id];
+                        return (
+                          <th key={s.id} className="px-3 py-3 text-center min-w-[150px]">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="font-semibold text-stone-800 normal-case text-xs truncate max-w-[130px]" title={s.name}>
+                                {s.name}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${ROLE_BADGE_CLASSES[s.role]}`}>
+                                  {s.role}
+                                </span>
+                                {hasCustom && (
+                                  <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-600">
+                                    Custom
+                                  </span>
+                                )}
+                              </div>
+                              {hasCustom && isOwner && (
+                                <button
+                                  onClick={() => resetUserPermissions(s.id, s.name)}
+                                  className="mt-1 text-[10px] text-stone-400 underline hover:text-stone-600 normal-case"
+                                  title="Reset to role default"
+                                >
+                                  Reset Default
+                                </button>
+                              )}
+                            </div>
+                          </th>
+                        );
+                      })
+                    ) : (
+                      STAFF_ROLES.map((r) => (
+                        <th key={r} className="px-2 py-3 text-center">{r === 'Front Desk' ? 'Desk' : r}</th>
+                      ))
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
                   {NAV_ITEMS.map(({ key, label }) => (
                     <tr key={key} className="hover:bg-stone-50/60">
-                      <td className="whitespace-nowrap px-4 py-2.5 text-stone-700">{label}</td>
-                      {STAFF_ROLES.map((r) => (
-                        <td key={r} className="px-2 py-2.5 text-center">
-                          {VIEW_ACCESS[key].includes(r) ? (
-                            <Check className="mx-auto h-4 w-4 text-emerald-500" />
-                          ) : (
-                            <Minus className="mx-auto h-4 w-4 text-stone-300" />
-                          )}
-                        </td>
-                      ))}
+                      <td className="whitespace-nowrap px-4 py-2.5 text-stone-700 font-medium">{label}</td>
+                      {matrixMode === 'per-user' ? (
+                        staff.map((s) => {
+                          const isAllowed = userPermissions[s.id]
+                            ? userPermissions[s.id].includes(key)
+                            : VIEW_ACCESS[key].includes(s.role);
+                          const isDisabled = !isOwner || s.role === 'Owner';
+
+                          return (
+                            <td key={s.id} className="px-3 py-2.5 text-center">
+                              <div className="flex justify-center">
+                                <Switch
+                                  checked={isAllowed}
+                                  disabled={isDisabled}
+                                  onCheckedChange={() => toggleUserPermission(s.id, s.name, s.role, key)}
+                                  className="data-[state=checked]:bg-emerald-500 scale-90"
+                                />
+                              </div>
+                            </td>
+                          );
+                        })
+                      ) : (
+                        STAFF_ROLES.map((r) => (
+                          <td key={r} className="px-2 py-2.5 text-center">
+                            {VIEW_ACCESS[key].includes(r) ? (
+                              <Check className="mx-auto h-4 w-4 text-emerald-500" />
+                            ) : (
+                              <Minus className="mx-auto h-4 w-4 text-stone-300" />
+                            )}
+                          </td>
+                        ))
+                      )}
                     </tr>
                   ))}
                 </tbody>
