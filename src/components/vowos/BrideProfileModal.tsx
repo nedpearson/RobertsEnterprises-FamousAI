@@ -8,6 +8,7 @@ import {
   X,
   PencilRuler,
   Sparkles,
+  PackageSearch,
 } from 'lucide-react';
 import { Customer, formatCents, formatDate, teamMembers } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
@@ -52,8 +53,13 @@ export default function BrideProfileModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const { allGowns } = useVowosData();
-  const [tab, setTab] = useState<'measurements' | 'tryons'>('measurements');
+  const { allGowns, purchaseOrders } = useVowosData();
+  const [tab, setTab] = useState<'measurements' | 'tryons' | 'orders'>('measurements');
+
+  const bridePos = useMemo(() => {
+    if (!bride) return [];
+    return purchaseOrders.filter((p) => p.items.toLowerCase().includes(bride.name.toLowerCase()));
+  }, [purchaseOrders, bride?.name]);
   const [loading, setLoading] = useState(false);
   const [sets, setSets] = useState<MeasurementSet[]>([]);
   const [tryOns, setTryOns] = useState<TryOnNote[]>([]);
@@ -232,6 +238,7 @@ export default function BrideProfileModal({
             [
               { key: 'measurements', label: `Measurements (${sets.length})`, icon: Ruler },
               { key: 'tryons', label: `Try-On Notes (${tryOns.length})`, icon: Shirt },
+              { key: 'orders', label: `Purchase Orders (${bridePos.length})`, icon: PackageSearch },
             ] as const
           ).map(({ key, label, icon: Icon }) => (
             <button
@@ -475,6 +482,32 @@ export default function BrideProfileModal({
                   {n.notes && <p className="mt-2 text-xs leading-relaxed text-stone-600">{n.notes}</p>}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── Purchase Orders tab ── */}
+          {!loading && tab === 'orders' && (
+            <div className="space-y-3">
+              {bridePos.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-stone-200 px-4 py-8 text-center text-sm text-stone-400">
+                  No special purchase orders currently linked to {bride.name}. Create a PO from the Purchasing screen to track factory production and arrival ETAs.
+                </p>
+              ) : (
+                bridePos.map((po) => (
+                  <div key={po.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-stone-900 text-sm">{po.id}</span>
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                        {po.status}
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-stone-800">{po.items}</p>
+                    <p className="text-xs text-stone-500">
+                      Vendor: <span className="font-semibold text-stone-700">{po.vendor}</span> · Expected ETA: <span className="font-semibold text-stone-700">{formatDate(po.expectedDelivery)}</span>
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>

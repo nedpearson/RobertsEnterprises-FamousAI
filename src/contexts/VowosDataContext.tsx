@@ -250,6 +250,7 @@ interface VowosDataContextType {
   addInvoice: (input: NewInvoiceInput) => Promise<boolean>;
   recordPayment: (id: string, paymentCents: number) => Promise<boolean>;
   markPoDelivered: (id: string) => Promise<void>;
+  addPurchaseOrder: (input: { vendor: string; items: string; amountCents: number; expectedDelivery: string; location?: LocationId }) => Promise<boolean>;
   addGown: (input: GownInput) => Promise<boolean>;
   updateGown: (id: string, input: GownInput) => Promise<boolean>;
   adjustGownStock: (id: string, newStock: number) => Promise<boolean>;
@@ -658,6 +659,43 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [purchaseOrders],
   );
 
+  const addPurchaseOrder = useCallback(
+    async (input: { vendor: string; items: string; amountCents: number; expectedDelivery: string; location?: LocationId }): Promise<boolean> => {
+      const nextNum = 7106 + purchaseOrders.length;
+      const newPo: PurchaseOrder = {
+        id: `PO-${nextNum}`,
+        vendor: input.vendor,
+        items: input.items,
+        amountCents: input.amountCents,
+        ordered: new Date().toISOString().slice(0, 10),
+        expectedDelivery: input.expectedDelivery,
+        status: 'Ordered',
+        location: input.location ?? defaultLocation,
+      };
+
+      setPurchaseOrders((prev) => [newPo, ...prev]);
+
+      const { error } = await supabase.from('purchase_orders').insert({
+        id: newPo.id,
+        vendor: newPo.vendor,
+        items: newPo.items,
+        amount_cents: newPo.amountCents,
+        ordered: newPo.ordered,
+        expected_delivery: newPo.expectedDelivery,
+        status: newPo.status,
+        location: newPo.location,
+      });
+
+      if (error) {
+        dbErrorToast('create purchase order', error.message);
+        setPurchaseOrders((prev) => prev.filter((p) => p.id !== newPo.id));
+        return false;
+      }
+      return true;
+    },
+    [purchaseOrders, defaultLocation],
+  );
+
   // ─── Gown inventory mutations ───
 
   const nextGownId = useCallback(() => {
@@ -959,6 +997,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addInvoice,
         recordPayment,
         markPoDelivered,
+        addPurchaseOrder,
         addGown,
         updateGown,
         adjustGownStock,
