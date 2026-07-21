@@ -154,6 +154,19 @@ export default function StaffView() {
   const changeRole = async (id: string, role: StaffRole) => {
     const prev = staff.find((s) => s.id === id);
     if (!prev || prev.role === role) return;
+
+    // 1. Self-change / self-promotion prevention
+    if (profile?.id === id) {
+      toast({ title: 'Self-Promotion Blocked', description: 'You cannot modify or promote your own account role.', variant: 'destructive' });
+      return;
+    }
+
+    // 2. Manager authority restriction: Managers cannot assign Manager or Owner roles
+    if (profile?.role === 'Manager' && (role === 'Owner' || role === 'Manager')) {
+      toast({ title: 'Elevation Blocked', description: 'Managers can only assign nonprivileged staff roles.', variant: 'destructive' });
+      return;
+    }
+
     setSavingId(id);
     setStaff((list) => list.map((s) => (s.id === id ? { ...s, role } : s)));
     const { error } = await supabase.from('staff_profiles').update({ role }).eq('id', id);
@@ -171,6 +184,12 @@ export default function StaffView() {
     e.preventDefault();
     if (!addName.trim() || !addEmail.trim() || !addPassword.trim()) {
       toast({ title: 'Missing parameters', description: 'Please fill in name, email and password.', variant: 'destructive' });
+      return;
+    }
+
+    // 3. Manager authority restriction on new account creation
+    if (profile?.role !== 'Owner' && (addRole === 'Owner' || addRole === 'Manager')) {
+      toast({ title: 'Elevation Blocked', description: 'Only existing active Owners can create Manager or Owner accounts.', variant: 'destructive' });
       return;
     }
 
