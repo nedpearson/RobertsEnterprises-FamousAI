@@ -23,15 +23,18 @@ import {
   ShieldCheck,
   FileText,
   DollarSign,
+  Trash2,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
-import { formatCents, formatDate, LOCATIONS, locationById } from '@/data/vowosData';
+import { formatCents, formatDate, LOCATIONS, locationById, PurchaseOrder } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { getVendorPortals, saveVendorPortal, VendorPortal } from '@/lib/services/vendorPortalStore';
 import { toast } from '@/components/ui/use-toast';
 
 export default function PurchasesView() {
-  const { purchaseOrders: list, brides, loading, markPoDelivered, addPurchaseOrder } = useVowosData();
+  const { purchaseOrders: list, brides, loading, markPoDelivered, updatePoStatus, deletePurchaseOrder, addPurchaseOrder } = useVowosData();
   const [activeTab, setActiveTab] = useState<'orders' | 'vault' | 'customers' | 'analytics'>('orders');
 
   // Search & Filter controls
@@ -47,6 +50,30 @@ export default function PurchasesView() {
   const [showNewPoModal, setShowNewPoModal] = useState(false);
   const [showPortalModal, setShowPortalModal] = useState(false);
   const [editingPortal, setEditingPortal] = useState<VendorPortal | null>(null);
+  const [deletePoId, setDeletePoId] = useState<string | null>(null);
+
+  const handleStatusChange = async (poId: string, newStatus: PurchaseOrder['status']) => {
+    const success = await updatePoStatus(poId, newStatus);
+    if (success) {
+      toast({
+        title: 'Status Updated',
+        description: `${poId} status changed to "${newStatus}".`,
+      });
+    }
+  };
+
+  const handleDeletePoConfirm = async () => {
+    if (!deletePoId) return;
+    const targetId = deletePoId;
+    const success = await deletePurchaseOrder(targetId);
+    setDeletePoId(null);
+    if (success) {
+      toast({
+        title: 'Purchase Order Deleted',
+        description: `${targetId} has been deleted.`,
+      });
+    }
+  };
 
   // New PO Form & Auto Ingest
   const [newVendor, setNewVendor] = useState('Justin Alexander');
@@ -317,6 +344,7 @@ export default function PurchasesView() {
                 <option value="In Transit">In Transit</option>
                 <option value="Delivered">Delivered</option>
                 <option value="Delayed">Delayed</option>
+                <option value="Archived">Archived</option>
               </select>
             </div>
           </div>
@@ -356,23 +384,51 @@ export default function PurchasesView() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
                       <div className="text-right">
                         <p className="font-serif text-lg font-bold text-stone-900">{formatCents(po.amountCents)}</p>
                         <span className="text-[10px] text-stone-400 font-mono">Wholesale PO</span>
                       </div>
-                      {po.status !== 'Delivered' ? (
+
+                      {/* Interactive Reversible Status Dropdown */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-xs font-semibold">
+                          <span className="text-[10px] text-stone-400 uppercase font-bold">Status:</span>
+                          <select
+                            value={po.status}
+                            onChange={(e) => handleStatusChange(po.id, e.target.value as PurchaseOrder['status'])}
+                            className="bg-transparent font-bold text-stone-800 outline-none cursor-pointer"
+                          >
+                            <option value="Ordered">Ordered</option>
+                            <option value="In Transit">In Transit</option>
+                            <option value="Delivered">Delivered (Received)</option>
+                            <option value="Delayed">Delayed</option>
+                            <option value="Archived">Archived</option>
+                          </select>
+                        </div>
+
+                        {/* Archive Button */}
                         <button
-                          onClick={() => markPoDelivered(po.id)}
-                          className="rounded-xl bg-stone-900 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-stone-700"
+                          onClick={() => handleStatusChange(po.id, po.status === 'Archived' ? 'Ordered' : 'Archived')}
+                          title={po.status === 'Archived' ? 'Unarchive PO' : 'Archive PO'}
+                          className={`rounded-xl border p-2 transition-colors ${
+                            po.status === 'Archived'
+                              ? 'border-amber-300 bg-amber-50 text-amber-800'
+                              : 'border-stone-200 text-stone-400 hover:bg-stone-100 hover:text-stone-700'
+                          }`}
                         >
-                          Mark Delivered
+                          <Archive className="h-4 w-4" />
                         </button>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
-                          <CheckCircle2 className="h-4 w-4" /> Received in Store
-                        </span>
-                      )}
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => setDeletePoId(po.id)}
+                          title="Delete Purchase Order"
+                          className="rounded-xl border border-stone-200 p-2 text-stone-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -690,6 +746,31 @@ export default function PurchasesView() {
           </div>
         </form>
       </Modal>
+
+      {/* DELETE PO CONFIRMATION MODAL */}
+      {deletePoId && (
+        <Modal open={!!deletePoId} onClose={() => setDeletePoId(null)} title={`Delete Purchase Order ${deletePoId}`}>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">
+              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+              <p className="text-xs font-semibold">
+                Are you sure you want to permanently delete <span className="font-bold">{deletePoId}</span>? This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-3 border-t border-stone-100">
+              <button type="button" onClick={() => setDeletePoId(null)} className={btnSecondary}>Cancel</button>
+              <button
+                type="button"
+                onClick={handleDeletePoConfirm}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
+              >
+                Delete Purchase Order
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

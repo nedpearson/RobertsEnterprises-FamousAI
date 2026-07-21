@@ -319,7 +319,7 @@ export interface PurchaseOrder {
   amountCents: number;
   ordered: string;
   expectedDelivery: string;
-  status: 'Ordered' | 'In Transit' | 'Delivered' | 'Delayed';
+  status: 'Ordered' | 'In Transit' | 'Delivered' | 'Delayed' | 'Archived';
   location: LocationId;
 }
 

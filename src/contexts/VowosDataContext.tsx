@@ -250,6 +250,8 @@ interface VowosDataContextType {
   addInvoice: (input: NewInvoiceInput) => Promise<boolean>;
   recordPayment: (id: string, paymentCents: number) => Promise<boolean>;
   markPoDelivered: (id: string) => Promise<void>;
+  updatePoStatus: (id: string, newStatus: PurchaseOrder['status']) => Promise<boolean>;
+  deletePurchaseOrder: (id: string) => Promise<boolean>;
   addPurchaseOrder: (input: { vendor: string; items: string; amountCents: number; expectedDelivery: string; location?: LocationId }) => Promise<boolean>;
   addGown: (input: GownInput) => Promise<boolean>;
   updateGown: (id: string, input: GownInput) => Promise<boolean>;
@@ -659,6 +661,40 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [purchaseOrders],
   );
 
+  const updatePoStatus = useCallback(
+    async (id: string, newStatus: PurchaseOrder['status']): Promise<boolean> => {
+      const prevPo = purchaseOrders.find((p) => p.id === id);
+      if (!prevPo) return false;
+      setPurchaseOrders((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p)),
+      );
+      const { error } = await supabase.from('purchase_orders').update({ status: newStatus }).eq('id', id);
+      if (error) {
+        dbErrorToast('update status', error.message);
+        setPurchaseOrders((prev) => prev.map((p) => (p.id === id ? prevPo : p)));
+        return false;
+      }
+      return true;
+    },
+    [purchaseOrders],
+  );
+
+  const deletePurchaseOrder = useCallback(
+    async (id: string): Promise<boolean> => {
+      const prevPo = purchaseOrders.find((p) => p.id === id);
+      if (!prevPo) return false;
+      setPurchaseOrders((prev) => prev.filter((p) => p.id !== id));
+      const { error } = await supabase.from('purchase_orders').delete().eq('id', id);
+      if (error) {
+        dbErrorToast('delete purchase order', error.message);
+        setPurchaseOrders((prev) => [...prev, prevPo]);
+        return false;
+      }
+      return true;
+    },
+    [purchaseOrders],
+  );
+
   const addPurchaseOrder = useCallback(
     async (input: { vendor: string; items: string; amountCents: number; expectedDelivery: string; location?: LocationId }): Promise<boolean> => {
       const nextNum = 7106 + purchaseOrders.length;
@@ -997,6 +1033,8 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addInvoice,
         recordPayment,
         markPoDelivered,
+        updatePoStatus,
+        deletePurchaseOrder,
         addPurchaseOrder,
         addGown,
         updateGown,
