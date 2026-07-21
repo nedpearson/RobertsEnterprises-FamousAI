@@ -38,11 +38,15 @@ interface BrideChecklistProps {
   onDraft: (draft: ChecklistDraft) => void;
 }
 
-/** Wedding date + 2 calendar months (the photo email send date). */
-function photoSendDate(weddingIso: string): string {
-  const d = new Date(weddingIso.slice(0, 10) + 'T12:00:00');
-  d.setMonth(d.getMonth() + 2);
-  return d.toISOString().slice(0, 10);
+function photoSendDate(weddingIso?: string): string {
+  if (!weddingIso) return new Date().toISOString().slice(0, 10);
+  try {
+    const d = new Date(weddingIso.slice(0, 10) + 'T12:00:00');
+    d.setMonth(d.getMonth() + 2);
+    return d.toISOString().slice(0, 10);
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
 }
 
 export default function BrideChecklist({ bride, thread, appointments, invoices, onDraft }: BrideChecklistProps) {

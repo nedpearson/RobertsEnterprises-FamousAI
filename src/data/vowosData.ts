@@ -337,11 +337,20 @@ export const revenueByMonth = [
 
 export const teamMembers = ['Dana R.', 'Priya K.', 'Marcus T.'];
 
-export function formatCents(cents: number): string {
+export function formatCents(cents?: number | null): string {
+  if (cents == null || isNaN(Number(cents))) return '$0.00';
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 }
 
-export function formatDate(iso: string): string {
-  const d = new Date(iso.slice(0, 10) + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+export function formatDate(iso?: string | null): string {
+  if (!iso || typeof iso !== 'string') return '—';
+  try {
+    const clean = iso.slice(0, 10);
+    if (!clean) return '—';
+    const d = new Date(clean + 'T12:00:00');
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch (e) {
+    return String(iso ?? '—');
+  }
 }
