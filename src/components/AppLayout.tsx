@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
+import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert, Loader2, Sparkles, BookOpen } from 'lucide-react';
 import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS, canAccessView, VIEW_ACCESS } from '@/components/vowos/Sidebar';
 import NotificationsBell from '@/components/vowos/NotificationsBell';
 import AuthModal from '@/components/vowos/AuthModal';
@@ -8,6 +8,12 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { locationById } from '@/data/vowosData';
 import { LocationSwitcher } from '@/components/vowos/LocationSelect';
 import { VowosErrorBoundary } from '@/components/vowos/ErrorBoundary';
+
+import { DemoModeBanner } from '@/components/demo/DemoModeBanner';
+import { DemoCursorOverlay } from '@/components/demo/DemoCursorOverlay';
+import { TourControlBar } from '@/components/demo/TourControlBar';
+import { DemoLauncherModal } from '@/components/demo/DemoLauncherModal';
+import TrainingCenterView from '@/components/demo/TrainingCenterView';
 
 import DashboardView from '@/components/vowos/DashboardView';
 import CustomersView from '@/components/vowos/CustomersView';
@@ -86,8 +92,12 @@ export default function AppLayout() {
     ? profile.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '';
 
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#faf8f5]">
+      <DemoModeBanner />
+
       <Sidebar
         view={view}
         onNavigate={setView}
@@ -114,6 +124,15 @@ export default function AppLayout() {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
+              {/* Launch Demo Button */}
+              <button
+                data-tour-id="btn-launch-demo"
+                onClick={() => setDemoModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-stone-950 font-semibold px-3 py-1.5 text-xs shadow-sm transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Launch Demo
+              </button>
+
               {/* Store / location switcher — scopes every view */}
               <LocationSwitcher />
 
@@ -207,8 +226,13 @@ export default function AppLayout() {
               {view === 'settings' && <SettingsView />}
               {view === 'payroll' && <PayrollView />}
               {view === 'timeclock' && <TimeClockView />}
+              {view === 'training' && <TrainingCenterView onNavigate={setView} />}
             </VowosErrorBoundary>
           )}
+
+          <DemoLauncherModal open={demoModalOpen} onClose={() => setDemoModalOpen(false)} onNavigateNeeded={setView} />
+          <DemoCursorOverlay />
+          <TourControlBar onNavigateNeeded={setView} />
 
           <footer className="mt-10 border-t border-stone-200 pt-6 pb-4 text-center text-xs text-stone-400">
             VowOS — Bridal Retail Operating System · © 2026 Roberts Enterprises · I Do Bridal Couture

@@ -68,6 +68,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
       {/* KPI cards with explicit drilldown click triggers */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
+          dataTourId="stat-revenue"
           label="Revenue Collected"
           value={formatCents(totalRevenue)}
           sub="Fiscal YTD · Tap for itemized drilldown"
@@ -76,6 +77,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
           onClick={() => setDrillModal('revenue')}
         />
         <StatCard
+          dataTourId="stat-outstanding"
           label="Outstanding Balance"
           value={formatCents(outstanding)}
           sub={`${outstandingInvoices.length} open invoices · Tap for ledger`}
@@ -84,6 +86,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
           onClick={() => setDrillModal('outstanding')}
         />
         <StatCard
+          dataTourId="stat-brides"
           label="Active Brides"
           value={String(customers.length)}
           sub={`${customers.filter((c) => c.status === 'Active').length} shopping now · Tap for CRM roster`}
@@ -92,6 +95,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
           onClick={() => setDrillModal('brides')}
         />
         <StatCard
+          dataTourId="stat-gowns"
           label="Gowns In Stock"
           value={String(gowns.reduce((s, g) => s + g.stock, 0))}
           sub={`${gowns.filter((g) => g.status === 'Low Stock').length} low-stock styles · Tap for inventory`}

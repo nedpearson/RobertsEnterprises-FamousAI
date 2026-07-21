@@ -15,6 +15,8 @@ import NotFound from "./pages/NotFound";
 
 import { VowosErrorBoundary } from "@/components/vowos/ErrorBoundary";
 
+import { DemoProvider } from "@/lib/demo/demoContext";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -25,16 +27,18 @@ const App = () => (
           <Toaster />
           <Sonner />
           <AuthProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/book" element={<BookAppointment />} />
-                <Route path="/pay/:invoiceId" element={<PayInvoice />} />
-                <Route path="/sign/:contractId" element={<SignContract />} />
-                <Route path="/portal/:brideId" element={<BridePortal />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+            <DemoProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/book" element={<BookAppointment />} />
+                  <Route path="/pay/:invoiceId" element={<PayInvoice />} />
+                  <Route path="/sign/:contractId" element={<SignContract />} />
+                  <Route path="/portal/:brideId" element={<BridePortal />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </DemoProvider>
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>

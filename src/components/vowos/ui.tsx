@@ -47,6 +47,7 @@ export function StatCard({
   icon,
   accent = 'rose',
   onClick,
+  dataTourId,
 }: {
   label: string;
   value: string;
@@ -54,6 +55,7 @@ export function StatCard({
   icon: ReactNode;
   accent?: 'rose' | 'emerald' | 'violet' | 'amber';
   onClick?: () => void;
+  dataTourId?: string;
 }) {
   const accents = {
     rose: 'bg-rose-50 text-rose-500',
@@ -63,6 +65,7 @@ export function StatCard({
   };
   return (
     <div
+      data-tour-id={dataTourId}
       onClick={onClick}
       className={`rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-all hover:shadow-md ${
         onClick ? 'cursor-pointer hover:border-rose-300 hover:ring-2 hover:ring-rose-100/50' : ''

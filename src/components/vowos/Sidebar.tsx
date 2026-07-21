@@ -41,9 +41,10 @@ export type ViewKey =
   | 'staff'
   | 'settings'
   | 'payroll'
-  | 'timeclock';
+  | 'timeclock'
+  | 'training';
 
-export const PUBLIC_VIEWS: ViewKey[] = ['dashboard'];
+export const PUBLIC_VIEWS: ViewKey[] = ['dashboard', 'training'];
 
 export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -62,6 +63,7 @@ export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = 
   { key: 'ledgers', label: 'Ledgers', icon: BookOpenText },
   { key: 'staff', label: 'Staff & Roles', icon: ShieldCheck },
   { key: 'payroll', label: 'Payroll & Workforce', icon: Gem },
+  { key: 'training', label: 'Training Center', icon: BookOpenText },
   { key: 'settings', label: 'Settings', icon: SlidersHorizontal },
 ];
 
@@ -86,6 +88,7 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   staff: ['Owner'],
   settings: ['Owner', 'Manager'],
   payroll: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  training: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
 };
 
 
@@ -155,6 +158,7 @@ export default function Sidebar({
           return (
             <button
               key={key}
+              data-tour-id={`nav-${key}`}
               onClick={() => {
                 onNavigate(key);
                 onCloseMobile();
