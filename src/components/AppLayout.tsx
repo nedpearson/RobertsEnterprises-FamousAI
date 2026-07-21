@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
 import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS, canAccessView, VIEW_ACCESS } from '@/components/vowos/Sidebar';
 import NotificationsBell from '@/components/vowos/NotificationsBell';
@@ -7,26 +7,25 @@ import { useAuth, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { locationById } from '@/data/vowosData';
 import { LocationSwitcher } from '@/components/vowos/LocationSelect';
-import { LoadingSkeleton } from '@/components/vowos/ui';
+import { VowosErrorBoundary } from '@/components/vowos/ErrorBoundary';
 
-// Lazy-loaded routes for code-splitting and bundle size optimization
-const DashboardView = lazy(() => import('@/components/vowos/DashboardView'));
-const CustomersView = lazy(() => import('@/components/vowos/CustomersView'));
-const LeadsView = lazy(() => import('@/components/vowos/LeadsView'));
-const InventoryView = lazy(() => import('@/components/vowos/InventoryView'));
-const TransfersView = lazy(() => import('@/components/vowos/TransfersView'));
-const AppointmentsView = lazy(() => import('@/components/vowos/AppointmentsView'));
-const InvoicesView = lazy(() => import('@/components/vowos/InvoicesView'));
-const PurchasesView = lazy(() => import('@/components/vowos/PurchasesView'));
-const ReportsView = lazy(() => import('@/components/vowos/ReportsView'));
-const LedgersView = lazy(() => import('@/components/vowos/LedgersView'));
-const StaffView = lazy(() => import('@/components/vowos/StaffView'));
-const CommunicationsView = lazy(() => import('@/components/vowos/CommunicationsView'));
-const ContractsView = lazy(() => import('@/components/vowos/ContractsView'));
-const AlterationsView = lazy(() => import('@/components/vowos/AlterationsView'));
-const SettingsView = lazy(() => import('@/components/vowos/settings/SettingsShell'));
-const PayrollView = lazy(() => import('@/components/vowos/payroll/PayrollView'));
-const TimeClockView = lazy(() => import('@/components/vowos/TimeClockView'));
+import DashboardView from '@/components/vowos/DashboardView';
+import CustomersView from '@/components/vowos/CustomersView';
+import LeadsView from '@/components/vowos/LeadsView';
+import InventoryView from '@/components/vowos/InventoryView';
+import TransfersView from '@/components/vowos/TransfersView';
+import AppointmentsView from '@/components/vowos/AppointmentsView';
+import InvoicesView from '@/components/vowos/InvoicesView';
+import PurchasesView from '@/components/vowos/PurchasesView';
+import ReportsView from '@/components/vowos/ReportsView';
+import LedgersView from '@/components/vowos/LedgersView';
+import StaffView from '@/components/vowos/StaffView';
+import CommunicationsView from '@/components/vowos/CommunicationsView';
+import ContractsView from '@/components/vowos/ContractsView';
+import AlterationsView from '@/components/vowos/AlterationsView';
+import SettingsView from '@/components/vowos/settings/SettingsShell';
+import PayrollView from '@/components/vowos/payroll/PayrollView';
+import TimeClockView from '@/components/vowos/TimeClockView';
 
 
 
@@ -189,7 +188,7 @@ export default function AppLayout() {
           ) : isRoleLocked ? (
             <RoleLockedPanel label={currentLabel} view={view} role={role!} />
           ) : (
-            <Suspense fallback={<LoadingSkeleton rows={4} />}>
+            <VowosErrorBoundary>
               {view === 'dashboard' && <DashboardView onNavigate={setView} />}
               {view === 'customers' && <CustomersView />}
               {view === 'leads' && <LeadsView />}
@@ -208,7 +207,7 @@ export default function AppLayout() {
               {view === 'settings' && <SettingsView />}
               {view === 'payroll' && <PayrollView />}
               {view === 'timeclock' && <TimeClockView />}
-            </Suspense>
+            </VowosErrorBoundary>
           )}
 
           <footer className="mt-10 border-t border-stone-200 pt-6 pb-4 text-center text-xs text-stone-400">

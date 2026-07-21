@@ -13,29 +13,33 @@ import SignContract from "./pages/SignContract";
 import BridePortal from "./pages/BridePortal";
 import NotFound from "./pages/NotFound";
 
+import { VowosErrorBoundary } from "@/components/vowos/ErrorBoundary";
+
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ThemeProvider defaultTheme="light">
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/book" element={<BookAppointment />} />
-              <Route path="/pay/:invoiceId" element={<PayInvoice />} />
-              <Route path="/sign/:contractId" element={<SignContract />} />
-              <Route path="/portal/:brideId" element={<BridePortal />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
+  <VowosErrorBoundary>
+    <ThemeProvider defaultTheme="light">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/book" element={<BookAppointment />} />
+                <Route path="/pay/:invoiceId" element={<PayInvoice />} />
+                <Route path="/sign/:contractId" element={<SignContract />} />
+                <Route path="/portal/:brideId" element={<BridePortal />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  </VowosErrorBoundary>
 );
 
 export default App;
