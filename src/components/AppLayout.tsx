@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { useState, lazy, Suspense } from 'react';
+import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
 import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS, canAccessView, VIEW_ACCESS } from '@/components/vowos/Sidebar';
 import NotificationsBell from '@/components/vowos/NotificationsBell';
 import AuthModal from '@/components/vowos/AuthModal';
@@ -7,23 +7,26 @@ import { useAuth, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { locationById } from '@/data/vowosData';
 import { LocationSwitcher } from '@/components/vowos/LocationSelect';
-import DashboardView from '@/components/vowos/DashboardView';
-import CustomersView from '@/components/vowos/CustomersView';
-import LeadsView from '@/components/vowos/LeadsView';
-import InventoryView from '@/components/vowos/InventoryView';
-import TransfersView from '@/components/vowos/TransfersView';
-import AppointmentsView from '@/components/vowos/AppointmentsView';
-import InvoicesView from '@/components/vowos/InvoicesView';
-import PurchasesView from '@/components/vowos/PurchasesView';
-import ReportsView from '@/components/vowos/ReportsView';
-import LedgersView from '@/components/vowos/LedgersView';
-import StaffView from '@/components/vowos/StaffView';
-import CommunicationsView from '@/components/vowos/CommunicationsView';
-import ContractsView from '@/components/vowos/ContractsView';
-import AlterationsView from '@/components/vowos/AlterationsView';
-import SettingsView from '@/components/vowos/settings/SettingsShell';
-import PayrollView from '@/components/vowos/payroll/PayrollView';
-import TimeClockView from '@/components/vowos/TimeClockView';
+import { LoadingSkeleton } from '@/components/vowos/ui';
+
+// Lazy-loaded routes for code-splitting and bundle size optimization
+const DashboardView = lazy(() => import('@/components/vowos/DashboardView'));
+const CustomersView = lazy(() => import('@/components/vowos/CustomersView'));
+const LeadsView = lazy(() => import('@/components/vowos/LeadsView'));
+const InventoryView = lazy(() => import('@/components/vowos/InventoryView'));
+const TransfersView = lazy(() => import('@/components/vowos/TransfersView'));
+const AppointmentsView = lazy(() => import('@/components/vowos/AppointmentsView'));
+const InvoicesView = lazy(() => import('@/components/vowos/InvoicesView'));
+const PurchasesView = lazy(() => import('@/components/vowos/PurchasesView'));
+const ReportsView = lazy(() => import('@/components/vowos/ReportsView'));
+const LedgersView = lazy(() => import('@/components/vowos/LedgersView'));
+const StaffView = lazy(() => import('@/components/vowos/StaffView'));
+const CommunicationsView = lazy(() => import('@/components/vowos/CommunicationsView'));
+const ContractsView = lazy(() => import('@/components/vowos/ContractsView'));
+const AlterationsView = lazy(() => import('@/components/vowos/AlterationsView'));
+const SettingsView = lazy(() => import('@/components/vowos/settings/SettingsShell'));
+const PayrollView = lazy(() => import('@/components/vowos/payroll/PayrollView'));
+const TimeClockView = lazy(() => import('@/components/vowos/TimeClockView'));
 
 
 
@@ -161,7 +164,7 @@ export default function AppLayout() {
           </div>
         </header>
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8">
+        <main className="px-4 py-6 sm:px-6 lg:px-8 pb-24 lg:pb-8">
           {/* Guest preview banner on the dashboard */}
           {!session && !loading && view === 'dashboard' && (
             <div className="mb-6 flex flex-col items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/70 px-5 py-4 sm:flex-row sm:items-center">
@@ -186,7 +189,7 @@ export default function AppLayout() {
           ) : isRoleLocked ? (
             <RoleLockedPanel label={currentLabel} view={view} role={role!} />
           ) : (
-            <>
+            <Suspense fallback={<LoadingSkeleton rows={4} />}>
               {view === 'dashboard' && <DashboardView onNavigate={setView} />}
               {view === 'customers' && <CustomersView />}
               {view === 'leads' && <LeadsView />}
@@ -205,8 +208,7 @@ export default function AppLayout() {
               {view === 'settings' && <SettingsView />}
               {view === 'payroll' && <PayrollView />}
               {view === 'timeclock' && <TimeClockView />}
-
-            </>
+            </Suspense>
           )}
 
           <footer className="mt-10 border-t border-stone-200 pt-6 pb-4 text-center text-xs text-stone-400">
@@ -215,6 +217,57 @@ export default function AppLayout() {
             {activeLocation === 'all' ? 'Viewing all locations' : `Viewing ${locationById(activeLocation).short}`}
           </footer>
         </main>
+      </div>
+
+      {/* Mobile Bottom Quick Navigation Bar (iPhone / Android safe area compliant) */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-stone-200 bg-white/95 backdrop-blur lg:hidden pb-[env(safe-area-inset-bottom)] shadow-lg">
+        <div className="flex items-center justify-around h-14 px-2">
+          <button
+            onClick={() => setView('dashboard')}
+            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
+              view === 'dashboard' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">📊</span>
+            <span>Home</span>
+          </button>
+          <button
+            onClick={() => setView('customers')}
+            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
+              view === 'customers' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">👰</span>
+            <span>Brides</span>
+          </button>
+          <button
+            onClick={() => setView('appointments')}
+            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
+              view === 'appointments' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">📅</span>
+            <span>Schedule</span>
+          </button>
+          <button
+            onClick={() => setView('timeclock')}
+            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
+              view === 'timeclock' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">⏰</span>
+            <span>Clock In</span>
+          </button>
+          <button
+            onClick={() => setView('invoices')}
+            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
+              view === 'invoices' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
+            }`}
+          >
+            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">💳</span>
+            <span>POS / Pay</span>
+          </button>
+        </div>
       </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />

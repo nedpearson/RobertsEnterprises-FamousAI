@@ -152,16 +152,20 @@ export default function CustomersView() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
+      {/* Desktop Table View (sm+) */}
+      <div className="hidden sm:block overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-stone-100 text-sm">
-            <thead className="bg-stone-50/70">
-              <tr>
-                {['Bride', 'Contact', 'Wedding Date', 'Stylist', 'Status', 'Spend', 'Fit Profile', 'Portal'].map((h) => (
-                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-stone-500">
-                    {h}
-                  </th>
-                ))}
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-stone-200 bg-stone-50/70 text-xs font-medium text-stone-500">
+                <th className="px-5 py-3">Bride</th>
+                <th className="px-5 py-3">Contact</th>
+                <th className="px-5 py-3">Wedding Date</th>
+                <th className="px-5 py-3">Stylist</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Spend</th>
+                <th className="px-5 py-3">Fit Profile</th>
+                <th className="px-5 py-3">Portal Link</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -249,10 +253,55 @@ export default function CustomersView() {
                   </td>
                 </tr>
               )}
-
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card Grid View (< 640px) */}
+      <div className="space-y-3 sm:hidden">
+        {!loading && filtered.map((c) => (
+          <div key={c.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <button onClick={() => setProfileBride(c)} className="flex items-center gap-2 text-left">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-rose-200 text-xs font-semibold text-rose-600">
+                  {c.name.split(' ').map((n) => n[0]).join('')}
+                </div>
+                <div>
+                  <p className="font-semibold text-stone-900 text-sm">{c.name}</p>
+                  <p className="text-[10px] text-stone-400">{c.id} · Stylist: {c.stylist}</p>
+                </div>
+              </button>
+              <StatusBadge status={c.status} />
+            </div>
+
+            <div className="flex justify-between text-xs text-stone-600 border-t border-stone-100 pt-2 font-medium">
+              <span>Wedding: {formatDate(c.weddingDate)}</span>
+              <span>{c.spendCents > 0 ? formatCents(c.spendCents) : 'No Purchases'}</span>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+              <button
+                onClick={() => setProfileBride(c)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600"
+              >
+                <Ruler className="h-3.5 w-3.5" /> Fit Profile
+              </button>
+
+              <div className="flex items-center gap-1">
+                <button onClick={() => copyPortal(c)} className="rounded-lg border border-stone-200 p-1.5 text-stone-500">
+                  {copiedId === c.id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Link2 className="h-3.5 w-3.5" />}
+                </button>
+                <button onClick={() => sendPortal(c, 'email')} className="rounded-lg border border-stone-200 p-1.5 text-stone-500">
+                  <Mail className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => sendPortal(c, 'sms')} className="rounded-lg border border-stone-200 p-1.5 text-stone-500">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add New Bride">

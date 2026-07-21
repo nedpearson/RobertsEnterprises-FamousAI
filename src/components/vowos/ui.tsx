@@ -126,10 +126,71 @@ export function Modal({
 }
 
 export const inputCls =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100';
+  'w-full min-h-[44px] rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100 transition-colors';
 
 export const btnPrimary =
-  'inline-flex items-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300';
+  'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300 disabled:opacity-50';
 
 export const btnSecondary =
-  'inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm transition-colors hover:bg-stone-50';
+  'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition-colors hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-stone-200 disabled:opacity-50';
+
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-stone-300 bg-white/80 px-6 py-12 text-center shadow-xs">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-100 text-stone-500 mb-3">
+        {icon}
+      </div>
+      <h3 className="font-serif text-lg font-semibold text-stone-900">{title}</h3>
+      <p className="mt-1 max-w-sm text-xs text-stone-500">{description}</p>
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+
+export function LoadingSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="h-16 w-full rounded-2xl bg-stone-200/60" />
+      ))}
+    </div>
+  );
+}
+
+export function ErrorAlert({
+  title = 'Something went wrong',
+  message,
+  onRetry,
+}: {
+  title?: string;
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-xs text-rose-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div>
+        <p className="font-bold">{title}</p>
+        <p className="mt-0.5 text-rose-700">{message}</p>
+      </div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="rounded-lg bg-rose-600 px-3 py-1.5 font-semibold text-white hover:bg-rose-700 transition-colors"
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
