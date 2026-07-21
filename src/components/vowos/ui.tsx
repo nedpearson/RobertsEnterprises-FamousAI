@@ -46,12 +46,14 @@ export function StatCard({
   sub,
   icon,
   accent = 'rose',
+  onClick,
 }: {
   label: string;
   value: string;
   sub?: string;
   icon: ReactNode;
   accent?: 'rose' | 'emerald' | 'violet' | 'amber';
+  onClick?: () => void;
 }) {
   const accents = {
     rose: 'bg-rose-50 text-rose-500',
@@ -60,10 +62,18 @@ export function StatCard({
     amber: 'bg-amber-50 text-amber-600',
   };
   return (
-    <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+    <div
+      onClick={onClick}
+      className={`rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-all hover:shadow-md ${
+        onClick ? 'cursor-pointer hover:border-rose-300 hover:ring-2 hover:ring-rose-100/50' : ''
+      }`}
+    >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-stone-500">{label}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-stone-500">{label}</p>
+            {onClick && <span className="text-[10px] text-rose-500 font-semibold">(Drill Down)</span>}
+          </div>
           <p className="mt-2 font-serif text-3xl text-stone-900">{value}</p>
           {sub && <p className="mt-1 text-xs text-stone-500">{sub}</p>}
         </div>
