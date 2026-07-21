@@ -22,6 +22,7 @@ import CommunicationsView from '@/components/vowos/CommunicationsView';
 import ContractsView from '@/components/vowos/ContractsView';
 import AlterationsView from '@/components/vowos/AlterationsView';
 import SettingsView from '@/components/vowos/settings/SettingsShell';
+import PayrollView from '@/components/vowos/payroll/PayrollView';
 
 
 
@@ -201,6 +202,7 @@ export default function AppLayout() {
               {view === 'ledgers' && <LedgersView />}
               {view === 'staff' && <StaffView />}
               {view === 'settings' && <SettingsView />}
+              {view === 'payroll' && <PayrollView />}
 
             </>
           )}

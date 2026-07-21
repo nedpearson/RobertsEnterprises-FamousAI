@@ -38,7 +38,8 @@ export type ViewKey =
   | 'reports'
   | 'ledgers'
   | 'staff'
-  | 'settings';
+  | 'settings'
+  | 'payroll';
 
 export const PUBLIC_VIEWS: ViewKey[] = ['dashboard'];
 
@@ -57,6 +58,7 @@ export const NAV_ITEMS: { key: ViewKey; label: string; icon: typeof Users }[] = 
   { key: 'reports', label: 'Reports', icon: BarChart3 },
   { key: 'ledgers', label: 'Ledgers', icon: BookOpenText },
   { key: 'staff', label: 'Staff & Roles', icon: ShieldCheck },
+  { key: 'payroll', label: 'Payroll & Workforce', icon: Gem },
   { key: 'settings', label: 'Settings', icon: SlidersHorizontal },
 ];
 
@@ -79,6 +81,7 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   ledgers: ['Owner', 'Manager'],
   staff: ['Owner'],
   settings: ['Owner', 'Manager'],
+  payroll: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
 };
 
 
