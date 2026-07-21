@@ -83,6 +83,9 @@ const mapPo = (r: any): PurchaseOrder => ({
   expectedDelivery: r.expected_delivery,
   status: r.status,
   location: (r.location ?? 'ido-br') as LocationId,
+  assignedStaff: r.assigned_staff ?? '',
+  assignedCustomer: r.assigned_customer ?? '',
+  notes: r.notes ?? '',
 });
 
 const mapGown = (r: any): Gown => ({
@@ -251,8 +254,9 @@ interface VowosDataContextType {
   recordPayment: (id: string, paymentCents: number) => Promise<boolean>;
   markPoDelivered: (id: string) => Promise<void>;
   updatePoStatus: (id: string, newStatus: PurchaseOrder['status']) => Promise<boolean>;
+  updatePurchaseOrder: (id: string, input: Partial<PurchaseOrder>) => Promise<boolean>;
   deletePurchaseOrder: (id: string) => Promise<boolean>;
-  addPurchaseOrder: (input: { vendor: string; items: string; amountCents: number; expectedDelivery: string; location?: LocationId }) => Promise<boolean>;
+  addPurchaseOrder: (input: { vendor: string; items: string; amountCents: number; expectedDelivery: string; location?: LocationId; assignedStaff?: string; assignedCustomer?: string; notes?: string }) => Promise<boolean>;
   addGown: (input: GownInput) => Promise<boolean>;
   updateGown: (id: string, input: GownInput) => Promise<boolean>;
   adjustGownStock: (id: string, newStock: number) => Promise<boolean>;
@@ -679,6 +683,38 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [purchaseOrders],
   );
 
+  const updatePurchaseOrder = useCallback(
+    async (id: string, input: Partial<PurchaseOrder>): Promise<boolean> => {
+      const prevPo = purchaseOrders.find((p) => p.id === id);
+      if (!prevPo) return false;
+
+      const updatedPo = { ...prevPo, ...input };
+      setPurchaseOrders((prev) =>
+        prev.map((p) => (p.id === id ? updatedPo : p)),
+      );
+
+      const dbUpdate: Record<string, any> = {};
+      if (input.vendor !== undefined) dbUpdate.vendor = input.vendor;
+      if (input.items !== undefined) dbUpdate.items = input.items;
+      if (input.amountCents !== undefined) dbUpdate.amount_cents = input.amountCents;
+      if (input.expectedDelivery !== undefined) dbUpdate.expected_delivery = input.expectedDelivery;
+      if (input.status !== undefined) dbUpdate.status = input.status;
+      if (input.location !== undefined) dbUpdate.location = input.location;
+      if (input.assignedStaff !== undefined) dbUpdate.assigned_staff = input.assignedStaff;
+      if (input.assignedCustomer !== undefined) dbUpdate.assigned_customer = input.assignedCustomer;
+      if (input.notes !== undefined) dbUpdate.notes = input.notes;
+
+      const { error } = await supabase.from('purchase_orders').update(dbUpdate).eq('id', id);
+      if (error) {
+        dbErrorToast('update purchase order', error.message);
+        setPurchaseOrders((prev) => prev.map((p) => (p.id === id ? prevPo : p)));
+        return false;
+      }
+      return true;
+    },
+    [purchaseOrders],
+  );
+
   const deletePurchaseOrder = useCallback(
     async (id: string): Promise<boolean> => {
       const prevPo = purchaseOrders.find((p) => p.id === id);
@@ -696,7 +732,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 
   const addPurchaseOrder = useCallback(
-    async (input: { vendor: string; items: string; amountCents: number; expectedDelivery: string; location?: LocationId }): Promise<boolean> => {
+    async (input: { vendor: string; items: string; amountCents: number; expectedDelivery: string; location?: LocationId; assignedStaff?: string; assignedCustomer?: string; notes?: string }): Promise<boolean> => {
       const nextNum = 7106 + purchaseOrders.length;
       const newPo: PurchaseOrder = {
         id: `PO-${nextNum}`,
@@ -707,6 +743,9 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         expectedDelivery: input.expectedDelivery,
         status: 'Ordered',
         location: input.location ?? defaultLocation,
+        assignedStaff: input.assignedStaff ?? '',
+        assignedCustomer: input.assignedCustomer ?? '',
+        notes: input.notes ?? '',
       };
 
       setPurchaseOrders((prev) => [newPo, ...prev]);
@@ -720,6 +759,9 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         expected_delivery: newPo.expectedDelivery,
         status: newPo.status,
         location: newPo.location,
+        assigned_staff: newPo.assignedStaff,
+        assigned_customer: newPo.assignedCustomer,
+        notes: newPo.notes,
       });
 
       if (error) {
@@ -1034,6 +1076,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         recordPayment,
         markPoDelivered,
         updatePoStatus,
+        updatePurchaseOrder,
         deletePurchaseOrder,
         addPurchaseOrder,
         addGown,

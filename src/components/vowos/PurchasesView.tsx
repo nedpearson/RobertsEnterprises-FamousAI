@@ -26,21 +26,24 @@ import {
   Trash2,
   Archive,
   RotateCcw,
+  Pencil,
+  UserCheck,
 } from 'lucide-react';
-import { formatCents, formatDate, LOCATIONS, locationById, PurchaseOrder } from '@/data/vowosData';
+import { formatCents, formatDate, LOCATIONS, locationById, PurchaseOrder, teamMembers } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { getVendorPortals, saveVendorPortal, VendorPortal } from '@/lib/services/vendorPortalStore';
 import { toast } from '@/components/ui/use-toast';
 
 export default function PurchasesView() {
-  const { purchaseOrders: list, brides, loading, markPoDelivered, updatePoStatus, deletePurchaseOrder, addPurchaseOrder } = useVowosData();
+  const { purchaseOrders: list, brides, loading, markPoDelivered, updatePoStatus, updatePurchaseOrder, deletePurchaseOrder, addPurchaseOrder } = useVowosData();
   const [activeTab, setActiveTab] = useState<'orders' | 'vault' | 'customers' | 'analytics'>('orders');
 
   // Search & Filter controls
   const [searchTerm, setSearchTerm] = useState('');
   const [vendorFilter, setVendorFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [staffFilter, setStaffFilter] = useState('all');
 
   // Vendor Credentials Vault State
   const [portals, setPortals] = useState<VendorPortal[]>([]);
@@ -51,6 +54,52 @@ export default function PurchasesView() {
   const [showPortalModal, setShowPortalModal] = useState(false);
   const [editingPortal, setEditingPortal] = useState<VendorPortal | null>(null);
   const [deletePoId, setDeletePoId] = useState<string | null>(null);
+
+  // Edit PO State
+  const [editingPo, setEditingPo] = useState<PurchaseOrder | null>(null);
+  const [editVendor, setEditVendor] = useState('Justin Alexander');
+  const [editItems, setEditItems] = useState('');
+  const [editAmountDollars, setEditAmountDollars] = useState('');
+  const [editEta, setEditEta] = useState('');
+  const [editLocation, setEditLocation] = useState<any>('ido-cov');
+  const [editStaff, setEditStaff] = useState('Dana R.');
+  const [editCustomer, setEditCustomer] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+
+  const handleOpenEditPo = (po: PurchaseOrder) => {
+    setEditingPo(po);
+    setEditVendor(po.vendor);
+    setEditItems(po.items);
+    setEditAmountDollars((po.amountCents / 100).toFixed(2));
+    setEditEta(po.expectedDelivery);
+    setEditLocation(po.location);
+    setEditStaff(po.assignedStaff || teamMembers[0]);
+    setEditCustomer(po.assignedCustomer || '');
+    setEditNotes(po.notes || '');
+  };
+
+  const handleSaveEditPo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPo) return;
+    const amountCents = Math.round(parseFloat(editAmountDollars || '0') * 100);
+    const success = await updatePurchaseOrder(editingPo.id, {
+      vendor: editVendor,
+      items: editItems,
+      amountCents: amountCents > 0 ? amountCents : editingPo.amountCents,
+      expectedDelivery: editEta,
+      location: editLocation,
+      assignedStaff: editStaff,
+      assignedCustomer: editCustomer,
+      notes: editNotes,
+    });
+    if (success) {
+      setEditingPo(null);
+      toast({
+        title: 'Purchase Order Updated',
+        description: `${editingPo.id} assigned to ${editStaff} and linked to ${editCustomer || 'Store Stock'}.`,
+      });
+    }
+  };
 
   const handleStatusChange = async (poId: string, newStatus: PurchaseOrder['status']) => {
     const success = await updatePoStatus(poId, newStatus);
@@ -223,10 +272,13 @@ export default function PurchasesView() {
     const matchesSearch =
       po.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       po.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      po.items.toLowerCase().includes(searchTerm.toLowerCase());
+      po.items.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (po.assignedStaff && po.assignedStaff.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (po.assignedCustomer && po.assignedCustomer.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesVendor = vendorFilter === 'all' || po.vendor === vendorFilter;
     const matchesStatus = statusFilter === 'all' || po.status === statusFilter;
-    return matchesSearch && matchesVendor && matchesStatus;
+    const matchesStaff = staffFilter === 'all' || po.assignedStaff === staffFilter;
+    return matchesSearch && matchesVendor && matchesStatus && matchesStaff;
   });
 
   return (
@@ -346,6 +398,17 @@ export default function PurchasesView() {
                 <option value="Delayed">Delayed</option>
                 <option value="Archived">Archived</option>
               </select>
+
+              <select
+                value={staffFilter}
+                onChange={(e) => setStaffFilter(e.target.value)}
+                className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 outline-none"
+              >
+                <option value="all">All Staff / Stylists</option>
+                {teamMembers.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -367,6 +430,16 @@ export default function PurchasesView() {
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-stone-900">{po.id}</p>
                         <StatusBadge status={po.status} />
+                        {po.assignedStaff && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 px-2.5 py-0.5 text-[10px] font-bold text-violet-700">
+                            <UserCheck className="h-3 w-3" /> Staff: {po.assignedStaff}
+                          </span>
+                        )}
+                        {po.assignedCustomer && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[10px] font-bold text-rose-700">
+                            <User className="h-3 w-3" /> Bride: {po.assignedCustomer}
+                          </span>
+                        )}
                         {vendorPortal && (
                           <a
                             href={vendorPortal.portalUrl}
@@ -406,6 +479,15 @@ export default function PurchasesView() {
                             <option value="Archived">Archived</option>
                           </select>
                         </div>
+
+                        {/* Edit PO & Reassign Button */}
+                        <button
+                          onClick={() => handleOpenEditPo(po)}
+                          title="Edit PO & Reassign Staff/Customer"
+                          className="rounded-xl border border-stone-200 p-2 text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
 
                         {/* Archive Button */}
                         <button
@@ -746,6 +828,83 @@ export default function PurchasesView() {
           </div>
         </form>
       </Modal>
+
+      {/* EDIT PO MODAL */}
+      {editingPo && (
+        <Modal open={!!editingPo} onClose={() => setEditingPo(null)} title={`Edit Purchase Order ${editingPo.id}`}>
+          <form onSubmit={handleSaveEditPo} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-stone-700 block">Vendor / Designer</label>
+                <select value={editVendor} onChange={(e) => setEditVendor(e.target.value)} className={inputCls}>
+                  <option value="Justin Alexander">Justin Alexander</option>
+                  <option value="Pronovias">Pronovias</option>
+                  <option value="Essense of Australia">Essense of Australia</option>
+                  <option value="Morilee">Morilee</option>
+                  <option value="Veil & Co.">Veil &amp; Co.</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-stone-700 block">Boutique Location</label>
+                <select value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className={inputCls}>
+                  {LOCATIONS.map((loc) => (
+                    <option key={loc.id} value={loc.id}>{loc.short} ({loc.address})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-stone-700 block">Assign Staff / Stylist</label>
+                <select value={editStaff} onChange={(e) => setEditStaff(e.target.value)} className={inputCls}>
+                  {teamMembers.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-stone-700 block">Assign Customer / Bride</label>
+                <select value={editCustomer} onChange={(e) => setEditCustomer(e.target.value)} className={inputCls}>
+                  <option value="">Store Stock Restock (No Customer)</option>
+                  {brides.map((b) => (
+                    <option key={b.id} value={b.name}>{b.name} (Wedding: {formatDate(b.weddingDate)})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-stone-700 block">Order Items &amp; Description</label>
+              <input type="text" value={editItems} onChange={(e) => setEditItems(e.target.value)} className={inputCls} required />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-stone-700 block">Wholesale Amount ($)</label>
+                <input type="number" step="0.01" value={editAmountDollars} onChange={(e) => setEditAmountDollars(e.target.value)} className={inputCls} required />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-stone-700 block">Expected Arrival ETA</label>
+                <input type="date" value={editEta} onChange={(e) => setEditEta(e.target.value)} className={inputCls} required />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-stone-700 block">Internal Notes &amp; Special Instructions</label>
+              <textarea rows={2} value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className={inputCls} placeholder="e.g. Custom 3-inch hem reduction requested from factory..." />
+            </div>
+
+            <div className="flex gap-2 justify-end pt-3 border-t border-stone-100">
+              <button type="button" onClick={() => setEditingPo(null)} className={btnSecondary}>Cancel</button>
+              <button type="submit" className={btnPrimary}>Save Changes</button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* DELETE PO CONFIRMATION MODAL */}
       {deletePoId && (

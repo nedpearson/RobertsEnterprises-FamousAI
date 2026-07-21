@@ -321,6 +321,9 @@ export interface PurchaseOrder {
   expectedDelivery: string;
   status: 'Ordered' | 'In Transit' | 'Delivered' | 'Delayed' | 'Archived';
   location: LocationId;
+  assignedStaff?: string;
+  assignedCustomer?: string;
+  notes?: string;
 }
 
 export const revenueByMonth = [
