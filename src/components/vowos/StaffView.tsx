@@ -8,6 +8,48 @@ import { PageHeader, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from 
 import { NAV_ITEMS, VIEW_ACCESS, ViewKey } from './Sidebar';
 import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
 import { Switch } from '@/components/ui/switch';
+import { ROLE_PERMISSIONS } from '@/lib/services/authService';
+
+const GRANULAR_ACTIONS_LIST = [
+  {
+    group: 'Settings & Administration',
+    actions: [
+      { key: 'settings.view', label: 'View general boutique settings' },
+      { key: 'settings.manage', label: 'Modify general boutique settings' },
+      { key: 'settings.security.manage', label: 'Edit system security policies' },
+      { key: 'settings.payroll.manage', label: 'Configure corporate payroll guidelines' },
+    ],
+  },
+  {
+    group: 'Staff & Roles',
+    actions: [
+      { key: 'staff.view', label: 'View employee roster and directories' },
+      { key: 'staff.invite', label: 'Send new employee registration links' },
+      { key: 'staff.edit', label: 'Edit staff profiles and roles' },
+      { key: 'staff.edit_compensation', label: 'Modify employee hourly wage rates & salaries' },
+    ],
+  },
+  {
+    group: 'Time Clock & Timecards',
+    actions: [
+      { key: 'timeclock.use', label: 'Use interactive employee time clock puncher' },
+      { key: 'timeclock.override_location', label: 'Allow clocking in outside geofence boundary' },
+      { key: 'timecards.view_team', label: 'Review timesheets for floor staff' },
+      { key: 'timecards.approve', label: 'Approve submitted employee timecards' },
+      { key: 'timecards.lock', label: 'Lock shifts and finalize timecard periods' },
+    ],
+  },
+  {
+    group: 'Payroll Engine & Calculations',
+    actions: [
+      { key: 'payroll.view_summary', label: 'View payroll dashboard costs & summaries' },
+      { key: 'payroll.create_run', label: 'Execute a payroll period run wizard' },
+      { key: 'payroll.calculate', label: 'Execute gross-to-net tax computations' },
+      { key: 'payroll.approve', label: 'Approve payroll drafts (Separation of duties)' },
+      { key: 'payroll.post', label: 'Post payroll journals to ledger accounts' },
+    ],
+  },
+];
 
 interface StaffRow {
   id: string;
@@ -35,6 +77,11 @@ export default function StaffView() {
   const [userPermissions, setUserPermissions] = useState<Record<string, ViewKey[]>>({});
   const [matrixMode, setMatrixMode] = useState<'per-user' | 'role-defaults'>('per-user');
 
+  // Custom user-specific Action Privileges
+  const [showActionsModal, setShowActionsModal] = useState(false);
+  const [selectedStaffForActions, setSelectedStaffForActions] = useState<StaffRow | null>(null);
+  const [customActionPermissions, setCustomActionPermissions] = useState<Record<string, string[]>>({});
+
   const isOwner = profile?.role === 'Owner';
 
   const loadStaff = async () => {
@@ -51,6 +98,11 @@ export default function StaffView() {
     const permissionsMap = await fetchJsonSetting<Record<string, ViewKey[]>>('custom_user_permissions', {});
     setUserPermissions(permissionsMap);
     localStorage.setItem('vowos_user_permissions', JSON.stringify(permissionsMap));
+
+    // Load custom action privileges
+    const actionsMap = await fetchJsonSetting<Record<string, string[]>>('custom_action_permissions', {});
+    setCustomActionPermissions(actionsMap);
+    localStorage.setItem('vowos_action_permissions', JSON.stringify(actionsMap));
     setLoading(false);
   };
 
@@ -289,6 +341,17 @@ export default function StaffView() {
                       </span>
                       {isOwner && (
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedStaffForActions(s);
+                              setShowActionsModal(true);
+                            }}
+                            className="text-stone-500 hover:text-rose-600 p-1.5 border border-stone-200 bg-stone-50/50 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1 text-xs"
+                            title="Configure Granular Action Privileges"
+                          >
+                            <UserCog className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline font-medium">Actions</span>
+                          </button>
                           <select
                             value={s.role}
                             disabled={savingId === s.id}
@@ -534,6 +597,82 @@ export default function StaffView() {
           </div>
         </form>
       </Modal>
+
+      {/* Granular Action Privileges Modal */}
+      {selectedStaffForActions && (
+        <Modal
+          open={showActionsModal}
+          onClose={() => setShowActionsModal(false)}
+          title={`Configure Action Privileges: ${selectedStaffForActions.name}`}
+        >
+          <div className="space-y-5">
+            <p className="text-xs text-stone-500">
+              Customize specific system actions for <span className="font-semibold text-stone-800">{selectedStaffForActions.name}</span>. 
+              These granular privileges override standard role defaults.
+            </p>
+
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+              {GRANULAR_ACTIONS_LIST.map((group) => (
+                <div key={group.group} className="space-y-2 rounded-xl border border-stone-200 bg-stone-50/60 p-3.5">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-stone-500">{group.group}</h4>
+                  <div className="space-y-2">
+                    {group.actions.map((act) => {
+                      const staffActions = customActionPermissions[selectedStaffForActions.id] ?? (
+                        ROLE_PERMISSIONS[selectedStaffForActions.role] || []
+                      );
+                      const isGranted = staffActions.includes(act.key);
+
+                      return (
+                        <div key={act.key} className="flex items-center justify-between py-1 border-b border-stone-100/50 last:border-0 pb-1.5 last:pb-0">
+                          <div>
+                            <p className="text-xs font-semibold text-stone-800">{act.key}</p>
+                            <p className="text-[11px] text-stone-400">{act.label}</p>
+                          </div>
+                          <Switch
+                            checked={isGranted}
+                            disabled={selectedStaffForActions.role === 'Owner'}
+                            onCheckedChange={async () => {
+                              const newStaffActions = isGranted
+                                ? staffActions.filter(k => k !== act.key)
+                                : [...staffActions, act.key];
+                              const newMap = { ...customActionPermissions, [selectedStaffForActions.id]: newStaffActions };
+                              setCustomActionPermissions(newMap);
+                              localStorage.setItem('vowos_action_permissions', JSON.stringify(newMap));
+                              await saveJsonSetting('custom_action_permissions', newMap);
+                              toast({ title: 'Privilege Updated', description: `${isGranted ? 'Revoked' : 'Granted'} ${act.key}.` });
+                            }}
+                            className="data-[state=checked]:bg-emerald-500 scale-90"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between items-center pt-3 border-t border-stone-100">
+              <button
+                onClick={async () => {
+                  const newMap = { ...customActionPermissions };
+                  delete newMap[selectedStaffForActions.id];
+                  setCustomActionPermissions(newMap);
+                  localStorage.setItem('vowos_action_permissions', JSON.stringify(newMap));
+                  await saveJsonSetting('custom_action_permissions', newMap);
+                  toast({ title: 'Privileges Reset', description: `Reset action privileges for ${selectedStaffForActions.name} to role defaults.` });
+                }}
+                className="text-xs text-stone-400 underline hover:text-stone-600"
+              >
+                Reset to Role Defaults
+              </button>
+
+              <button onClick={() => setShowActionsModal(false)} className={btnPrimary}>
+                Done
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

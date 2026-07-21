@@ -72,7 +72,7 @@ export type PermissionKey =
   | 'payroll_audit.view';
 
 // ─── Default Permission Matrix ───
-const ROLE_PERMISSIONS: Record<StaffRole, PermissionKey[]> = {
+export const ROLE_PERMISSIONS: Record<StaffRole, string[]> = {
   Owner: [
     'settings.view', 'settings.manage', 'settings.organization.manage', 'settings.locations.manage', 'settings.security.manage', 'settings.integrations.manage', 'settings.payroll.manage',
     'staff.view', 'staff.invite', 'staff.edit', 'staff.suspend', 'staff.terminate', 'staff.manage_locations', 'staff.manage_roles', 'staff.view_compensation', 'staff.edit_compensation', 'staff.view_security',
@@ -123,7 +123,7 @@ export interface AuthorizeParams {
 
 export interface AuthorizationResult {
   allowed: boolean;
-  reasonCode: 'AUTHORIZED' | 'ROLE_DENIED' | 'LOCATION_MISMATCH' | 'SELF_APPROVAL_BLOCKED' | 'AMOUNT_LIMIT_EXCEEDED' | 'NO_ROLE';
+  reasonCode: 'AUTHORIZED' | 'ROLE_DENIED' | 'LOCATION_MISMATCH' | 'SELF_APPROVAL_BLOCKED' | 'AMOUNT_LIMIT_EXCEEDED' | 'NO_ROLE' | 'USER_ACTION_DENIED';
   reason: string;
 }
 
@@ -132,13 +132,49 @@ export function authorizeAction(params: AuthorizeParams): AuthorizationResult {
     return { allowed: false, reasonCode: 'NO_ROLE', reason: 'User access role is not configured.' };
   }
 
+  // Custom user action overrides checks
+  if (params.userId && params.userRole !== 'Owner' && typeof localStorage !== 'undefined') {
+    try {
+      const cached = localStorage.getItem('vowos_action_permissions');
+      if (cached) {
+        const map = JSON.parse(cached);
+        if (map && map[params.userId] !== undefined) {
+          const userActions: string[] = map[params.userId];
+          if (!userActions.includes(params.permission)) {
+            return {
+              allowed: false,
+              reasonCode: 'USER_ACTION_DENIED',
+              reason: `Individual Privilege Denied: Account lacks granular '${params.permission}' authorization.`
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   // 1. RBAC Check
-  if (!hasPermission(params.userRole, params.permission)) {
-    return {
-      allowed: false,
-      reasonCode: 'ROLE_DENIED',
-      reason: `Access Role '${params.userRole}' lacks the required '${params.permission}' privilege.`
-    };
+  if (params.userRole !== 'Owner') {
+    const hasOverride = (() => {
+      if (!params.userId || typeof localStorage === 'undefined') return false;
+      try {
+        const cached = localStorage.getItem('vowos_action_permissions');
+        if (cached) {
+          const map = JSON.parse(cached);
+          return map && map[params.userId] !== undefined;
+        }
+      } catch (e) {}
+      return false;
+    })();
+
+    if (!hasOverride && !hasPermission(params.userRole, params.permission)) {
+      return {
+        allowed: false,
+        reasonCode: 'ROLE_DENIED',
+        reason: `Access Role '${params.userRole}' lacks the required '${params.permission}' privilege.`
+      };
+    }
   }
 
   // 2. Self-Approval Lockout Safeguard

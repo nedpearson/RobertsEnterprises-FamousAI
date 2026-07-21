@@ -93,7 +93,7 @@ export function canAccessView(role: StaffRole | null, view: ViewKey, staffId?: s
   if (!role) return false;
   if (role === 'Owner') return true;
 
-  if (staffId) {
+  if (staffId && typeof localStorage !== 'undefined') {
     try {
       const cached = localStorage.getItem('vowos_user_permissions');
       if (cached) {
