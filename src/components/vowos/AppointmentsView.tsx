@@ -17,6 +17,7 @@ import { toast } from '@/components/ui/use-toast';
 import { PageHeader, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
 import BookAppointmentModal from './BookAppointmentModal';
 import BridalIdentity from './BridalIdentity';
+import CoverageCalendar from './CoverageCalendar';
 import { LocationBadge } from './LocationSelect';
 
 
