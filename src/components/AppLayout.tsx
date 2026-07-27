@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert, Loader2, Sparkles, MessageSquare } from 'lucide-react';
 import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS, canAccessView, VIEW_ACCESS } from '@/components/vowos/Sidebar';
 import NotificationsBell from '@/components/vowos/NotificationsBell';
@@ -13,6 +13,7 @@ import CommandPaletteModal from '@/components/vowos/CommandPaletteModal';
 import MobileNavigation from '@/components/vowos/MobileNavigation';
 import { NAVIGATION_ITEMS } from '@/lib/navigation/navigationRegistry';
 import { getStoredCompactSidebar } from '@/lib/navigation/userPreferences';
+import { fetchMessages } from '@/lib/messaging';
 
 import { DemoModeBanner } from '@/components/demo/DemoModeBanner';
 import { DemoCursorOverlay } from '@/components/demo/DemoCursorOverlay';
@@ -101,8 +102,15 @@ export default function AppLayout() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [compactSidebar, setCompactSidebar] = useState(() => getStoredCompactSidebar());
 
-  const { communications } = useVowosData();
-  const unreadMessagesCount = communications.filter((c) => c.status === 'unread' || c.direction === 'inbound').length;
+  const [headerMessages, setHeaderMessages] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchMessages().then(setHeaderMessages).catch(() => {});
+  }, []);
+
+  const unreadMessagesCount = (headerMessages || []).filter(
+    (c) => c.direction === 'inbound' || c.status === 'failed'
+  ).length;
 
   return (
     <div className="min-h-screen bg-[#faf8f5]">

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Customer,
   formatCents,
@@ -6,6 +6,8 @@ import {
   teamMembers
 } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
+import { fetchContracts, fetchAlterations, ContractRecord, AlterationJob } from '@/lib/contractsAlterations';
+import { fetchMessages, MessageRecord } from '@/lib/messaging';
 import {
   Users,
   Calendar,
@@ -59,36 +61,46 @@ const LIFECYCLE_STAGES = [
 
 export default function Bride360View({ bride, onBack, initialTab = 'overview', onNavigateView }: Bride360ViewProps) {
   const [tab, setTab] = useState<Bride360Tab>(initialTab);
-  const { appointments, contracts, invoices, alterations, communications, purchaseOrders } = useVowosData();
+  const { appointments = [], invoices = [], purchaseOrders = [] } = useVowosData();
 
-  // Filter bride-specific data
+  const [contracts, setContracts] = useState<ContractRecord[]>([]);
+  const [alterations, setAlterations] = useState<AlterationJob[]>([]);
+  const [messages, setMessages] = useState<MessageRecord[]>([]);
+
+  useEffect(() => {
+    fetchContracts().then(setContracts).catch(() => {});
+    fetchAlterations().then(setAlterations).catch(() => {});
+    fetchMessages(bride.name).then(setMessages).catch(() => {});
+  }, [bride.name]);
+
+  // Filter bride-specific data safely
   const brideAppointments = useMemo(
-    () => appointments.filter((a) => a.brideName?.toLowerCase() === bride.name.toLowerCase() || a.brideId === bride.id),
+    () => (appointments || []).filter((a: any) => a.customer?.toLowerCase() === bride.name.toLowerCase() || a.brideId === bride.id),
     [appointments, bride]
   );
 
   const brideContract = useMemo(
-    () => contracts.find((c) => c.brideName?.toLowerCase() === bride.name.toLowerCase() || c.brideId === bride.id),
+    () => (contracts || []).find((c) => c.customer?.toLowerCase() === bride.name.toLowerCase()),
     [contracts, bride]
   );
 
   const brideInvoices = useMemo(
-    () => invoices.filter((i) => i.brideName?.toLowerCase() === bride.name.toLowerCase() || i.brideId === bride.id),
+    () => (invoices || []).filter((i: any) => i.brideName?.toLowerCase() === bride.name.toLowerCase() || i.brideId === bride.id),
     [invoices, bride]
   );
 
   const brideAlterations = useMemo(
-    () => alterations.filter((alt) => alt.brideName?.toLowerCase() === bride.name.toLowerCase() || alt.brideId === bride.id),
+    () => (alterations || []).filter((alt) => alt.customer?.toLowerCase() === bride.name.toLowerCase()),
     [alterations, bride]
   );
 
   const brideMessages = useMemo(
-    () => communications.filter((m) => m.brideName?.toLowerCase() === bride.name.toLowerCase() || m.brideId === bride.id),
-    [communications, bride]
+    () => (messages || []).filter((m) => m.customer?.toLowerCase() === bride.name.toLowerCase()),
+    [messages, bride]
   );
 
   const bridePOs = useMemo(
-    () => purchaseOrders.filter((po) => po.items?.toLowerCase().includes(bride.name.toLowerCase())),
+    () => (purchaseOrders || []).filter((po: any) => po.items?.toLowerCase().includes(bride.name.toLowerCase())),
     [purchaseOrders, bride]
   );
 

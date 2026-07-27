@@ -4,6 +4,7 @@ import { NAVIGATION_ITEMS, NavigationItem, ViewKey } from '@/lib/navigation/navi
 import { useAuth } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { canAccessView } from '@/components/vowos/Sidebar';
+import { fetchContracts, ContractRecord } from '@/lib/contractsAlterations';
 
 interface CommandPaletteModalProps {
   open: boolean;
@@ -16,7 +17,14 @@ export default function CommandPaletteModal({ open, onClose, onNavigate }: Comma
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { profile } = useAuth();
   const role = profile?.role ?? null;
-  const { brides, gowns, leads, appointments, contracts, invoices } = useVowosData();
+  const { brides = [], gowns = [], leads = [], appointments = [], invoices = [] } = useVowosData();
+  const [contracts, setContracts] = useState<ContractRecord[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      fetchContracts().then(setContracts).catch(() => {});
+    }
+  }, [open]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,10 +45,10 @@ export default function CommandPaletteModal({ open, onClose, onNavigate }: Comma
   // Compute matching items across navigation and domain entities
   const navResults = useMemo(() => {
     if (!query.trim()) {
-      return NAVIGATION_ITEMS.filter((item) => !item.external && canAccessView(role, item.id as ViewKey, profile?.id)).slice(0, 5);
+      return (NAVIGATION_ITEMS || []).filter((item) => !item.external && canAccessView(role, item.id as ViewKey, profile?.id)).slice(0, 5);
     }
     const q = query.toLowerCase();
-    return NAVIGATION_ITEMS.filter((item) => {
+    return (NAVIGATION_ITEMS || []).filter((item) => {
       if (item.external) return false;
       if (!canAccessView(role, item.id as ViewKey, profile?.id)) return false;
       return (
@@ -54,40 +62,40 @@ export default function CommandPaletteModal({ open, onClose, onNavigate }: Comma
   const brideResults = useMemo(() => {
     if (!query.trim() || !canAccessView(role, 'customers', profile?.id)) return [];
     const q = query.toLowerCase();
-    return brides
-      .filter((b) => b.name.toLowerCase().includes(q) || b.email?.toLowerCase().includes(q) || b.phone?.includes(q))
+    return (brides || [])
+      .filter((b) => b.name?.toLowerCase().includes(q) || b.email?.toLowerCase().includes(q) || b.phone?.includes(q))
       .slice(0, 4);
   }, [query, brides, role, profile?.id]);
 
   const gownResults = useMemo(() => {
     if (!query.trim() || !canAccessView(role, 'inventory', profile?.id)) return [];
     const q = query.toLowerCase();
-    return gowns
-      .filter((g) => g.name.toLowerCase().includes(q) || g.designer.toLowerCase().includes(q) || g.sku.toLowerCase().includes(q))
+    return (gowns || [])
+      .filter((g) => g.name?.toLowerCase().includes(q) || g.designer?.toLowerCase().includes(q) || g.sku?.toLowerCase().includes(q))
       .slice(0, 4);
   }, [query, gowns, role, profile?.id]);
 
   const leadResults = useMemo(() => {
     if (!query.trim() || !canAccessView(role, 'leads', profile?.id)) return [];
     const q = query.toLowerCase();
-    return leads
-      .filter((l) => l.name.toLowerCase().includes(q) || l.email?.toLowerCase().includes(q))
+    return (leads || [])
+      .filter((l) => l.name?.toLowerCase().includes(q) || l.email?.toLowerCase().includes(q))
       .slice(0, 3);
   }, [query, leads, role, profile?.id]);
 
   const contractResults = useMemo(() => {
     if (!query.trim() || !canAccessView(role, 'contracts', profile?.id)) return [];
     const q = query.toLowerCase();
-    return contracts
-      .filter((c) => c.brideName.toLowerCase().includes(q) || c.id.toLowerCase().includes(q))
+    return (contracts || [])
+      .filter((c) => c.customer?.toLowerCase().includes(q) || c.id?.toLowerCase().includes(q))
       .slice(0, 3);
   }, [query, contracts, role, profile?.id]);
 
   const invoiceResults = useMemo(() => {
     if (!query.trim() || !canAccessView(role, 'invoices', profile?.id)) return [];
     const q = query.toLowerCase();
-    return invoices
-      .filter((inv) => inv.brideName.toLowerCase().includes(q) || inv.invoiceNumber.toLowerCase().includes(q))
+    return (invoices || [])
+      .filter((inv) => inv.brideName?.toLowerCase().includes(q) || inv.invoiceNumber?.toLowerCase().includes(q))
       .slice(0, 3);
   }, [query, invoices, role, profile?.id]);
 
@@ -156,8 +164,8 @@ export default function CommandPaletteModal({ open, onClose, onNavigate }: Comma
       list.push({
         type: 'Contracts',
         id: `contract-${c.id}`,
-        label: `Contract for ${c.brideName}`,
-        sub: `Status: ${c.status} · Total: $${c.totalCents ? (c.totalCents / 100).toFixed(2) : '0.00'}`,
+        label: `Contract for ${c.customer}`,
+        sub: `Status: ${c.status} · Total: $${c.amountCents ? (c.amountCents / 100).toFixed(2) : '0.00'}`,
         icon: FileSignature,
         action: () => {
           onNavigate('contracts', { contractId: c.id });
