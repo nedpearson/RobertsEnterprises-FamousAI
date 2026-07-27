@@ -10,11 +10,12 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase environment variables');
-  process.exit(1);
+  console.warn('⚠️  Warning: Missing Supabase environment variables — Supabase-dependent routes will be unavailable.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+export const supabase = (supabaseUrl && supabaseServiceKey)
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null as any;
 
 import { marketingAIRouter } from './modules/marketing-ai/routes';
 

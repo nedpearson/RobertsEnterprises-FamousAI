@@ -30,7 +30,7 @@ export async function checkBudgetSafeguards(brand: string, location?: string) {
       .eq('platform', budget.platform)
       // filter by current month if applicable
     
-    const totalSpent = campaigns?.reduce((sum, camp) => sum + (camp.spent_cents || 0), 0) || 0;
+    const totalSpent = campaigns?.reduce((sum: number, camp: { spent_cents?: number }) => sum + (camp.spent_cents || 0), 0) || 0;
 
     const percentage = (totalSpent / budget.monthly_limit_cents) * 100;
 
