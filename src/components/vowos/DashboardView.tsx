@@ -225,9 +225,19 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
           <p className="text-xs font-semibold text-stone-700">Itemized Paid Invoices ({invoices.filter(i => i.paidCents > 0).length}):</p>
           <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
             {invoices.filter(i => i.paidCents > 0).map((inv) => (
-              <div key={inv.id} className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-xs">
+              <div
+                key={inv.id}
+                onClick={() => {
+                  sessionStorage.setItem('vowos_target_invoice_id', inv.id);
+                  setDrillModal(null);
+                  onNavigate('invoices');
+                }}
+                className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-xs cursor-pointer hover:border-emerald-300 hover:bg-emerald-50/40 transition-all group"
+              >
                 <div>
-                  <p className="font-bold text-stone-900">{inv.id} · {inv.brideName}</p>
+                  <p className="font-bold text-stone-900 group-hover:text-emerald-700 transition-colors flex items-center gap-1.5">
+                    {inv.id} · {inv.brideName} <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+                  </p>
                   <p className="text-stone-500">Paid: {formatDate(inv.date)} · Status: {inv.status}</p>
                 </div>
                 <div className="text-right">
@@ -262,9 +272,19 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
             {outstandingInvoices.map((inv) => {
               const rem = inv.amountCents - inv.paidCents;
               return (
-                <div key={inv.id} className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-xs">
+                <div
+                  key={inv.id}
+                  onClick={() => {
+                    sessionStorage.setItem('vowos_target_invoice_id', inv.id);
+                    setDrillModal(null);
+                    onNavigate('invoices');
+                  }}
+                  className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-xs cursor-pointer hover:border-rose-300 hover:bg-rose-50/40 transition-all group"
+                >
                   <div>
-                    <p className="font-bold text-stone-900">{inv.id} · {inv.brideName}</p>
+                    <p className="font-bold text-stone-900 group-hover:text-rose-600 transition-colors flex items-center gap-1.5">
+                      {inv.id} · {inv.brideName} <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+                    </p>
                     <p className="text-stone-500">Total: {formatCents(inv.amountCents)} · Paid: {formatCents(inv.paidCents)}</p>
                   </div>
                   <div className="text-right">
@@ -287,16 +307,24 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
       {/* --- DRILLDOWN MODAL 3: ACTIVE BRIDES --- */}
       <Modal open={drillModal === 'brides'} onClose={() => setDrillModal(null)} title="Active Brides Roster Drilldown">
         <div className="space-y-4">
-          <p className="text-xs text-stone-500">Currently enrolled brides in wedding pipeline ({customers.length} total):</p>
+          <p className="text-xs text-stone-500">Currently enrolled brides in wedding pipeline ({customers.length} total) — Click any bride to open Bride 360 Profile:</p>
           <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
             {customers.map((c) => (
-              <div key={c.id} className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-xs">
+              <div
+                key={c.id}
+                onClick={() => {
+                  sessionStorage.setItem('vowos_target_bride_id', c.id);
+                  setDrillModal(null);
+                  onNavigate('customers');
+                }}
+                className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-xs cursor-pointer hover:border-rose-400 hover:bg-rose-50/50 transition-all group shadow-2xs"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 font-bold text-rose-600">
-                    {c.name.split(' ').map((n) => n[0]).join('')}
-                  </div>
+                  <BridalIdentity customer={c} size="sm" />
                   <div>
-                    <p className="font-bold text-stone-900">{c.name}</p>
+                    <p className="font-bold text-stone-900 group-hover:text-rose-600 transition-colors flex items-center gap-1.5">
+                      {c.name} <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+                    </p>
                     <p className="text-stone-500">Wedding: {formatDate(c.weddingDate)} · Stylist: {c.stylist}</p>
                   </div>
                 </div>
@@ -316,12 +344,21 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
       {/* --- DRILLDOWN MODAL 4: GOWNS IN STOCK --- */}
       <Modal open={drillModal === 'gowns'} onClose={() => setDrillModal(null)} title="Sample Gowns Inventory Drilldown">
         <div className="space-y-4">
-          <p className="text-xs text-stone-500">Boutique floor sample gowns &amp; stock levels ({gowns.length} styles):</p>
+          <p className="text-xs text-stone-500">Boutique floor sample gowns &amp; stock levels ({gowns.length} styles) — Click any gown to view inventory master:</p>
           <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
             {gowns.map((g) => (
-              <div key={g.id} className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-xs">
+              <div
+                key={g.id}
+                onClick={() => {
+                  setDrillModal(null);
+                  onNavigate('inventory');
+                }}
+                className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-xs cursor-pointer hover:border-rose-400 hover:bg-rose-50/50 transition-all group"
+              >
                 <div>
-                  <p className="font-bold text-stone-900">{g.name}</p>
+                  <p className="font-bold text-stone-900 group-hover:text-rose-600 transition-colors flex items-center gap-1.5">
+                    {g.name} <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
+                  </p>
                   <p className="text-stone-500">{g.designer} · Sample Sz {g.sampleSize} · Color: {g.color}</p>
                 </div>
                 <div className="text-right">

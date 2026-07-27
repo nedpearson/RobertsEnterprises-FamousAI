@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Search, Receipt, Loader2, Plus, Link2 } from 'lucide-react';
 import { Invoice, formatCents, formatDate } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
@@ -17,6 +17,18 @@ export default function InvoicesView() {
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [linkInvoiceId, setLinkInvoiceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      const targetId = sessionStorage.getItem('vowos_target_invoice_id');
+      if (targetId) {
+        setQuery(targetId);
+        const inv = list.find((i) => i.id === targetId || i.id.toLowerCase().includes(targetId.toLowerCase()));
+        if (inv) setPayingInvoiceId(inv.id);
+        sessionStorage.removeItem('vowos_target_invoice_id');
+      }
+    }
+  }, [list]);
 
 
   const filtered = useMemo(

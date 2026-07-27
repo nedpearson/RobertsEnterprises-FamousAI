@@ -26,6 +26,19 @@ export default function CustomersView() {
   const [selectedBride, setSelectedBride] = useState<Customer | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', weddingDate: '', stylist: teamMembers[0], smsOptIn: true });
 
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      const targetId = sessionStorage.getItem('vowos_target_bride_id');
+      if (targetId && list.length > 0) {
+        const found = list.find((b) => b.id === targetId || b.name.toLowerCase().includes(targetId.toLowerCase()));
+        if (found) {
+          setSelectedBride(found);
+          sessionStorage.removeItem('vowos_target_bride_id');
+        }
+      }
+    }
+  }, [list]);
+
 
   const filtered = useMemo(
     () =>
