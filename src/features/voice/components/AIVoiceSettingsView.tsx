@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Mic, PhoneCall, Volume2, ShieldCheck, Activity, BookOpen, Key, AlertTriangle } from 'lucide-react';
+import { Save, Mic, PhoneCall, Volume2, ShieldCheck, Activity, BookOpen, Key, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { btnPrimary } from '@/components/vowos/ui';
 import { toast } from '@/components/ui/use-toast';
 

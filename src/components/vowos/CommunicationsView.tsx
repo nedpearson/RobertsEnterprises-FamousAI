@@ -16,6 +16,7 @@ import {
   X,
   ArrowDownLeft,
   Sunrise,
+  Phone,
 } from 'lucide-react';
 import { Customer, formatCents, formatDate, locationById } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
