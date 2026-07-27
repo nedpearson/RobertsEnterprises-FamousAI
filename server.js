@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 const DIST = path.join(__dirname, 'dist');
 
 const MIME_TYPES = {
@@ -22,11 +22,23 @@ const MIME_TYPES = {
   '.woff2': 'font/woff2',
 };
 
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
 const server = http.createServer((req, res) => {
-  let urlPath = req.url.split('?')[0];
+  let urlPath = (req.url || '/').split('?')[0];
   let filePath = path.join(DIST, urlPath === '/' ? 'index.html' : urlPath);
 
-  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+  try {
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+      filePath = path.join(DIST, 'index.html');
+    }
+  } catch (e) {
     filePath = path.join(DIST, 'index.html');
   }
 
@@ -35,7 +47,7 @@ const server = http.createServer((req, res) => {
 
   fs.readFile(filePath, (err, content) => {
     if (err) {
-      res.writeHead(500);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
       res.end('Server Error');
     } else {
       res.writeHead(200, { 'Content-Type': contentType });
@@ -45,5 +57,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Static server running on http://0.0.0.0:${PORT}`);
+  console.log(`Production SPA server listening on 0.0.0.0:${PORT}`);
 });
