@@ -1,17 +1,21 @@
 import { useState, useMemo } from 'react';
-import { InventoryLevel, InventoryMovement } from '../types/properCommerceTypes';
+import { CatalogProduct, InventoryLevel, InventoryMovement } from '../types/properCommerceTypes';
+import Product360Modal from './Product360Modal';
 import { formatDate } from '@/data/vowosData';
 import { Search, MapPin, ArrowRightLeft, History, PackageCheck, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface InventoryLevelsViewProps {
   levels: InventoryLevel[];
   movements: InventoryMovement[];
+  products?: CatalogProduct[];
+  onUpdate?: () => void;
 }
 
-export default function InventoryLevelsView({ levels, movements }: InventoryLevelsViewProps) {
+export default function InventoryLevelsView({ levels, movements, products = [], onUpdate = () => {} }: InventoryLevelsViewProps) {
   const [activeTab, setActiveTab] = useState<'levels' | 'movements'>('levels');
   const [selectedLocation, setSelectedLocation] = useState<'all' | 'pc-br' | 'pc-cov'>('all');
   const [query, setQuery] = useState('');
+  const [drilldownProd, setDrilldownProd] = useState<CatalogProduct | null>(null);
 
   const filteredLevels = useMemo(() => {
     return levels.filter((lvl) => {
@@ -100,7 +104,15 @@ export default function InventoryLevelsView({ levels, movements }: InventoryLeve
                 {filteredLevels.map((lvl, idx) => (
                   <tr key={idx} className="transition-colors hover:bg-rose-50/30">
                     <td className="px-4 py-3.5">
-                      <p className="font-bold text-stone-900">{lvl.productTitle}</p>
+                      <p
+                        onClick={() => {
+                          const targetProd = products.find((p) => p.variants.some((v) => v.sku === lvl.sku));
+                          if (targetProd) setDrilldownProd(targetProd);
+                        }}
+                        className="font-bold text-stone-900 cursor-pointer hover:text-rose-600 hover:underline transition-colors"
+                      >
+                        {lvl.productTitle}
+                      </p>
                       <p className="text-[11px] font-mono text-stone-400">SKU: {lvl.sku}</p>
                     </td>
                     <td className="px-4 py-3.5 font-semibold text-stone-800">
@@ -172,6 +184,16 @@ export default function InventoryLevelsView({ levels, movements }: InventoryLeve
             </table>
           </div>
         </div>
+      )}
+
+      {/* Product 360 Drilldown Modal */}
+      {drilldownProd && (
+        <Product360Modal
+          product={drilldownProd}
+          movements={movements}
+          onClose={() => setDrilldownProd(null)}
+          onUpdate={onUpdate}
+        />
       )}
     </div>
   );

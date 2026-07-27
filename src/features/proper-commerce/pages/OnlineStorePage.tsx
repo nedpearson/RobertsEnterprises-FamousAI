@@ -158,7 +158,7 @@ export default function OnlineStorePage() {
         />
       )}
 
-      {tab === 'catalog' && <CatalogManager products={products} onUpdate={loadData} />}
+      {tab === 'catalog' && <CatalogManager products={products} movements={movements} onUpdate={loadData} />}
 
       {tab === 'imports' && (
         <VendorImportWizard
@@ -169,7 +169,7 @@ export default function OnlineStorePage() {
         />
       )}
 
-      {tab === 'inventory' && <InventoryLevelsView levels={levels} movements={movements} />}
+      {tab === 'inventory' && <InventoryLevelsView levels={levels} movements={movements} products={products} onUpdate={loadData} />}
 
       {tab === 'counts' && <InventoryCountManager sessions={sessions} onUpdate={loadData} />}
 

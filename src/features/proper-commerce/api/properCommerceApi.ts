@@ -419,6 +419,49 @@ export async function approveCountSession(sessionId: string, approvedBy: string)
   return { ...session };
 }
 
+// ─── Stock Adjustment API ───
+export async function recordStockAdjustment(
+  productId: string,
+  variantId: string,
+  locationId: 'pc-br' | 'pc-cov',
+  delta: number,
+  reason: string,
+  performedBy: string
+): Promise<boolean> {
+  const prod = mockProducts.find((p) => p.id === productId);
+  if (!prod) return false;
+  const variant = prod.variants.find((v) => v.id === variantId);
+  if (!variant) return false;
+
+  const before = locationId === 'pc-br' ? variant.inventoryBatonRouge : variant.inventoryCovington;
+  const after = Math.max(0, before + delta);
+
+  if (locationId === 'pc-br') variant.inventoryBatonRouge = after;
+  else variant.inventoryCovington = after;
+
+  mockMovements.unshift({
+    id: `mov-${Date.now().toString().slice(-4)}`,
+    variantId: variant.id,
+    sku: variant.sku,
+    productTitle: prod.title,
+    locationId,
+    quantityDelta: delta,
+    quantityBefore: before,
+    quantityAfter: after,
+    movementType: delta >= 0 ? 'receiving' : 'damage',
+    reason: `${reason} (${performedBy})`,
+    performedBy,
+    occurredAt: new Date().toISOString(),
+  });
+
+  return true;
+}
+
+export async function deleteCatalogProduct(id: string): Promise<boolean> {
+  mockProducts = mockProducts.filter((p) => p.id !== id);
+  return true;
+}
+
 // ─── Commerce Orders API ───
 export async function fetchCommerceOrders(): Promise<CommerceOrder[]> {
   return [...mockOrders];

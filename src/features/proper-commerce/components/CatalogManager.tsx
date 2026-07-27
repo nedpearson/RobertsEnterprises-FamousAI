@@ -34,14 +34,15 @@ const PURCHASE_MODE_LABELS: Record<PurchaseMode, { label: string; bg: string }> 
   do_not_publish: { label: 'Internal Only', bg: 'bg-stone-200 text-stone-600 border-stone-300' },
 };
 
-export default function CatalogManager({ products, onUpdate }: CatalogManagerProps) {
+export default function CatalogManager({ products, movements = [], onUpdate }: CatalogManagerProps) {
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [publishing, setPublishing] = useState(false);
 
-  // Edit Purchase Mode Modal State
+  // Drilldown & Edit States
+  const [drilldownProd, setDrilldownProd] = useState<CatalogProduct | null>(null);
   const [editingModeProd, setEditingModeProd] = useState<CatalogProduct | null>(null);
 
   const categories = useMemo(() => ['All', ...Array.from(new Set(products.map((p) => p.category)))], [products]);
@@ -210,7 +211,12 @@ export default function CatalogManager({ products, onUpdate }: CatalogManagerPro
                           )}
                         </div>
                         <div>
-                          <p className="font-bold text-stone-900">{p.title}</p>
+                          <p
+                            onClick={() => setDrilldownProd(p)}
+                            className="font-bold text-stone-900 cursor-pointer hover:text-rose-600 hover:underline transition-colors"
+                          >
+                            {p.title}
+                          </p>
                           <p className="text-[11px] text-stone-400">Style: {p.styleNumber} · {p.variants.length} variant(s)</p>
                         </div>
                       </div>
@@ -301,6 +307,16 @@ export default function CatalogManager({ products, onUpdate }: CatalogManagerPro
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Product 360 Drilldown Modal */}
+      {drilldownProd && (
+        <Product360Modal
+          product={drilldownProd}
+          movements={movements}
+          onClose={() => setDrilldownProd(null)}
+          onUpdate={onUpdate}
+        />
       )}
     </div>
   );
