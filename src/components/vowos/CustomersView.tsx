@@ -42,10 +42,10 @@ export default function CustomersView() {
 
   const filtered = useMemo(
     () =>
-      list.filter(
+      (list || []).filter(
         (c) =>
           (filter === 'All' || c.status === filter) &&
-          (c.name.toLowerCase().includes(query.toLowerCase()) || c.email.toLowerCase().includes(query.toLowerCase())),
+          ((c.name || '').toLowerCase().includes((query || '').toLowerCase()) || (c.email || '').toLowerCase().includes((query || '').toLowerCase())),
       ),
     [list, query, filter],
   );

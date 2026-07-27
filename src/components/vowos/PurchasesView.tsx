@@ -267,14 +267,14 @@ export default function PurchasesView() {
   const openValue = openOrders.reduce((s, p) => s + p.amountCents, 0);
   const delayedCount = list.filter((p) => p.status === 'Delayed').length;
 
-  // Filtered orders list
   const filteredOrders = list.filter((po) => {
+    const q = (searchTerm || '').toLowerCase();
     const matchesSearch =
-      po.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      po.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      po.items.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (po.assignedStaff && po.assignedStaff.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (po.assignedCustomer && po.assignedCustomer.toLowerCase().includes(searchTerm.toLowerCase()));
+      (po.id || '').toLowerCase().includes(q) ||
+      (po.vendor || '').toLowerCase().includes(q) ||
+      (po.items || '').toLowerCase().includes(q) ||
+      (po.assignedStaff && po.assignedStaff.toLowerCase().includes(q)) ||
+      (po.assignedCustomer && po.assignedCustomer.toLowerCase().includes(q));
     const matchesVendor = vendorFilter === 'all' || po.vendor === vendorFilter;
     const matchesStatus = statusFilter === 'all' || po.status === statusFilter;
     const matchesStaff = staffFilter === 'all' || po.assignedStaff === staffFilter;

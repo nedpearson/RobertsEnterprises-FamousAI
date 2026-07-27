@@ -33,10 +33,10 @@ export default function InvoicesView() {
 
   const filtered = useMemo(
     () =>
-      list.filter(
+      (list || []).filter(
         (i) =>
           (filter === 'All' || i.status === filter) &&
-          (i.customer.toLowerCase().includes(query.toLowerCase()) || i.id.toLowerCase().includes(query.toLowerCase())),
+          ((i.customer || '').toLowerCase().includes((query || '').toLowerCase()) || (i.id || '').toLowerCase().includes((query || '').toLowerCase())),
       ),
     [list, query, filter],
   );

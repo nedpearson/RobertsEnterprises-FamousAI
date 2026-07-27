@@ -118,9 +118,9 @@ export default function StaffView() {
       return;
     }
 
-    let currentList = userPermissions[staffId];
+    let currentList = Array.isArray(userPermissions[staffId]) ? userPermissions[staffId] : null;
     if (!currentList) {
-      currentList = NAV_ITEMS.filter((item) => VIEW_ACCESS[item.key].includes(staffRole)).map((item) => item.key);
+      currentList = NAV_ITEMS.filter((item) => VIEW_ACCESS[item.key]?.includes(staffRole) ?? false).map((item) => item.key);
     }
 
     const hasAccess = currentList.includes(viewKey);
@@ -511,9 +511,9 @@ export default function StaffView() {
                       <td className="whitespace-nowrap px-4 py-2.5 text-stone-700 font-medium">{label}</td>
                       {matrixMode === 'per-user' ? (
                         staff.map((s) => {
-                          const isAllowed = userPermissions[s.id]
+                          const isAllowed = Array.isArray(userPermissions[s.id])
                             ? userPermissions[s.id].includes(key)
-                            : VIEW_ACCESS[key].includes(s.role);
+                            : (VIEW_ACCESS[key]?.includes(s.role) ?? false);
                           const isDisabled = !isOwner || s.role === 'Owner';
 
                           return (
@@ -532,7 +532,7 @@ export default function StaffView() {
                       ) : (
                         STAFF_ROLES.map((r) => (
                           <td key={r} className="px-2 py-2.5 text-center">
-                            {VIEW_ACCESS[key].includes(r) ? (
+                            {VIEW_ACCESS[key]?.includes(r) ? (
                               <Check className="mx-auto h-4 w-4 text-emerald-500" />
                             ) : (
                               <Minus className="mx-auto h-4 w-4 text-stone-300" />

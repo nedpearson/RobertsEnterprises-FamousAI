@@ -74,7 +74,13 @@ export function canAccessView(role: StaffRole | null, view: ViewKey, staffId?: s
       if (cached) {
         const map = JSON.parse(cached);
         if (map && map[staffId] !== undefined) {
-          return map[staffId].includes(view);
+          const perm = map[staffId];
+          if (Array.isArray(perm)) {
+            return perm.includes(view);
+          }
+          if (typeof perm === 'object' && perm !== null) {
+            return !!perm[view];
+          }
         }
       }
     } catch (e) {

@@ -52,17 +52,17 @@ export default function InventoryView() {
     [gowns],
   );
 
-  const q = query.toLowerCase();
-  const filtered = gowns.filter(
+  const q = (query || '').toLowerCase();
+  const filtered = (gowns || []).filter(
     (g) =>
       (styleFilter === 'All' || g.style === styleFilter) &&
       (categoryFilter === 'All' || g.category === categoryFilter) &&
       (!lowStockOnly || g.stock <= g.reorderPoint) &&
-      (g.name.toLowerCase().includes(q) ||
-        g.designer.toLowerCase().includes(q) ||
-        g.sku.toLowerCase().includes(q) ||
-        g.vendor.toLowerCase().includes(q) ||
-        g.color.toLowerCase().includes(q)),
+      ((g.name || '').toLowerCase().includes(q) ||
+        (g.designer || '').toLowerCase().includes(q) ||
+        (g.sku || '').toLowerCase().includes(q) ||
+        (g.vendor || '').toLowerCase().includes(q) ||
+        (g.color || '').toLowerCase().includes(q)),
   );
 
   // ── Inventory valuation across the current scope ──
