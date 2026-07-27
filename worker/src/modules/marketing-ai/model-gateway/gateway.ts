@@ -47,7 +47,7 @@ export class ModelGateway {
     const phoneRegex = /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g;
 
     let wasRedacted = false;
-    let sanitized = stringified.replace(emailRegex, (match) => {
+    const sanitized = stringified.replace(emailRegex, (match) => {
       wasRedacted = true;
       return '[REDACTED_EMAIL]';
     }).replace(phoneRegex, (match) => {

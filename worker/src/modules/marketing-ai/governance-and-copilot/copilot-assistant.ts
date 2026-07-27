@@ -21,7 +21,7 @@ export class ExecutiveCopilotAssistant {
     const lower = sanitizedQuestion.toLowerCase();
 
     let reply = `Analyzing VowOS data for ${brand}...`;
-    let citations: string[] = ['VowOS Ledger', 'Meta Ads API Reporting', 'Shopify Analytics'];
+    const citations: string[] = ['VowOS Ledger', 'Meta Ads API Reporting', 'Shopify Analytics'];
     let actionPreview: CopilotMessage['actionPreview'] = undefined;
 
     if (lower.includes('budget') || lower.includes('reallocate') || lower.includes('spend')) {

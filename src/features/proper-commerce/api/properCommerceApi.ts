@@ -146,7 +146,7 @@ let mockProducts: CatalogProduct[] = [
   },
 ];
 
-let mockMovements: InventoryMovement[] = [
+const mockMovements: InventoryMovement[] = [
   {
     id: 'mov-101',
     variantId: 'var-001-s',
@@ -163,7 +163,7 @@ let mockMovements: InventoryMovement[] = [
   },
 ];
 
-let mockOrders: CommerceOrder[] = [
+const mockOrders: CommerceOrder[] = [
   {
     id: 'ord-3001',
     orderNumber: '#PC-1001',
