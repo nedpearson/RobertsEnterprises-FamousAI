@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { VendorCoopClaim } from '../types/marketingTypes';
 import { getVendorCoopClaims, getMarketingMetricsSummary } from '../api/marketingApi';
 import { formatCents } from '@/data/vowosData';
-import { DollarSign, ShieldAlert, FileText, CheckCircle2, TrendingUp, AlertTriangle } from 'lucide-react';
+import { DollarSign, ShieldAlert, FileText, CheckCircle2, TrendingUp, AlertTriangle, Download } from 'lucide-react';
 import { btnPrimary } from '@/components/vowos/ui';
+import VendorCoopClaimModal from './VendorCoopClaimModal';
 
 interface BudgetCenterViewProps {
   brandFilter: string;
@@ -13,6 +14,7 @@ interface BudgetCenterViewProps {
 export default function BudgetCenterView({ brandFilter, locationFilter }: BudgetCenterViewProps) {
   const metrics = getMarketingMetricsSummary(brandFilter, locationFilter);
   const vendorClaims = getVendorCoopClaims();
+  const [selectedClaim, setSelectedClaim] = useState<VendorCoopClaim | null>(null);
 
   return (
     <div className="space-y-6 select-none max-w-5xl">
@@ -60,11 +62,12 @@ export default function BudgetCenterView({ brandFilter, locationFilter }: Budget
                 <th className="py-3 px-4">Actual Spend</th>
                 <th className="py-3 px-4">Claim Status</th>
                 <th className="py-3 px-4">Deadline</th>
+                <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 font-medium text-stone-700">
               {vendorClaims.map((v) => (
-                <tr key={v.id}>
+                <tr key={v.id} className="hover:bg-stone-50 transition-colors">
                   <td className="py-3.5 px-4 font-bold text-stone-900">{v.vendorName} — {v.programName}</td>
                   <td className="py-3.5 px-4 font-bold">{formatCents(v.approvedAmountCents)}</td>
                   <td className="py-3.5 px-4 text-stone-600">{formatCents(v.actualSpendCents)}</td>
@@ -74,12 +77,29 @@ export default function BudgetCenterView({ brandFilter, locationFilter }: Budget
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-stone-500">{v.deadlineDate}</td>
+                  <td className="py-3.5 px-4 text-right">
+                     <button
+                       onClick={() => setSelectedClaim(v)}
+                       className="rounded-lg bg-white border border-stone-200 px-2.5 py-1.5 text-[11px] font-bold text-stone-700 hover:bg-stone-50 transition-colors flex items-center gap-1.5 ml-auto"
+                     >
+                       <FileText className="h-3.5 w-3.5" /> View Claim PDF
+                     </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+      
+      {selectedClaim && (
+         <VendorCoopClaimModal
+            claimId={selectedClaim.id}
+            vendor={selectedClaim.vendorName}
+            amountCents={selectedClaim.actualSpendCents}
+            onClose={() => setSelectedClaim(null)}
+         />
+      )}
     </div>
   );
 }

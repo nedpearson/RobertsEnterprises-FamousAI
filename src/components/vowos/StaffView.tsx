@@ -9,6 +9,7 @@ import { NAV_ITEMS, VIEW_ACCESS, ViewKey } from './Sidebar';
 import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
 import { Switch } from '@/components/ui/switch';
 import { ROLE_PERMISSIONS } from '@/lib/services/authService';
+import Staff360Modal from './Staff360Modal';
 
 const GRANULAR_ACTIONS_LIST = [
   {
@@ -80,6 +81,7 @@ export default function StaffView() {
   // Custom user-specific Action Privileges
   const [showActionsModal, setShowActionsModal] = useState(false);
   const [selectedStaffForActions, setSelectedStaffForActions] = useState<StaffRow | null>(null);
+  const [selectedStaff360, setSelectedStaff360] = useState<StaffRow | null>(null);
   const [customActionPermissions, setCustomActionPermissions] = useState<Record<string, string[]>>({});
 
   const isOwner = profile?.role === 'Owner';
@@ -344,12 +346,21 @@ export default function StaffView() {
                 {filteredStaff.map((s) => {
                   const initials = s.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
                   return (
-                    <li key={s.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-stone-500 to-stone-700 text-sm font-semibold text-white">
+                    <li 
+                      key={s.id} 
+                      className="flex flex-wrap items-center gap-4 border-b border-stone-100 p-4 last:border-0 hover:bg-stone-50/70 transition-colors cursor-pointer group"
+                      onClick={(e) => {
+                         // prevent firing if clicking a select or button inside the row
+                         const target = e.target as HTMLElement;
+                         if (target.closest('button') || target.closest('select')) return;
+                         setSelectedStaff360(s);
+                      }}
+                    >
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-stone-500 to-stone-700 text-sm font-semibold text-white group-hover:from-rose-500 group-hover:to-rose-600 transition-colors">
                         {initials}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-stone-900">
+                        <p className="truncate text-sm font-medium text-stone-900 group-hover:text-rose-600 transition-colors">
                           {s.name}
                           {profile?.id === s.id && <span className="ml-2 text-xs text-stone-400">(you)</span>}
                         </p>
@@ -691,6 +702,10 @@ export default function StaffView() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {selectedStaff360 && (
+        <Staff360Modal staff={selectedStaff360} onClose={() => setSelectedStaff360(null)} />
       )}
     </div>
   );

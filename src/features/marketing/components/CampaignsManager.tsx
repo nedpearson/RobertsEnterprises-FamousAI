@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MarketingCampaign } from '../types/marketingTypes';
 import { getMarketingCampaigns, updateCampaignStatus } from '../api/marketingApi';
 import CampaignWizardModal from './CampaignWizardModal';
+import Campaign360Modal from './Campaign360Modal';
 import { formatCents } from '@/data/vowosData';
 import { Search, PlusCircle, PlayCircle, PauseCircle, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -15,6 +16,7 @@ export default function CampaignsManager({ brandFilter, onOpenWizard }: Campaign
   const [campaigns, setCampaigns] = useState<MarketingCampaign[]>(getMarketingCampaigns());
   const [searchQuery, setSearchQuery] = useState('');
   const [showWizard, setShowWizard] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<MarketingCampaign | null>(null);
 
   const filtered = campaigns.filter((c) => {
     if (brandFilter !== 'all' && c.brand !== brandFilter) return false;
@@ -67,9 +69,13 @@ export default function CampaignsManager({ brandFilter, onOpenWizard }: Campaign
             </thead>
             <tbody className="divide-y divide-stone-100 font-medium text-stone-700">
               {filtered.map((c) => (
-                <tr key={c.id} className="hover:bg-stone-50/70 transition-colors">
+                <tr 
+                  key={c.id} 
+                  className="hover:bg-stone-50/70 transition-colors cursor-pointer group"
+                  onClick={() => setSelectedCampaign(c)}
+                >
                   <td className="py-3.5 px-4 max-w-xs">
-                    <p className="font-bold text-stone-900 truncate">{c.name}</p>
+                    <p className="font-bold text-stone-900 truncate group-hover:text-rose-600 transition-colors">{c.name}</p>
                     <p className="text-[11px] text-stone-500 truncate">{c.description}</p>
                   </td>
                   <td className="py-3.5 px-4">
@@ -132,6 +138,13 @@ export default function CampaignsManager({ brandFilter, onOpenWizard }: Campaign
         <CampaignWizardModal
           onClose={() => setShowWizard(false)}
           onCampaignCreated={() => setCampaigns(getMarketingCampaigns())}
+        />
+      )}
+
+      {selectedCampaign && (
+        <Campaign360Modal 
+          campaign={selectedCampaign} 
+          onClose={() => setSelectedCampaign(null)} 
         />
       )}
     </div>
