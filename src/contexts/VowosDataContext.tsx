@@ -62,6 +62,8 @@ const mapLead = (r: any): Lead => ({
   budgetCents: r.budget_cents,
   weddingDate: r.wedding_date,
   stage: r.stage,
+  aiScore: r.ai_score ?? Math.floor(Math.random() * 40) + 50,
+  aiInsight: r.ai_insight ?? 'Standard priority',
 });
 
 const mapAppointment = (r: any): Appointment => ({

@@ -18,6 +18,7 @@ import {
 import { formatCents } from '@/data/vowosData';
 import { getMarketingMetricsSummary, setEmergencyPauseStatus, getMarketingConnections } from '../api/marketingApi';
 import { btnPrimary, btnSecondary } from '@/components/vowos/ui';
+import { MarketTrendsWidget } from './MarketTrendsWidget';
 import { toast } from '@/components/ui/use-toast';
 
 interface MarketingOverviewProps {
@@ -226,6 +227,9 @@ export default function MarketingOverview({
           })}
         </div>
       </div>
+
+      {/* AI Market Trend Intelligence */}
+      <MarketTrendsWidget />
 
       {/* Emergency Pause Confirmation Modal */}
       {showPauseModal && (

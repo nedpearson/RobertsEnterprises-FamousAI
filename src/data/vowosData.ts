@@ -203,6 +203,8 @@ export interface Lead {
   budgetCents: number;
   weddingDate: string;
   stage: LeadStage;
+  aiScore?: number;
+  aiInsight?: string;
 }
 
 export interface Invoice {

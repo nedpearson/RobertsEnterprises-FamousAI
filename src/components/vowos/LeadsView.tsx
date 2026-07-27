@@ -35,7 +35,9 @@ export default function LeadsView({ onNavigate }: { onNavigate?: (view: string, 
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {LEAD_STAGES.map((stage) => {
-            const stageLeads = list.filter((l) => l.stage === stage);
+            const stageLeads = list
+              .filter((l) => l.stage === stage)
+              .sort((a, b) => (b.aiScore ?? 0) - (a.aiScore ?? 0));
             const style = STAGE_STYLES[stage];
             return (
               <div key={stage} className="rounded-2xl border border-stone-200/80 bg-stone-50/50 p-3">
@@ -57,9 +59,17 @@ export default function LeadsView({ onNavigate }: { onNavigate?: (view: string, 
                         <p className="font-bold text-stone-900 group-hover:text-rose-600 transition-colors flex items-center gap-1">
                           {l.name} <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:translate-x-0.5 transition-transform" />
                         </p>
-                        <Sparkles className="h-4 w-4 flex-shrink-0 text-rose-400" />
+                        <div className="flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200/50">
+                           <Sparkles className="h-3 w-3 text-rose-500" />
+                           <span className="text-[10px] font-bold text-rose-700">AI {l.aiScore}</span>
+                        </div>
                       </div>
                       <p className="mt-0.5 text-xs text-stone-400">{l.email}</p>
+                      {l.aiInsight && (
+                        <p className="mt-2 text-[11px] font-medium text-indigo-600 leading-tight bg-indigo-50/50 p-1.5 rounded-lg border border-indigo-100/50">
+                          {l.aiInsight}
+                        </p>
+                      )}
                       <div className="mt-3 flex items-center justify-between text-xs text-stone-500">
                         <span>Budget {formatCents(l.budgetCents)}</span>
                         <span>{formatDate(l.weddingDate)}</span>
