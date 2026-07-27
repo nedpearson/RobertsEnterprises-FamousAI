@@ -1,4 +1,4 @@
-import { useMemo, useState, FormEvent } from 'react';
+import { useMemo, useState, useEffect, FormEvent } from 'react';
 
 import { Search, UserPlus, CheckCircle2, Loader2, Link2, Check, Mail, MessageSquare, Ruler } from 'lucide-react';
 import { formatCents, formatDate, teamMembers, Customer } from '@/data/vowosData';
