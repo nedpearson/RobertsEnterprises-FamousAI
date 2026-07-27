@@ -16,9 +16,14 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+import { marketingAIRouter } from './modules/marketing-ai/routes';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Mount Marketing AI Router
+app.use('/api/marketing-ai', marketingAIRouter);
 
 // OAuth Connect Endpoint
 app.get('/api/auth/connect/:provider', (req, res) => {

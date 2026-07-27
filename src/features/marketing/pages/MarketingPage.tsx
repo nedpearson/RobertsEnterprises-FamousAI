@@ -11,7 +11,14 @@ import AutomationsView from '../components/AutomationsView';
 import MarketingReportsView from '../components/MarketingReportsView';
 import ApprovalsView from '../components/ApprovalsView';
 import MarketingSettingsView from '../components/MarketingSettingsView';
-import AIProspectingView from '../components/AIProspectingView';
+import AICommandCenterView from '../../marketing-ai/command-center/AICommandCenterView';
+import MarketingCopilotView from '../../marketing-ai/assistant/MarketingCopilotView';
+import RecommendationsView from '../../marketing-ai/recommendations/RecommendationsView';
+import BudgetOptimizerView from '../../marketing-ai/budget-optimizer/BudgetOptimizerView';
+import ExperimentsView from '../../marketing-ai/experiments/ExperimentsView';
+import CreativeIntelligenceView from '../../marketing-ai/creative-intelligence/CreativeIntelligenceView';
+import CompetitorTrendsView from '../../marketing-ai/competitors/CompetitorTrendsView';
+import GovernanceView from '../../marketing-ai/governance/GovernanceView';
 import {
   TrendingUp,
   Megaphone,
@@ -26,10 +33,24 @@ import {
   Settings,
   PlusCircle,
   Filter,
+  Sparkles,
+  Bot,
+  Cpu,
+  Layers,
+  Eye,
+  ShieldCheck
 } from 'lucide-react';
 
-  export type MarketingTab =
+export type MarketingTab =
   | 'overview'
+  | 'ai-overview'
+  | 'ai-copilot'
+  | 'ai-recommendations'
+  | 'ai-budget-optimizer'
+  | 'ai-experiments'
+  | 'ai-creative'
+  | 'ai-competitors'
+  | 'ai-governance'
   | 'campaigns'
   | 'content'
   | 'creatives'
@@ -45,22 +66,26 @@ import {
   | 'settings';
 
 export default function MarketingPage() {
-  const [activeTab, setActiveTab] = useState<MarketingTab>('overview');
+  const [activeTab, setActiveTab] = useState<MarketingTab>('ai-overview');
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
 
   const TABS: { id: MarketingTab; label: string; icon: any }[] = [
+    { id: 'ai-overview', label: 'AI Command Center', icon: Sparkles },
+    { id: 'ai-copilot', label: 'AI Copilot', icon: Bot },
+    { id: 'ai-recommendations', label: 'AI Recommendations', icon: Sparkles },
+    { id: 'ai-budget-optimizer', label: 'Digital Twin & Optimizer', icon: Cpu },
+    { id: 'ai-experiments', label: 'A/B & Bandit Experiments', icon: Layers },
+    { id: 'ai-creative', label: 'Creative Intelligence', icon: Image },
+    { id: 'ai-competitors', label: 'Competitor & Trend Radar', icon: Eye },
+    { id: 'ai-governance', label: 'AI Governance & Kill Switch', icon: ShieldCheck },
     { id: 'overview', label: 'Overview', icon: TrendingUp },
     { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
     { id: 'content', label: 'Content Calendar', icon: Calendar },
-    { id: 'creatives', label: 'Creative Studio', icon: Image },
     { id: 'prospecting', label: 'AI Prospecting', icon: Users },
     { id: 'budget', label: 'Budget Center', icon: DollarSign },
-    { id: 'attribution', label: 'Attribution', icon: BarChart3 },
     { id: 'automations', label: 'Automations', icon: Zap },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'approvals', label: 'Approvals', icon: CheckCircle2 },
     { id: 'connections', label: 'Connections', icon: Radio },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -143,6 +168,19 @@ export default function MarketingPage() {
 
       {/* Tab Content Renderer */}
       <div>
+        {activeTab === 'ai-overview' && (
+          <AICommandCenterView
+            brandFilter={brandFilter}
+            onNavigateTab={(tab: string) => setActiveTab(tab as MarketingTab)}
+          />
+        )}
+        {activeTab === 'ai-copilot' && <MarketingCopilotView brandFilter={brandFilter} />}
+        {activeTab === 'ai-recommendations' && <RecommendationsView brandFilter={brandFilter} />}
+        {activeTab === 'ai-budget-optimizer' && <BudgetOptimizerView brandFilter={brandFilter} />}
+        {activeTab === 'ai-experiments' && <ExperimentsView />}
+        {activeTab === 'ai-creative' && <CreativeIntelligenceView />}
+        {activeTab === 'ai-competitors' && <CompetitorTrendsView brandFilter={brandFilter} />}
+        {activeTab === 'ai-governance' && <GovernanceView />}
         {activeTab === 'overview' && (
           <MarketingOverview
             brandFilter={brandFilter}
