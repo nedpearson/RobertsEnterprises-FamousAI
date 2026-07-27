@@ -7,7 +7,10 @@ NIXPACKS_PATH = "/root/.nix-profile/bin:/nix/var/nix/profiles/default/bin"
 nixPkgs = ["nodejs_22"]
 
 [phases.install]
-cmds = ["npm ci --include=dev"]
+cmds = ["npm install --legacy-peer-deps"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["npx vite build"]
+
+[start]
+cmd = "npx serve -s dist -l $PORT"
