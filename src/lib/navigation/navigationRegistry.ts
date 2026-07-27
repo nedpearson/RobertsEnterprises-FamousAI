@@ -17,6 +17,7 @@ import {
   Scissors,
   SlidersHorizontal,
   AlarmClock,
+  ShoppingBag,
   LucideIcon
 } from 'lucide-react';
 import { StaffRole } from '@/contexts/AuthContext';
@@ -49,7 +50,8 @@ export type ViewKey =
   | 'settings'
   | 'payroll'
   | 'timeclock'
-  | 'training';
+  | 'training'
+  | 'onlinestore';
 
 export interface NavigationSection {
   id: NavigationSectionId;
@@ -291,6 +293,17 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     mobilePriority: 18,
     searchKeywords: ['settings', 'configuration', 'store setup', 'notifications', 'taxes', 'system'],
   },
+  {
+    id: 'onlinestore',
+    label: 'Online Store',
+    shortLabel: 'Shopify Store',
+    icon: ShoppingBag,
+    path: '/onlinestore',
+    section: 'admin',
+    allowedRoles: ['Owner', 'Manager'],
+    mobilePriority: 17,
+    searchKeywords: ['online store', 'shopify', 'proper', 'ecommerce', 'catalog import', 'web orders'],
+  },
 
   // EXTERNAL
   {
@@ -328,6 +341,7 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
   payroll: '/payroll',
   timeclock: '/timeclock',
   training: '/training',
+  onlinestore: '/onlinestore',
 };
 
 /** Map path to view key */
@@ -341,6 +355,7 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/transfers': 'transfers',
   '/appointments': 'appointments',
   '/communications': 'communications',
+  '/onlinestore': 'onlinestore',
   '/contracts': 'contracts',
   '/alterations': 'alterations',
   '/invoices': 'invoices',

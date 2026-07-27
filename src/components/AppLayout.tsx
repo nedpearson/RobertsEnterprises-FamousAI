@@ -38,6 +38,7 @@ import AlterationsView from '@/components/vowos/AlterationsView';
 import SettingsView from '@/components/vowos/settings/SettingsShell';
 import PayrollView from '@/components/vowos/payroll/PayrollView';
 import TimeClockView from '@/components/vowos/TimeClockView';
+import OnlineStorePage from '@/features/proper-commerce/pages/OnlineStorePage';
 
 
 
@@ -272,6 +273,7 @@ export default function AppLayout() {
               {view === 'payroll' && <PayrollView />}
               {view === 'timeclock' && <TimeClockView />}
               {view === 'training' && <TrainingCenterView onNavigate={setView} />}
+              {view === 'onlinestore' && <OnlineStorePage />}
             </VowosErrorBoundary>
           )}
 

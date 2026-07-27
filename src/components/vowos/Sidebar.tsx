@@ -15,6 +15,7 @@ import {
   CalendarHeart
 } from 'lucide-react';
 import { useAuth, StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
+import { useVowosData } from '@/contexts/VowosDataContext';
 import {
   NAVIGATION_SECTIONS,
   NAVIGATION_ITEMS,
@@ -58,6 +59,7 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   settings: ['Owner', 'Manager'],
   payroll: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   training: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  onlinestore: ['Owner', 'Manager'],
 };
 
 export function canAccessView(role: StaffRole | null, view: ViewKey, staffId?: string | null): boolean {
@@ -102,6 +104,7 @@ export default function Sidebar({
   onToggleCompact,
 }: SidebarProps) {
   const { session, profile, signOut } = useAuth();
+  const { activeLocation } = useVowosData();
   const role: StaffRole | null = session && profile ? profile.role : null;
 
   const [compact, setCompact] = useState<boolean>(() => {
@@ -170,6 +173,9 @@ export default function Sidebar({
     : 'G';
 
   const checkAccess = (item: NavigationItem): boolean => {
+    if (item.id === 'onlinestore') {
+      if (activeLocation !== 'pc-br' && activeLocation !== 'pc-cov') return false;
+    }
     if (item.id === 'training' || item.id === 'dashboard') return true;
     if (!role) return false;
     if (role === 'Owner') return true;
