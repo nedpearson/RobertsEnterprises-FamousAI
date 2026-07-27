@@ -1,0 +1,81 @@
+import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import { runJobPoller } from './jobs/runner';
+
+dotenv.config();
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase environment variables');
+  process.exit(1);
+}
+
+export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// OAuth Connect Endpoint
+app.get('/api/auth/connect/:provider', (req, res) => {
+  const { provider } = req.params;
+  const { brand } = req.query;
+  
+  // Real implementation would redirect to provider's authorization URL
+  console.log(`Initiating OAuth for ${provider} - Brand: ${brand}`);
+  res.redirect(`http://localhost:5173/marketing/connections?success=true&provider=${provider}`);
+});
+
+// OAuth Callback Endpoint
+app.get('/api/auth/callback/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const { code, state } = req.query;
+  
+  // Real implementation would exchange code for tokens securely and store in `provider_connections` table
+  console.log(`Received OAuth callback for ${provider}. Code: ${code}`);
+  
+  res.send('Authorization successful. You can close this window.');
+});
+
+app.post('/api/campaigns/pause-all', async (req, res) => {
+  const { brand } = req.body;
+  if (!brand) return res.status(400).json({ error: 'Brand required' });
+  
+  try {
+    console.log(`🚨 Received EMERGENCY PAUSE request for ${brand}`);
+    // Queue the durable job
+    await supabase.from('durable_jobs').insert({
+      queue_name: 'emergency_pause_all',
+      payload: { brand, timestamp: new Date().toISOString() }
+    });
+    res.json({ success: true, message: 'Emergency pause queued successfully' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', service: 'vowos-worker', timestamp: new Date() });
+});
+
+async function start() {
+  const PORT = process.env.PORT || 8080;
+  
+  app.listen(PORT, () => {
+    console.log(`🚀 Proper & Co Autonomous Marketing Worker listening on port ${PORT}`);
+  });
+  
+  console.log('Environment:', process.env.NODE_ENV);
+  
+  // Start the background job poller
+  runJobPoller();
+}
+
+start().catch((err) => {
+  console.error('Failed to start worker:', err);
+});

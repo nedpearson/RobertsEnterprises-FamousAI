@@ -470,10 +470,19 @@ export function getEmergencyPauseStatus(): boolean {
 
 export function setEmergencyPauseStatus(paused: boolean) {
   localStorage.setItem(EMERGENCY_PAUSE_KEY, String(paused));
+  
   if (paused) {
+    // 1. Update frontend state
     const list = getMarketingCampaigns();
     const nextList = list.map((c) => (c.status === 'active' ? { ...c, status: 'paused' as const } : c));
     saveMarketingCampaigns(nextList);
+    
+    // 2. Queue durable job on the backend to enforce this in real external APIs
+    fetch('http://localhost:8080/api/campaigns/pause-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brand: 'Proper & Company' })
+    }).catch(err => console.error('Failed to queue emergency pause job', err));
   }
 }
 
