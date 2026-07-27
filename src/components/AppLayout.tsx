@@ -256,7 +256,7 @@ export default function AppLayout() {
             <VowosErrorBoundary>
               {view === 'dashboard' && <DashboardView onNavigate={setView} />}
               {view === 'customers' && <CustomersView />}
-              {view === 'leads' && <LeadsView />}
+              {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
               {view === 'inventory' && <InventoryView />}
               {view === 'transfers' && <TransfersView />}
               {view === 'appointments' && <AppointmentsView />}
