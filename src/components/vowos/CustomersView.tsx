@@ -6,6 +6,7 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { sendAndLogMessage, isEmail, isPhone } from '@/lib/messaging';
 import { portalUrl, portalLinkTemplates } from '@/lib/contractsAlterations';
 import BrideProfileModal from './BrideProfileModal';
+import Bride360View from './Bride360View';
 import { PageHeader, StatusBadge, Modal, inputCls, btnPrimary } from './ui';
 import { toast } from '@/components/ui/use-toast';
 
@@ -21,6 +22,7 @@ export default function CustomersView() {
   const [copiedId, setCopiedId] = useState('');
   const [sendingKey, setSendingKey] = useState('');
   const [profileBride, setProfileBride] = useState<Customer | null>(null);
+  const [selectedBride, setSelectedBride] = useState<Customer | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', weddingDate: '', stylist: teamMembers[0], smsOptIn: true });
 
 
@@ -115,6 +117,10 @@ export default function CustomersView() {
     }, 1200);
   };
 
+  if (selectedBride) {
+    return <Bride360View bride={selectedBride} onBack={() => setSelectedBride(null)} />;
+  }
+
   return (
     <div>
       <PageHeader
@@ -183,15 +189,15 @@ export default function CustomersView() {
                   <tr key={c.id} className="transition-colors hover:bg-rose-50/40">
                     <td className="px-5 py-3.5">
                       <button
-                        onClick={() => setProfileBride(c)}
-                        title="Open fit profile"
-                        className="flex items-center gap-3 text-left"
+                        onClick={() => setSelectedBride(c)}
+                        title="Open Bride 360 record"
+                        className="flex items-center gap-3 text-left group cursor-pointer"
                       >
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-rose-200 text-xs font-semibold text-rose-600">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-rose-200 text-xs font-semibold text-rose-600 group-hover:bg-rose-500 group-hover:text-white transition-colors">
                           {c.name.split(' ').map((n) => n[0]).join('')}
                         </div>
                         <div>
-                          <p className="font-medium text-stone-800 hover:text-rose-600">{c.name}</p>
+                          <p className="font-medium text-stone-800 group-hover:text-rose-600 transition-colors">{c.name}</p>
                           <p className="text-xs text-stone-400">{c.id}</p>
                         </div>
                       </button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert, Loader2, Sparkles, BookOpen } from 'lucide-react';
+import { Menu, Search, LogIn, LogOut, Lock, ShieldCheck, ShieldAlert, Loader2, Sparkles, MessageSquare } from 'lucide-react';
 import Sidebar, { ViewKey, NAV_ITEMS, PUBLIC_VIEWS, canAccessView, VIEW_ACCESS } from '@/components/vowos/Sidebar';
 import NotificationsBell from '@/components/vowos/NotificationsBell';
 import AuthModal from '@/components/vowos/AuthModal';
@@ -8,6 +8,11 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { locationById } from '@/data/vowosData';
 import { LocationSwitcher } from '@/components/vowos/LocationSelect';
 import { VowosErrorBoundary } from '@/components/vowos/ErrorBoundary';
+import Breadcrumbs from '@/components/vowos/Breadcrumbs';
+import CommandPaletteModal from '@/components/vowos/CommandPaletteModal';
+import MobileNavigation from '@/components/vowos/MobileNavigation';
+import { NAVIGATION_ITEMS } from '@/lib/navigation/navigationRegistry';
+import { getStoredCompactSidebar } from '@/lib/navigation/userPreferences';
 
 import { DemoModeBanner } from '@/components/demo/DemoModeBanner';
 import { DemoCursorOverlay } from '@/components/demo/DemoCursorOverlay';
@@ -93,6 +98,11 @@ export default function AppLayout() {
     : '';
 
   const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [compactSidebar, setCompactSidebar] = useState(() => getStoredCompactSidebar());
+
+  const { communications } = useVowosData();
+  const unreadMessagesCount = communications.filter((c) => c.status === 'unread' || c.direction === 'inbound').length;
 
   return (
     <div className="min-h-screen bg-[#faf8f5]">
@@ -104,9 +114,11 @@ export default function AppLayout() {
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
         onRequestSignIn={() => setAuthOpen(true)}
+        isCompact={compactSidebar}
+        onToggleCompact={() => setCompactSidebar(!compactSidebar)}
       />
 
-      <div className="lg:pl-64">
+      <div className={`transition-all duration-200 ${compactSidebar ? 'lg:pl-20' : 'lg:pl-64'}`}>
         {/* Top bar */}
         <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#faf8f5]/90 backdrop-blur">
           <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
@@ -138,13 +150,31 @@ export default function AppLayout() {
                 <LocationSwitcher />
               </div>
 
+              {/* Global Search / Command Palette button */}
               <button
                 data-tour-id="header-search-brides"
-                onClick={() => setView('customers')}
-                className="hidden items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-400 transition-colors hover:border-stone-300 sm:flex"
+                onClick={() => setCommandPaletteOpen(true)}
+                className="hidden items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-400 transition-colors hover:border-stone-300 sm:flex shadow-2xs"
               >
-                <Search className="h-4 w-4" />
-                Search brides...
+                <Search className="h-3.5 w-3.5 text-stone-400" />
+                <span>Search brides, gowns, orders...</span>
+                <kbd className="ml-1 rounded border border-stone-200 bg-stone-50 px-1 py-0.5 text-[9px] font-medium text-stone-500">
+                  Ctrl K
+                </kbd>
+              </button>
+
+              {/* Global Communications Header Button */}
+              <button
+                onClick={() => setView('communications')}
+                className="relative flex items-center justify-center h-9 w-9 rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 transition-colors shadow-2xs"
+                title="Client Communications Inbox"
+              >
+                <MessageSquare className="h-4 w-4" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-xs">
+                    {unreadMessagesCount}
+                  </span>
+                )}
               </button>
 
               {/* Live alerts: in-transit transfers, overdue invoices, delayed POs */}
@@ -188,6 +218,8 @@ export default function AppLayout() {
         </header>
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 pb-24 lg:pb-8">
+          <Breadcrumbs view={view} onNavigate={setView} />
+
           {/* Guest preview banner on the dashboard */}
           {!session && !loading && view === 'dashboard' && (
             <div className="mb-6 flex flex-col items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/70 px-5 py-4 sm:flex-row sm:items-center">
@@ -236,6 +268,7 @@ export default function AppLayout() {
           )}
 
           <DemoLauncherModal open={demoModalOpen} onClose={() => setDemoModalOpen(false)} onNavigateNeeded={setView} />
+          <CommandPaletteModal open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} onNavigate={setView} />
           <DemoCursorOverlay />
           <TourControlBar onNavigateNeeded={setView} />
 
@@ -247,56 +280,8 @@ export default function AppLayout() {
         </main>
       </div>
 
-      {/* Mobile Bottom Quick Navigation Bar (iPhone / Android safe area compliant) */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-stone-200 bg-white/95 backdrop-blur lg:hidden pb-[env(safe-area-inset-bottom)] shadow-lg">
-        <div className="flex items-center justify-around h-14 px-2">
-          <button
-            onClick={() => setView('dashboard')}
-            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
-              view === 'dashboard' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">📊</span>
-            <span>Home</span>
-          </button>
-          <button
-            onClick={() => setView('customers')}
-            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
-              view === 'customers' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">👰</span>
-            <span>Brides</span>
-          </button>
-          <button
-            onClick={() => setView('appointments')}
-            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
-              view === 'appointments' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">📅</span>
-            <span>Schedule</span>
-          </button>
-          <button
-            onClick={() => setView('timeclock')}
-            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
-              view === 'timeclock' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">⏰</span>
-            <span>Clock In</span>
-          </button>
-          <button
-            onClick={() => setView('invoices')}
-            className={`flex flex-col items-center justify-center min-w-[56px] py-1 text-[10px] font-semibold transition-colors ${
-              view === 'invoices' ? 'text-rose-600' : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            <span className="h-5 w-5 flex items-center justify-center font-bold text-xs">💳</span>
-            <span>POS / Pay</span>
-          </button>
-        </div>
-      </div>
+      {/* Role-aware mobile navigation bar and More drawer */}
+      <MobileNavigation view={view} onNavigate={setView} onRequestSignIn={() => setAuthOpen(true)} />
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
