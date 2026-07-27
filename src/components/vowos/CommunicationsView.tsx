@@ -21,6 +21,7 @@ import { Customer, formatCents, formatDate, locationById } from '@/data/vowosDat
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
+import BridalIdentity from './BridalIdentity';
 import { PageHeader, inputCls } from './ui';
 import {
   MessageChannel,
@@ -466,9 +467,7 @@ export default function CommunicationsView() {
                   selectedId === b.id ? 'bg-rose-50/70' : 'hover:bg-stone-50'
                 }`}
               >
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-400 to-rose-600 text-xs font-semibold text-white">
-                  {b.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
-                </div>
+                <BridalIdentity customer={b} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-stone-800">{b.name}</p>
                   <p className="truncate text-[11px] text-stone-400">

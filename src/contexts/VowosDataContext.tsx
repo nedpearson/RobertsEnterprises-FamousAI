@@ -23,6 +23,22 @@ import { registerSiteOrigin } from '@/lib/messaging';
 
 const asDate = (v: any): string => (typeof v === 'string' ? v.slice(0, 10) : '');
 
+export const DEMO_BRIDE_PHOTOS: Record<string, string> = {
+  'c-101': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+  'c-102': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
+  'c-103': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80',
+  'c-104': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80',
+};
+
+const getCachedBridePhoto = (id: string, dbPhoto?: string | null): string | undefined => {
+  if (typeof localStorage !== 'undefined') {
+    const cached = localStorage.getItem(`vowos_bride_photo_${id}`);
+    if (cached !== null) return cached || undefined;
+  }
+  if (dbPhoto) return dbPhoto;
+  return DEMO_BRIDE_PHOTOS[id] || undefined;
+};
+
 const mapBride = (r: any): Customer => ({
   id: r.id,
   name: r.name,
@@ -34,6 +50,8 @@ const mapBride = (r: any): Customer => ({
   spendCents: r.spend_cents,
   location: (r.location ?? 'ido-br') as LocationId,
   portalToken: r.portal_token ?? '',
+  profilePhotoUrl: getCachedBridePhoto(r.id, r.profile_photo_url),
+  profilePhotoUpdatedAt: r.profile_photo_updated_at || new Date().toISOString(),
 });
 
 const mapLead = (r: any): Lead => ({
@@ -265,6 +283,7 @@ interface VowosDataContextType {
 
   addTransfer: (input: NewTransferInput) => Promise<boolean>;
   receiveTransfer: (id: string) => Promise<boolean>;
+  updateBridePhoto: (id: string, photoUrl: string | null) => Promise<boolean>;
 }
 
 const VowosDataContext = createContext<VowosDataContextType>({
@@ -301,6 +320,7 @@ const VowosDataContext = createContext<VowosDataContextType>({
 
   addTransfer: async () => false,
   receiveTransfer: async () => false,
+  updateBridePhoto: async () => false,
 });
 
 export const useVowosData = () => useContext(VowosDataContext);
@@ -408,6 +428,51 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return true;
     },
     [brides, defaultLocation],
+  );
+
+  const updateBridePhoto = useCallback(
+    async (id: string, photoUrl: string | null): Promise<boolean> => {
+      const updatedAt = new Date().toISOString();
+
+      // Update local React state immediately across all views
+      setBrides((prev) =>
+        prev.map((b) =>
+          b.id === id
+            ? {
+                ...b,
+                profilePhotoUrl: photoUrl || undefined,
+                profilePhotoUpdatedAt: updatedAt,
+              }
+            : b,
+        ),
+      );
+
+      // Cache in localStorage as fallback
+      try {
+        if (photoUrl) {
+          localStorage.setItem(`vowos_bride_photo_${id}`, photoUrl);
+          localStorage.setItem(`vowos_bride_photo_updated_${id}`, updatedAt);
+        } else {
+          localStorage.removeItem(`vowos_bride_photo_${id}`);
+          localStorage.removeItem(`vowos_bride_photo_updated_${id}`);
+        }
+      } catch (e) {
+        console.error('Failed to cache bride photo in localStorage:', e);
+      }
+
+      // Persist to Supabase
+      const { error } = await supabase
+        .from('customers')
+        .update({ profile_photo_url: photoUrl, profile_photo_updated_at: updatedAt })
+        .eq('id', id);
+
+      if (error) {
+        console.warn('Supabase update notification for profile_photo_url:', error.message);
+      }
+
+      return true;
+    },
+    [],
   );
 
   const advanceLead = useCallback(
@@ -1086,6 +1151,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         addTransfer,
         receiveTransfer,
+        updateBridePhoto,
       }}
     >
       {children}

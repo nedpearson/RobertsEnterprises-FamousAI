@@ -28,8 +28,10 @@ import {
 import { PageHeader, StatusBadge, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { toast } from '@/components/ui/use-toast';
 
+import BridalIdentity from './BridalIdentity';
+
 export default function ContractsView() {
-  const { brides, allBrides, activeLocation } = useVowosData();
+  const { activeLocation, brides = [] } = useVowosData();
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -173,10 +175,13 @@ export default function ContractsView() {
                 scoped.map((c) => (
                   <tr key={c.id} className="transition-colors hover:bg-rose-50/40">
                     <td className="px-5 py-3.5">
-                      <button onClick={() => setDetail(c)} className="text-left">
-                        <p className="font-medium text-stone-800 hover:text-rose-600">{c.customer}</p>
-                        <p className="text-xs text-stone-400">{c.id}</p>
-                      </button>
+                      <BridalIdentity
+                        customer={brides.find((b) => b.name.toLowerCase() === c.customer.toLowerCase()) || { name: c.customer }}
+                        size="xs"
+                        showName
+                        clickable
+                        onClick={() => setDetail(c)}
+                      />
                     </td>
                     <td className="max-w-[240px] px-5 py-3.5">
                       <p className="truncate text-stone-700" title={c.gown}>{c.gown}</p>

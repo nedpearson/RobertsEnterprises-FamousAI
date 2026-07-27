@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { canAccessView } from '@/components/vowos/Sidebar';
 import { fetchContracts, ContractRecord } from '@/lib/contractsAlterations';
+import BridalIdentity from './BridalIdentity';
 
 interface CommandPaletteModalProps {
   open: boolean;
@@ -125,6 +126,7 @@ export default function CommandPaletteModal({ open, onClose, onNavigate }: Comma
         label: b.name,
         sub: `Wedding: ${b.weddingDate || 'TBD'} · ${b.status}`,
         icon: Users,
+        customerObj: b,
         action: () => {
           onNavigate('customers', { brideId: b.id });
           onClose();
@@ -260,13 +262,17 @@ export default function CommandPaletteModal({ open, onClose, onNavigate }: Comma
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                        isSelected ? 'bg-rose-500 text-white' : 'bg-stone-100 text-stone-600'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </div>
+                    {(item as any).customerObj ? (
+                      <BridalIdentity customer={(item as any).customerObj} size="sm" />
+                    ) : (
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                          isSelected ? 'bg-rose-500 text-white' : 'bg-stone-100 text-stone-600'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="truncate font-semibold text-stone-900">{item.label}</span>

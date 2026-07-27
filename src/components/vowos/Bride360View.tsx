@@ -59,8 +59,12 @@ const LIFECYCLE_STAGES = [
   'Completed',
 ];
 
+import BridalIdentity from './BridalIdentity';
+import BridePhotoModal from './BridePhotoModal';
+
 export default function Bride360View({ bride, onBack, initialTab = 'overview', onNavigateView }: Bride360ViewProps) {
   const [tab, setTab] = useState<Bride360Tab>(initialTab);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const { appointments = [], invoices = [], purchaseOrders = [] } = useVowosData();
 
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
@@ -146,43 +150,51 @@ export default function Bride360View({ bride, onBack, initialTab = 'overview', o
       {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-stone-800 to-rose-950 p-6 text-white shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="rounded-full bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-300 ring-1 ring-inset ring-rose-500/40">
-                {bride.status} Bride
-              </span>
-              {bride.stylist && (
-                <span className="text-xs text-stone-300">
-                  Stylist: <strong className="text-white">{bride.stylist}</strong>
+          <div className="flex items-center gap-5">
+            <BridalIdentity
+              customer={bride}
+              size="xl"
+              showEditOverlay
+              onPhotoClick={() => setPhotoModalOpen(true)}
+            />
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <span className="rounded-full bg-rose-500/20 px-3 py-0.5 text-xs font-semibold text-rose-300 ring-1 ring-inset ring-rose-500/40">
+                  {bride.status} Bride
                 </span>
-              )}
-            </div>
-            <h1 className="font-serif text-3xl font-bold tracking-tight text-white">{bride.name}</h1>
-            <div className="flex flex-wrap gap-4 text-xs text-stone-300 pt-1">
-              {bride.weddingDate && (
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-rose-400" />
-                  <span>Wedding: {formatDate(bride.weddingDate)}</span>
-                </div>
-              )}
-              {bride.email && (
-                <div className="flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 text-rose-400" />
-                  <span>{bride.email}</span>
-                </div>
-              )}
-              {bride.phone && (
-                <div className="flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 text-rose-400" />
-                  <span>{bride.phone}</span>
-                </div>
-              )}
-              {bride.location && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-rose-400" />
-                  <span>{bride.location}</span>
-                </div>
-              )}
+                {bride.stylist && (
+                  <span className="text-xs text-stone-300">
+                    Stylist: <strong className="text-white">{bride.stylist}</strong>
+                  </span>
+                )}
+              </div>
+              <h1 className="font-serif text-3xl font-bold tracking-tight text-white">{bride.name}</h1>
+              <div className="flex flex-wrap gap-4 text-xs text-stone-300 pt-1">
+                {bride.weddingDate && (
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-rose-400" />
+                    <span>Wedding: {formatDate(bride.weddingDate)}</span>
+                  </div>
+                )}
+                {bride.email && (
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-rose-400" />
+                    <span>{bride.email}</span>
+                  </div>
+                )}
+                {bride.phone && (
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-rose-400" />
+                    <span>{bride.phone}</span>
+                  </div>
+                )}
+                {bride.location && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-rose-400" />
+                    <span>{bride.location}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -454,6 +466,8 @@ export default function Bride360View({ bride, onBack, initialTab = 'overview', o
           </div>
         )}
       </div>
+
+      <BridePhotoModal open={photoModalOpen} onClose={() => setPhotoModalOpen(false)} bride={bride} />
     </div>
   );
 }

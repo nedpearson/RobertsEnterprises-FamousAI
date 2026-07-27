@@ -5,6 +5,7 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { StatCard, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
 import { ViewKey } from './Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import BridalIdentity from './BridalIdentity';
 
 export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const { session, profile } = useAuth();
@@ -145,25 +146,29 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
             <CalendarDays className="h-5 w-5 text-stone-400" />
           </div>
           <ul className="divide-y divide-stone-100">
-            {upcoming.map((a) => (
-              <li
-                key={a.id}
-                onClick={() => handleOpenAppt(a)}
-                className="flex items-center gap-3 py-3 cursor-pointer rounded-xl px-2 transition-colors hover:bg-rose-50/50"
-                title="Click to drill down into appointment details"
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-rose-50 text-xs font-semibold text-rose-500">
-                  {a.customer.split(' ').map((n) => n[0]).join('')}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-stone-800 hover:text-rose-600">{a.customer}</p>
-                  <p className="text-xs text-stone-500">
-                    {a.type} · {formatDate(a.date)} at {a.time}
-                  </p>
-                </div>
-                <StatusBadge status={a.status} />
-              </li>
-            ))}
+            {upcoming.map((a) => {
+              const matchedBride = customers.find((c) => c.name.toLowerCase() === a.customer.toLowerCase());
+              return (
+                <li
+                  key={a.id}
+                  onClick={() => handleOpenAppt(a)}
+                  className="flex items-center gap-3 py-3 cursor-pointer rounded-xl px-2 transition-colors hover:bg-rose-50/50"
+                  title="Click to drill down into appointment details"
+                >
+                  <BridalIdentity
+                    customer={matchedBride || { name: a.customer }}
+                    size="md"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-stone-800 hover:text-rose-600">{a.customer}</p>
+                    <p className="text-xs text-stone-500">
+                      {a.type} · {formatDate(a.date)} at {a.time}
+                    </p>
+                  </div>
+                  <StatusBadge status={a.status} />
+                </li>
+              );
+            })}
           </ul>
           <button
             onClick={() => onNavigate('appointments')}

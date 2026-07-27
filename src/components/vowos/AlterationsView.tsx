@@ -26,7 +26,8 @@ import {
   jobProgress,
   pickupReadyTemplates,
 } from '@/lib/contractsAlterations';
-import { PageHeader, StatCard, Modal, inputCls, btnPrimary } from './ui';
+import BridalIdentity from './BridalIdentity';
+import { PageHeader, StatusBadge, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { toast } from '@/components/ui/use-toast';
 
 const STATUS_COLORS: Record<AlterationStatus, string> = {
@@ -197,7 +198,11 @@ export default function AlterationsView() {
               <div key={job.id} className="flex flex-col rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-medium text-stone-800">{job.customer}</p>
+                    <BridalIdentity
+                      customer={allBrides.find((b) => b.name.toLowerCase() === job.customer.toLowerCase()) || { name: job.customer }}
+                      size="xs"
+                      showName
+                    />
                     <p className="truncate text-xs text-stone-500" title={job.gown}>{job.gown}</p>
                     <p className="mt-0.5 text-[11px] text-stone-400">
                       {job.id} · {locationById(job.location).short}

@@ -16,7 +16,7 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
 import { PageHeader, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
 import BookAppointmentModal from './BookAppointmentModal';
-import CoverageCalendar from './CoverageCalendar';
+import BridalIdentity from './BridalIdentity';
 import { LocationBadge } from './LocationSelect';
 
 
@@ -56,7 +56,7 @@ function printBookingQr(url: string) {
 type ViewMode = 'calendar' | 'list';
 
 export default function AppointmentsView() {
-  const { appointments: list, loading, setAppointmentStatus, deleteAppointment } = useVowosData();
+  const { appointments: list, brides = [], loading, setAppointmentStatus, deleteAppointment } = useVowosData();
   const [view, setView] = useState<ViewMode>('calendar');
   const [bookOpen, setBookOpen] = useState(false);
   const [bookDefaults, setBookDefaults] = useState<{ date?: string; stylist?: string } | null>(null);
@@ -195,7 +195,13 @@ export default function AppointmentsView() {
 
                         </div>
                       </div>
-                      <p className="mt-3 font-serif text-lg text-stone-900">{a.customer}</p>
+                      <div className="mt-3">
+                        <BridalIdentity
+                          customer={brides.find((b) => b.name.toLowerCase() === a.customer.toLowerCase()) || { name: a.customer }}
+                          size="md"
+                          showName
+                        />
+                      </div>
                       <p className="mt-0.5 text-sm text-stone-500">
                         {a.time} · with {a.stylist}
                       </p>

@@ -7,6 +7,7 @@ import { sendAndLogMessage, isEmail, isPhone } from '@/lib/messaging';
 import { portalUrl, portalLinkTemplates } from '@/lib/contractsAlterations';
 import BrideProfileModal from './BrideProfileModal';
 import Bride360View from './Bride360View';
+import BridalIdentity from './BridalIdentity';
 import { PageHeader, StatusBadge, Modal, inputCls, btnPrimary } from './ui';
 import { toast } from '@/components/ui/use-toast';
 
@@ -188,19 +189,13 @@ export default function CustomersView() {
                 filtered.map((c) => (
                   <tr key={c.id} className="transition-colors hover:bg-rose-50/40">
                     <td className="px-5 py-3.5">
-                      <button
+                      <BridalIdentity
+                        customer={c}
+                        size="md"
+                        showName
+                        clickable
                         onClick={() => setSelectedBride(c)}
-                        title="Open Bride 360 record"
-                        className="flex items-center gap-3 text-left group cursor-pointer"
-                      >
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-rose-200 text-xs font-semibold text-rose-600 group-hover:bg-rose-500 group-hover:text-white transition-colors">
-                          {c.name.split(' ').map((n) => n[0]).join('')}
-                        </div>
-                        <div>
-                          <p className="font-medium text-stone-800 group-hover:text-rose-600 transition-colors">{c.name}</p>
-                          <p className="text-xs text-stone-400">{c.id}</p>
-                        </div>
-                      </button>
+                      />
                     </td>
                     <td className="px-5 py-3.5">
                       <p className="text-stone-700">{c.email}</p>

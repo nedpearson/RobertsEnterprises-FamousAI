@@ -6,10 +6,12 @@ import { PageHeader, StatusBadge, inputCls, btnPrimary } from './ui';
 import { NewInvoiceModal, RecordPaymentModal } from './InvoiceModals';
 import PaymentLinkModal from './PaymentLinkModal';
 
+import BridalIdentity from './BridalIdentity';
+
 const FILTERS = ['All', 'Paid', 'Partial', 'Open', 'Overdue'] as const;
 
 export default function InvoicesView() {
-  const { invoices: list, loading } = useVowosData();
+  const { invoices: list, brides = [], loading } = useVowosData();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
   const [showNewInvoice, setShowNewInvoice] = useState(false);
@@ -98,7 +100,13 @@ export default function InvoicesView() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-stone-700">{inv.customer}</td>
+                      <td className="px-5 py-3.5">
+                        <BridalIdentity
+                          customer={brides.find((b) => b.name.toLowerCase() === inv.customer.toLowerCase()) || { name: inv.customer }}
+                          size="xs"
+                          showName
+                        />
+                      </td>
                       <td className="px-5 py-3.5 font-medium text-stone-800">{formatCents(inv.amountCents)}</td>
                       <td className={`px-5 py-3.5 font-medium ${balance > 0 ? 'text-amber-600' : 'text-stone-400'}`}>
                         {balance > 0 ? formatCents(balance) : '—'}

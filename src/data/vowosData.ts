@@ -186,6 +186,10 @@ export interface Customer {
   location: LocationId;
   /** Secret token that unlocks the bride's private /portal page. */
   portalToken: string;
+  /** Centralized profile photo URL or data URI. */
+  profilePhotoUrl?: string;
+  /** Timestamp ISO string when profile photo was updated. */
+  profilePhotoUpdatedAt?: string;
 }
 
 export type LeadStage = 'New' | 'Contacted' | 'Appointment Set' | 'Won';
