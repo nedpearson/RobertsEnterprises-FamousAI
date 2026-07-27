@@ -11,6 +11,7 @@ import AutomationsView from '../components/AutomationsView';
 import MarketingReportsView from '../components/MarketingReportsView';
 import ApprovalsView from '../components/ApprovalsView';
 import MarketingSettingsView from '../components/MarketingSettingsView';
+import AIProspectingView from '../components/AIProspectingView';
 import {
   TrendingUp,
   Megaphone,
@@ -27,11 +28,12 @@ import {
   Filter,
 } from 'lucide-react';
 
-export type MarketingTab =
+  export type MarketingTab =
   | 'overview'
   | 'campaigns'
   | 'content'
   | 'creatives'
+  | 'prospecting'
   | 'audiences'
   | 'leads'
   | 'budget'
@@ -53,6 +55,7 @@ export default function MarketingPage() {
     { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
     { id: 'content', label: 'Content Calendar', icon: Calendar },
     { id: 'creatives', label: 'Creative Studio', icon: Image },
+    { id: 'prospecting', label: 'AI Prospecting', icon: Users },
     { id: 'budget', label: 'Budget Center', icon: DollarSign },
     { id: 'attribution', label: 'Attribution', icon: BarChart3 },
     { id: 'automations', label: 'Automations', icon: Zap },
@@ -160,6 +163,7 @@ export default function MarketingPage() {
         {activeTab === 'budget' && <BudgetCenterView brandFilter={brandFilter} locationFilter={locationFilter} />}
         {activeTab === 'attribution' && <AttributionView />}
         {activeTab === 'automations' && <AutomationsView />}
+        {activeTab === 'prospecting' && <AIProspectingView brandFilter={brandFilter} />}
         {activeTab === 'reports' && <MarketingReportsView />}
         {activeTab === 'approvals' && <ApprovalsView />}
         {activeTab === 'settings' && <MarketingSettingsView />}

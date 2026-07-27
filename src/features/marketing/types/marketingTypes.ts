@@ -192,8 +192,27 @@ export interface MarketingMetricsSummary {
   costPerAppointmentCents: number;
   attributedRevenueCents: number;
   roasMultiplier: number;
-  marketingEfficiencyRatioPct: number;
+  marketingEfficiencyRatioPct: number; // (Total Rev / Total Ad Spend)
   shopifyRevenueCents: number;
   inStoreRevenueCents: number;
   emergencyPauseActive: boolean;
+}
+
+export interface DiscoveredLead {
+  id: string;
+  source: 'reddit' | 'tiktok' | 'instagram' | 'facebook_group' | 'pinterest';
+  author: string;
+  content: string;
+  intentScore: 'High' | 'Medium' | 'Low';
+  discoveredAt: string;
+  url: string;
+  brand: MarketingBrand;
+}
+
+export interface OutreachDraft {
+  id: string;
+  leadId: string;
+  draftContent: string;
+  generatedAt: string;
+  status: 'pending_approval' | 'approved_sent' | 'rejected';
 }

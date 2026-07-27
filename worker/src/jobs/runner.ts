@@ -98,6 +98,17 @@ async function processJob(job: any) {
     case 'publish_meta_campaign':
       console.log('Publishing Meta Campaign...');
       break;
+    case 'run_prospecting':
+      console.log('Running AI Prospecting Cycle...');
+      // await runProspectingCycle(job.payload.brand);
+      break;
+    case 'generate_outreach':
+      console.log('Generating AI Outreach Draft...');
+      // await generateOutreachDraft(job.payload.leadId, job.payload.content, job.payload.brand);
+      break;
+    case 'emergency_pause_all':
+      console.log('Executing emergency pause for all campaigns...');
+      break;
     default:
       throw new Error(`Unknown job queue: ${job.queue_name}`);
   }

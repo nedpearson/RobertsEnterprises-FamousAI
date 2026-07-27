@@ -573,3 +573,48 @@ export function getMarketingMetricsSummary(brandFilter: string = 'all', location
     emergencyPauseActive: getEmergencyPauseStatus(),
   };
 }
+
+// AI Prospecting Mocks
+import { DiscoveredLead, OutreachDraft } from '../types/marketingTypes';
+
+const MOCK_LEADS: DiscoveredLead[] = [
+  {
+    id: 'lead_1',
+    source: 'reddit',
+    author: 'u/BatonRougeBride27',
+    content: 'Just got engaged over the weekend! Where are the best places in BR or Covington to look for modern bridal gowns?',
+    intentScore: 'High',
+    discoveredAt: new Date(Date.now() - 3600000).toISOString(),
+    url: 'https://reddit.com/r/batonrouge',
+    brand: 'ido'
+  },
+  {
+    id: 'lead_2',
+    source: 'tiktok',
+    author: '@summer_style_louisiana',
+    content: 'Looking for some cute linen sets for a bachelorette trip to 30A next month, any local boutique recs?',
+    intentScore: 'High',
+    discoveredAt: new Date(Date.now() - 7200000).toISOString(),
+    url: 'https://tiktok.com',
+    brand: 'proper'
+  }
+];
+
+export function getDiscoveredLeads(brandFilter: string = 'all'): DiscoveredLead[] {
+  if (brandFilter === 'all') return MOCK_LEADS;
+  return MOCK_LEADS.filter(l => l.brand === brandFilter);
+}
+
+export function generateMockOutreach(leadId: string): Promise<OutreachDraft> {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve({
+        id: `draft_${Date.now()}`,
+        leadId,
+        draftContent: "Hi there! Congratulations! We saw you're looking for outfits in the area. We have exactly that style at our boutique. We'd love to host you whenever you're ready!",
+        generatedAt: new Date().toISOString(),
+        status: 'pending_approval'
+      });
+    }, 1500);
+  });
+}
