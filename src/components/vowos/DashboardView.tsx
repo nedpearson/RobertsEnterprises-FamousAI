@@ -44,7 +44,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
   return (
     <div className="space-y-6">
       {/* Hero banner */}
-      <div className="relative overflow-hidden rounded-3xl shadow-lg">
+      <div data-tour-id="hero-banner" className="relative overflow-hidden rounded-3xl shadow-lg">
         <img src={HERO_IMAGE} alt="Roberts Enterprises bridal boutique" className="h-52 w-full object-cover sm:h-60" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1c1a1f]/90 via-[#1c1a1f]/60 to-transparent" />
         <div className="absolute inset-0 flex flex-col justify-center px-8 sm:px-10">
@@ -107,7 +107,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
         {/* Revenue chart with Month-level Drilldowns */}
-        <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm xl:col-span-3">
+        <div data-tour-id="chart-revenue" className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm xl:col-span-3">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h2 className="font-serif text-lg text-stone-900">Monthly Revenue</h2>
@@ -139,7 +139,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
         </div>
 
         {/* Upcoming appointments with Drilldown on item click */}
-        <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm xl:col-span-2">
+        <div data-tour-id="list-upcoming-appts" className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm xl:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-serif text-lg text-stone-900">Upcoming Appointments</h2>
             <CalendarDays className="h-5 w-5 text-stone-400" />
@@ -175,7 +175,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
       </div>
 
       {/* Delivery watch with PO Drilldown */}
-      <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm">
+      <div data-tour-id="grid-delivery-watch" className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="font-serif text-lg text-stone-900">Delivery Watch</h2>

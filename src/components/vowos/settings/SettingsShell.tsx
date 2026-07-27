@@ -323,7 +323,7 @@ export default function SettingsShell() {
             />
           </div>
 
-          <div className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
+          <div data-tour-id="tabs-settings" className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
             <SettingsNavigation
               activeTab={activeTab}
               onTabChange={handleTabChange}
@@ -333,7 +333,7 @@ export default function SettingsShell() {
         </div>
 
         {/* Right Column: Settings Tab Content */}
-        <div className="flex-1 space-y-6">
+        <div data-tour-id="card-settings-active" className="flex-1 space-y-6">
           <PageHeader
             title={getTabTitle()}
             subtitle={getTabSubtitle()}

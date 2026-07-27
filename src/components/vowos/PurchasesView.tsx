@@ -289,12 +289,14 @@ export default function PurchasesView() {
         action={
           <div className="flex items-center gap-2">
             <button
+              data-tour-id="btn-vendor-vault"
               onClick={() => handleOpenEditPortal()}
               className={btnSecondary}
             >
               <KeyRound className="h-4 w-4 text-[#a98a4b]" /> Vendor Vault Credentials
             </button>
             <button
+              data-tour-id="btn-new-po"
               onClick={() => setShowNewPoModal(true)}
               className={btnPrimary}
             >
@@ -313,7 +315,7 @@ export default function PurchasesView() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-stone-200">
+      <div data-tour-id="tabs-purchases" className="flex border-b border-stone-200">
         <button
           onClick={() => setActiveTab('orders')}
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${

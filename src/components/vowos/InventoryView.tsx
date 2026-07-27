@@ -121,7 +121,7 @@ export default function InventoryView() {
         title="Gown Inventory"
         subtitle={`${gowns.length} styles · ${stats.units} pieces ${scopeLabel}`}
         action={
-          <button onClick={openAdd} className={btnPrimary}>
+          <button data-tour-id="btn-add-gown" onClick={openAdd} className={btnPrimary}>
             <Plus className="h-4 w-4" />
             Add Gown
           </button>
@@ -155,6 +155,7 @@ export default function InventoryView() {
           <div className="relative flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
+              data-tour-id="search-inventory"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search name, designer, SKU, vendor, color…"
@@ -162,6 +163,7 @@ export default function InventoryView() {
             />
           </div>
           <select
+            data-tour-id="filter-designer"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className={`${inputCls} sm:w-52`}

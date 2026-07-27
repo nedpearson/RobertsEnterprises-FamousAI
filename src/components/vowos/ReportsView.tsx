@@ -203,7 +203,7 @@ export default function ReportsView() {
       />
 
 
-      <div className="mb-6 flex flex-wrap gap-2 border-b border-stone-200 pb-px">
+      <div data-tour-id="tabs-reports" className="flex overflow-x-auto border-b border-stone-200">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -218,7 +218,7 @@ export default function ReportsView() {
       </div>
 
       {tab === 'revenue' && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div data-tour-id="report-summary" className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm lg:col-span-2">
             <h2 className="font-serif text-lg text-stone-900">Six-Month Revenue Trend</h2>
             <p className="mb-6 text-xs text-stone-500">Total {formatCents(totalRev * 100)} across the period</p>

@@ -177,7 +177,7 @@ export default function TransfersView() {
         title="Store Transfers"
         subtitle={`${inTransit.length} in transit · ${piecesMoved} pieces moved ${scopeLabel}`}
         action={
-          <button onClick={() => setModalOpen(true)} className={btnPrimary}>
+          <button data-tour-id="btn-request-transfer" onClick={() => setModalOpen(true)} className={btnPrimary}>
             <Plus className="h-4 w-4" />
             New Transfer
           </button>

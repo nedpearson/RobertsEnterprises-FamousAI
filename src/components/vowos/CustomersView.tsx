@@ -121,7 +121,7 @@ export default function CustomersView() {
         title="Brides"
         subtitle={`${list.length} brides in your book · ${list.filter((c) => c.status === 'Active').length} actively shopping`}
         action={
-          <button onClick={() => setModalOpen(true)} className={btnPrimary}>
+          <button data-tour-id="btn-add-customer" onClick={() => setModalOpen(true)} className={btnPrimary}>
             <UserPlus className="h-4 w-4" /> Add Bride
           </button>
         }
@@ -131,13 +131,14 @@ export default function CustomersView() {
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
           <input
+            data-tour-id="search-customers"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search brides..."
             className={`${inputCls} pl-9`}
           />
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div data-tour-id="filter-customers-status" className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f}
@@ -153,7 +154,7 @@ export default function CustomersView() {
       </div>
 
       {/* Desktop Table View (sm+) */}
-      <div className="hidden sm:block overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
+      <div data-tour-id="table-customers" className="hidden sm:block overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>

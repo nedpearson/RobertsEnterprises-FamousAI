@@ -249,7 +249,7 @@ export default function PayrollView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap border-b border-stone-200 gap-1">
+      <div data-tour-id="tabs-payroll" className="flex flex-wrap border-b border-stone-200 gap-1">
         {/* Navigation Tabs */}
         {[
           { key: 'command', label: 'Command Center', icon: Briefcase },
@@ -275,7 +275,7 @@ export default function PayrollView() {
       {/* COMMAND CENTER TAB */}
       {activeTab === 'command' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div data-tour-id="payroll-summary-cards" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Current Period" value="July 16 - 31" sub="Deadline: Aug 5, 2026" icon={<Calendar className="h-5 w-5" />} accent="violet" />
             <StatCard label="Direct Deposit Queue" value="$14,240.50" sub="3 active statements" icon={<CreditCard className="h-5 w-5" />} accent="emerald" />
             <StatCard label="Open Exceptions" value={String(exceptions.length)} sub="Drill down to fix punches" icon={<AlertTriangle className="h-5 w-5 animate-bounce" />} accent="amber" />
@@ -289,7 +289,7 @@ export default function PayrollView() {
                 As a Payroll Administrator, please ensure all timecards are verified, break infractions are resolved, and bonus plans are approved before executing calculations.
               </p>
               <div className="flex gap-2.5 pt-3">
-                <button onClick={() => setActiveTab('wizard')} className={btnPrimary}>
+                <button data-tour-id="btn-run-payroll" onClick={() => setActiveTab('wizard')} className={btnPrimary}>
                   Start Guided Wizard <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>

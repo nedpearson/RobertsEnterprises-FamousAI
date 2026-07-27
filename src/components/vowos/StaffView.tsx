@@ -286,7 +286,7 @@ export default function StaffView() {
         subtitle="Manage team accounts and what each role can open across VowOS"
         action={
           isOwner && (
-            <button onClick={() => setShowAddModal(true)} className={btnPrimary}>
+            <button data-tour-id="btn-add-staff" onClick={() => setShowAddModal(true)} className={btnPrimary}>
               <UserPlus className="h-4 w-4" /> Add Staff Member
             </button>
           )

@@ -112,7 +112,7 @@ export default function AppointmentsView() {
         action={
           <div className="flex flex-wrap items-center gap-2">
             {/* Calendar / list toggle */}
-            <div className="flex overflow-hidden rounded-lg border border-stone-200 bg-white">
+            <div data-tour-id="calendar-view-switcher" className="flex overflow-hidden rounded-lg border border-stone-200 bg-white">
               <button
                 onClick={() => setView('calendar')}
                 className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
@@ -132,10 +132,10 @@ export default function AppointmentsView() {
                 <LayoutList className="h-3.5 w-3.5" /> List
               </button>
             </div>
-            <button onClick={() => setQrOpen(true)} className={btnSecondary}>
+            <button data-tour-id="btn-booking-qr" onClick={() => setQrOpen(true)} className={btnSecondary}>
               <QrCode className="h-4 w-4" /> Booking QR
             </button>
-            <button onClick={() => openBooking()} className={btnPrimary}>
+            <button data-tour-id="btn-book-appointment" onClick={() => openBooking()} className={btnPrimary}>
               <CalendarPlus className="h-4 w-4" /> Book Appointment
             </button>
           </div>

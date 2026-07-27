@@ -134,9 +134,12 @@ export default function AppLayout() {
               </button>
 
               {/* Store / location switcher — scopes every view */}
-              <LocationSwitcher />
+              <div data-tour-id="header-location-select">
+                <LocationSwitcher />
+              </div>
 
               <button
+                data-tour-id="header-search-brides"
                 onClick={() => setView('customers')}
                 className="hidden items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-400 transition-colors hover:border-stone-300 sm:flex"
               >
@@ -145,7 +148,9 @@ export default function AppLayout() {
               </button>
 
               {/* Live alerts: in-transit transfers, overdue invoices, delayed POs */}
-              <NotificationsBell onNavigate={setView} />
+              <div data-tour-id="header-notifications">
+                <NotificationsBell onNavigate={setView} />
+              </div>
 
               {/* Auth control */}
               {!loading && (

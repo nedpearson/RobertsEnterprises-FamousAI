@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDemo } from '@/lib/demo/demoContext';
-import { PageHeader, btnPrimary, btnSecondary } from '../vowos/ui';
-import { GraduationCap, Play, CheckCircle2, Trophy, BookOpen, Sparkles, Award } from 'lucide-react';
+import { PageHeader, btnPrimary } from '../vowos/ui';
+import { GraduationCap, Play, CheckCircle2, Trophy, Sparkles, Award, Compass } from 'lucide-react';
 import { ViewKey } from '../vowos/Sidebar';
 
 export default function TrainingCenterView({ onNavigate }: { onNavigate?: (v: ViewKey) => void }) {
@@ -12,11 +12,13 @@ export default function TrainingCenterView({ onNavigate }: { onNavigate?: (v: Vi
     ? scenarios
     : scenarios.filter((s) => s.targetRole.toLowerCase().includes(selectedRoleFilter.toLowerCase()));
 
+  const masterScenario = scenarios.find((s) => s.id === 'scenario-0-master-tour') || scenarios[0];
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="VowOS Training Center & Certification"
-        subtitle="Role-based guided paths, hands-on scenario practice, and interactive certification."
+        subtitle="Role-based guided paths, continuous multi-tab tours, hands-on scenario practice, and ElevenLabs voice narration."
         action={
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-semibold">
@@ -26,6 +28,32 @@ export default function TrainingCenterView({ onNavigate }: { onNavigate?: (v: Vi
         }
       />
 
+      {/* Featured Master Tour Banner Card */}
+      {masterScenario && (
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-900 via-stone-800 to-rose-950 p-6 sm:p-8 text-white shadow-xl">
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-300 border border-rose-500/30 mb-3">
+                <Compass className="h-3.5 w-3.5" /> Full Application Continuous Master Tour
+              </div>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold leading-tight">
+                {masterScenario.name}
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-stone-300 leading-relaxed">
+                {masterScenario.description} Take an uninterrupted, voice-guided journey through every single tab, card, ledger, and workflow in VowOS.
+              </p>
+            </div>
+            <button
+              data-tour-id="btn-launch-master-tour"
+              onClick={() => startScenario(masterScenario.id, 'watch', onNavigate as any)}
+              className="inline-flex flex-shrink-0 items-center gap-2 rounded-2xl bg-rose-500 hover:bg-rose-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all transform hover:scale-105"
+            >
+              <Play className="h-4 w-4 fill-white" /> Launch Master Tour
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Progress Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
@@ -33,9 +61,9 @@ export default function TrainingCenterView({ onNavigate }: { onNavigate?: (v: Vi
             <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Completed Scenarios</p>
             <Trophy className="h-5 w-5 text-amber-500" />
           </div>
-          <p className="mt-2 font-serif text-2xl font-bold text-stone-900">12 / {scenarios.length}</p>
+          <p className="mt-2 font-serif text-2xl font-bold text-stone-900">14 / {scenarios.length}</p>
           <div className="mt-3 h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
-            <div className="h-full bg-amber-500 w-[30%]" />
+            <div className="h-full bg-amber-500 w-[35%]" />
           </div>
         </div>
 
@@ -45,7 +73,7 @@ export default function TrainingCenterView({ onNavigate }: { onNavigate?: (v: Vi
             <GraduationCap className="h-5 w-5 text-rose-500" />
           </div>
           <p className="mt-2 font-serif text-2xl font-bold text-stone-900">Bridal Consultant</p>
-          <p className="mt-1 text-xs text-stone-500">10 Scenarios · 4 Completed</p>
+          <p className="mt-1 text-xs text-stone-500">40 Scenarios Available</p>
         </div>
 
         <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
@@ -68,7 +96,7 @@ export default function TrainingCenterView({ onNavigate }: { onNavigate?: (v: Vi
       </div>
 
       {/* Role Filter Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-stone-200 pb-3">
+      <div data-tour-id="tabs-training-roles" className="flex flex-wrap gap-2 border-b border-stone-200 pb-3">
         {(['All', 'Owner', 'Manager', 'Bridal Consultant', 'Payroll Administrator'] as const).map((r) => (
           <button
             key={r}
@@ -85,7 +113,7 @@ export default function TrainingCenterView({ onNavigate }: { onNavigate?: (v: Vi
       </div>
 
       {/* Scenarios Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div data-tour-id="grid-training-scenarios" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredScenarios.map((sc) => (
           <div
             key={sc.id}
