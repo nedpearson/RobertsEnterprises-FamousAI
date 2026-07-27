@@ -1,5 +1,8 @@
 providers = ["node"]
 
+[variables]
+NIXPACKS_PATH = "/root/.nix-profile/bin:/nix/var/nix/profiles/default/bin"
+
 [phases.setup]
 nixPkgs = ["nodejs_22"]
 
