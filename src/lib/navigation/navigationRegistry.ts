@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   AlarmClock,
   ShoppingBag,
+  Megaphone,
   LucideIcon
 } from 'lucide-react';
 import { StaffRole } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ export type NavigationSectionId =
   | 'gowns'
   | 'finance'
   | 'team'
+  | 'growth'
   | 'insights'
   | 'admin'
   | 'external';
@@ -51,7 +53,8 @@ export type ViewKey =
   | 'payroll'
   | 'timeclock'
   | 'training'
-  | 'onlinestore';
+  | 'onlinestore'
+  | 'marketing';
 
 export interface NavigationSection {
   id: NavigationSectionId;
@@ -224,26 +227,26 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
 
   // TEAM
   {
+    id: 'staff',
+    label: 'Team Directory',
+    shortLabel: 'Team',
+    icon: Users,
+    path: '/team',
+    section: 'team',
+    allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+    mobilePriority: 14,
+    searchKeywords: ['staff', 'team', 'employees', 'stylists', 'directory', 'roles'],
+  },
+  {
     id: 'timeclock',
-    label: 'Time Clock & Kiosk',
-    shortLabel: 'Clock In',
+    label: 'Time Clock',
+    shortLabel: 'Time Clock',
     icon: AlarmClock,
     path: '/timeclock',
     section: 'team',
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
-    mobilePriority: 7,
-    searchKeywords: ['time clock', 'kiosk', 'clock in', 'clock out', 'shifts', 'hours', 'attendance'],
-  },
-  {
-    id: 'staff',
-    label: 'Team & Permissions',
-    shortLabel: 'Team',
-    icon: ShieldCheck,
-    path: '/team',
-    section: 'team',
-    allowedRoles: ['Owner'],
     mobilePriority: 15,
-    searchKeywords: ['staff', 'team', 'roles', 'permissions', 'users', 'access control'],
+    searchKeywords: ['time clock', 'timecards', 'clock in', 'clock out', 'hours', 'shifts'],
   },
   {
     id: 'payroll',
@@ -266,6 +269,19 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
     mobilePriority: 17,
     searchKeywords: ['training', 'demo', 'scenarios', 'tutorials', 'guided tour', 'learning'],
+  },
+
+  // GROWTH & MARKETING
+  {
+    id: 'marketing',
+    label: 'Marketing',
+    shortLabel: 'Marketing',
+    icon: Megaphone,
+    path: '/marketing',
+    section: 'growth',
+    allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+    mobilePriority: 7.5,
+    searchKeywords: ['marketing', 'facebook', 'instagram', 'google ads', 'tiktok', 'pinterest', 'meta', 'campaigns', 'ad spend', 'roas'],
   },
 
   // INSIGHTS
@@ -342,6 +358,7 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
   timeclock: '/timeclock',
   training: '/training',
   onlinestore: '/onlinestore',
+  marketing: '/marketing',
 };
 
 /** Map path to view key */
@@ -356,6 +373,7 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/appointments': 'appointments',
   '/communications': 'communications',
   '/onlinestore': 'onlinestore',
+  '/marketing': 'marketing',
   '/contracts': 'contracts',
   '/alterations': 'alterations',
   '/invoices': 'invoices',

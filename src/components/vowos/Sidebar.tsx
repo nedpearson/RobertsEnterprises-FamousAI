@@ -60,6 +60,7 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   payroll: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   training: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   onlinestore: ['Owner', 'Manager'],
+  marketing: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
 };
 
 export function canAccessView(role: StaffRole | null, view: ViewKey, staffId?: string | null): boolean {
