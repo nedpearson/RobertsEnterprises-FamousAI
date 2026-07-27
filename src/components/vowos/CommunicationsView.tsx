@@ -22,7 +22,8 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import BridalIdentity from './BridalIdentity';
-import { PageHeader, inputCls } from './ui';
+import { PageHeader, inputCls, Modal } from './ui';
+import AIVoiceSettingsView from '@/features/voice/components/AIVoiceSettingsView';
 import {
   MessageChannel,
   MessageKind,
@@ -57,6 +58,7 @@ export default function CommunicationsView() {
   const [sending, setSending] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [runningAuto, setRunningAuto] = useState(false);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [lastInboundCount, setLastInboundCount] = useState<Record<string, number>>({});
   const pollRef = useRef<number | null>(null);
 
@@ -361,6 +363,34 @@ export default function CommunicationsView() {
           {runningAuto ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
           Run now
         </button>
+      </div>
+
+      {/* AI Voice Agent & Virtual Concierge Settings */}
+      <div className="mb-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-xl bg-rose-50 p-2 text-rose-600">
+              <Phone className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-stone-800">AI Voice Receptionist (Twilio &amp; GPT-4o)</p>
+              <p className="max-w-md text-xs text-stone-500">
+                Configure your 24/7 conversational AI concierge. It can book appointments, answer FAQs, and route calls.
+              </p>
+            </div>
+          </div>
+          <div className="ml-auto flex items-center gap-3">
+             <span className="flex items-center gap-1.5 text-xs font-bold text-stone-500 bg-stone-100 px-2 py-1 rounded-md border border-stone-200">
+               Paused
+             </span>
+             <button
+              onClick={() => setShowVoiceSettings(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+            >
+              Voice Settings
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Automated Drip Sequences */}
@@ -675,6 +705,17 @@ export default function CommunicationsView() {
           )}
         </div>
       </div>
+
+      {showVoiceSettings && (
+        <Modal 
+          open={showVoiceSettings} 
+          onClose={() => setShowVoiceSettings(false)}
+          title="AI Voice Agent Settings"
+          maxWidth="max-w-4xl"
+        >
+          <AIVoiceSettingsView />
+        </Modal>
+      )}
     </div>
   );
 }

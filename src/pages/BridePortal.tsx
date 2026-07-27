@@ -15,6 +15,8 @@ import {
   Phone,
   Heart,
   Ruler,
+  Download,
+  Smartphone,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import {
@@ -48,6 +50,7 @@ export default function BridePortal() {
   const [measurements, setMeasurements] = useState<MeasurementSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [showPwaBanner, setShowPwaBanner] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -183,6 +186,35 @@ export default function BridePortal() {
 
         {!loading && bride && (
           <div className="space-y-6">
+            
+            {/* Dedicated "Bride Portal" App (PWA) Banner */}
+            {showPwaBanner && (
+              <div className="bg-gradient-to-r from-rose-500 to-rose-600 rounded-2xl shadow-lg p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-white">
+                 <div className="flex items-center gap-3">
+                    <div className="bg-white/20 p-2.5 rounded-xl">
+                      <Smartphone className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm">Install the Bridal Portal App</h3>
+                      <p className="text-xs text-rose-100 mt-0.5 max-w-sm leading-relaxed">
+                        Keep track of your appointments, production status, and checklist right from your home screen.
+                      </p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button 
+                      onClick={() => setShowPwaBanner(false)}
+                      className="text-xs text-rose-200 hover:text-white transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white text-rose-600 px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-stone-50 transition-colors">
+                      <Download className="h-4 w-4" /> Install App
+                    </button>
+                 </div>
+              </div>
+            )}
+
             {/* Appointments */}
             <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
               <div className="flex items-center gap-2 border-b border-stone-100 bg-stone-50/60 px-6 py-4">

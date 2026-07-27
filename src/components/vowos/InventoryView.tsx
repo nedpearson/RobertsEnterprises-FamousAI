@@ -17,6 +17,7 @@ import { PageHeader, StatusBadge, inputCls, btnPrimary } from './ui';
 import { GownFormModal, AdjustStockModal } from './GownModals';
 import { TransferModal } from './TransfersView';
 import { LocationBadge } from './LocationSelect';
+import OTBForecastingWidget from '@/features/inventory/components/OTBForecastingWidget';
 
 
 const CONDITION_BADGE: Record<string, string> = {
@@ -127,6 +128,8 @@ export default function InventoryView() {
           </button>
         }
       />
+
+      <OTBForecastingWidget />
 
       {/* Valuation strip */}
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

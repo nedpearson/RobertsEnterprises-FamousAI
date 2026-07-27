@@ -4,6 +4,7 @@ import { Gown, LocationId, LOCATIONS, locationById, formatDate } from '@/data/vo
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, Modal, inputCls, btnPrimary, btnSecondary, StatCard } from './ui';
 import { LocationBadge, LocationSelect } from './LocationSelect';
+import RebalancingEngine from '@/features/inventory/components/RebalancingEngine';
 
 const labelCls = 'mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500';
 
@@ -183,6 +184,8 @@ export default function TransfersView() {
           </button>
         }
       />
+
+      <RebalancingEngine />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
