@@ -1,0 +1,5 @@
+[build]
+cmds = ["npm install", "npx tsc"]
+
+[start]
+cmd = "node dist/index.js"
