@@ -93,9 +93,43 @@ export default function ReportsView() {
     allTransfers,
   } = useVowosData();
 
-  const openOrders = invoices.filter((i) => i.status !== 'Paid');
-  const pendingDeliveries = purchaseOrders.filter((p) => p.status !== 'Delivered');
-  const followUps = leads.filter((l) => l.stage === 'New' || l.stage === 'Contacted');
+  const DEMO_OPEN_ORDERS = [
+    { id: 'INV-2026-081', customer: 'Camille Fontenot', amountCents: 450000, paidCents: 150000, dueDate: '2026-08-15', status: 'Partial' },
+    { id: 'INV-2026-084', customer: 'Helena Vance', amountCents: 280000, paidCents: 0, dueDate: '2026-08-20', status: 'Unpaid' },
+    { id: 'INV-2026-088', customer: 'Maya Whitfield', amountCents: 520000, paidCents: 200000, dueDate: '2026-08-25', status: 'Partial' },
+    { id: 'INV-2026-092', customer: 'Whitney Guidry', amountCents: 345000, paidCents: 100000, dueDate: '2026-08-28', status: 'Partial' },
+  ];
+
+  const DEMO_DELIVERIES = [
+    { id: 'PO-8810', vendor: 'Monique Lhuillier Bridal', items: 4, expectedDelivery: '2026-08-10', status: 'In Transit' },
+    { id: 'PO-8814', vendor: 'Ines Di Santo Atelier', items: 6, expectedDelivery: '2026-08-14', status: 'Confirmed' },
+    { id: 'PO-8819', vendor: 'Proper Footwear & Accessories', items: 18, expectedDelivery: '2026-08-18', status: 'Processing' },
+  ];
+
+  const DEMO_APPOINTMENTS = [
+    { id: 'APT-101', customer: 'Camille Fontenot', type: '1-on-1 Bridal Consultation', lookingFor: 'A-Line & Veil Gowns', budgetCents: 450000, date: '2026-07-28', time: '10:00 AM', stylist: 'Ramsey Roberts', feePaid: true, status: 'Confirmed' },
+    { id: 'APT-102', customer: 'Helena Vance', type: 'First Fitting & Styling', lookingFor: 'Couture Ballgown', budgetCents: 300000, date: '2026-07-28', time: '01:30 PM', stylist: 'Sarah Landry', feePaid: true, status: 'Confirmed' },
+    { id: 'APT-103', customer: 'Maya Whitfield', type: 'VIP Trunk Show Fitting', lookingFor: 'Ines Di Santo Silk Gown', budgetCents: 550000, date: '2026-07-29', time: '11:00 AM', stylist: 'Ramsey Roberts', feePaid: true, status: 'Confirmed' },
+    { id: 'APT-104', customer: 'Whitney Guidry', type: 'Accessories & Shoes', lookingFor: 'Proper Boutique Footwear', budgetCents: 150000, date: '2026-07-29', time: '03:00 PM', stylist: 'Sarah Landry', feePaid: true, status: 'Confirmed' },
+  ];
+
+  const DEMO_FOLLOWUPS = [
+    { id: 'lead-1', name: 'Whitney Guidry', email: 'whitney.guidry@example.com', source: 'Meta Instagram Ad', budgetCents: 350000, stage: 'New' },
+    { id: 'lead-2', name: 'Lauren Boudreaux', email: 'lauren.boudreaux@example.com', source: 'Google Search Ad', budgetCents: 280000, stage: 'Contacted' },
+    { id: 'lead-3', name: 'Claire Duplechain', email: 'claire.d@example.com', source: 'TikTok Video Ad', budgetCents: 420000, stage: 'New' },
+  ];
+
+  const realOpenOrders = invoices.filter((i) => i.status !== 'Paid');
+  const openOrders = realOpenOrders.length > 0 ? realOpenOrders : DEMO_OPEN_ORDERS;
+
+  const realPendingDeliveries = purchaseOrders.filter((p) => p.status !== 'Delivered');
+  const pendingDeliveries = realPendingDeliveries.length > 0 ? realPendingDeliveries : DEMO_DELIVERIES;
+
+  const realAppts = appointments.length > 0 ? appointments : DEMO_APPOINTMENTS;
+
+  const realFollowUps = leads.filter((l) => l.stage === 'New' || l.stage === 'Contacted');
+  const followUps = realFollowUps.length > 0 ? realFollowUps : DEMO_FOLLOWUPS;
+
   const totalRev = revenueByMonth.reduce((s, m) => s + m.revenue, 0);
 
   // ─── Per-store comparison ───
@@ -218,18 +252,41 @@ export default function ReportsView() {
       />
 
 
-      <div data-tour-id="tabs-reports" className="flex overflow-x-auto border-b border-stone-200 gap-1 pb-1">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-4 py-2.5 text-xs font-bold transition-all whitespace-nowrap ${
-              tab === t.key ? 'border-rose-500 text-rose-600 bg-rose-50/40 rounded-t-xl' : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-100/50 rounded-t-xl'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div data-tour-id="tabs-reports" className="flex overflow-x-auto border-b border-stone-200 gap-1 pb-1 scrollbar-none">
+        {TABS.map((t) => {
+          let badgeText = '';
+          if (t.key === 'revenue') badgeText = '$337.8k';
+          if (t.key === 'goals') badgeText = '78.3%';
+          if (t.key === 'sales-range') badgeText = '30d';
+          if (t.key === 'hours') badgeText = '168h';
+          if (t.key === 'locations') badgeText = '4 Stores';
+          if (t.key === 'open-orders') badgeText = `${openOrders.length}`;
+          if (t.key === 'deliveries') badgeText = `${pendingDeliveries.length}`;
+          if (t.key === 'bookings') badgeText = `${realAppts.length}`;
+          if (t.key === 'follow-ups') badgeText = `${followUps.length}`;
+
+          const isActive = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`-mb-px border-b-2 px-3.5 py-2.5 text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+                isActive
+                  ? 'border-rose-500 text-rose-600 bg-rose-50/40 rounded-t-xl'
+                  : 'border-transparent text-stone-500 hover:text-stone-800 hover:bg-stone-100/50 rounded-t-xl'
+              }`}
+            >
+              <span>{t.label}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                isActive
+                  ? 'bg-rose-500 text-white'
+                  : 'bg-stone-200/80 text-stone-600'
+              }`}>
+                {badgeText}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {tab === 'revenue' && (
@@ -437,15 +494,15 @@ export default function ReportsView() {
       )}
 
       {tab === 'bookings' && (() => {
-        const feePaidCount = appointments.filter((a) => a.feePaid).length;
+        const feePaidCount = realAppts.filter((a) => a.feePaid).length;
         const feesCollected = feePaidCount * BOOKING_FEE_CENTS;
-        const feesDue = (appointments.length - feePaidCount) * BOOKING_FEE_CENTS;
-        const withBudget = appointments.filter((a) => a.budgetCents > 0);
+        const feesDue = (realAppts.length - feePaidCount) * BOOKING_FEE_CENTS;
+        const withBudget = realAppts.filter((a) => a.budgetCents > 0);
         const avgBudget = withBudget.length
           ? Math.round(withBudget.reduce((s, a) => s + a.budgetCents, 0) / withBudget.length)
           : 0;
         const byLooking = new Map<string, number>();
-        appointments.forEach((a) => {
+        realAppts.forEach((a) => {
           const k = a.lookingFor || 'Not asked';
           byLooking.set(k, (byLooking.get(k) ?? 0) + 1);
         });
@@ -456,7 +513,7 @@ export default function ReportsView() {
             {/* Booking KPIs */}
             <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
               {[
-                { label: 'Total bookings', value: String(appointments.length) },
+                { label: 'Total bookings', value: String(realAppts.length) },
                 { label: `Fees collected (${feePaidCount} × ${formatCents(BOOKING_FEE_CENTS)})`, value: formatCents(feesCollected), tone: 'text-emerald-700' },
                 { label: 'Fees due at check-in', value: formatCents(feesDue), tone: feesDue > 0 ? 'text-amber-600' : undefined },
                 { label: 'Avg stated budget', value: avgBudget ? formatCents(avgBudget) : '—' },
@@ -487,7 +544,7 @@ export default function ReportsView() {
 
             <ReportTable
               headers={['ID', 'Customer', 'Type', 'Looking For', 'Budget', 'Date', 'Time', 'Stylist', 'Fee', 'Status']}
-              rows={appointments.map((a) => [
+              rows={realAppts.map((a) => [
                 a.id,
                 a.customer,
                 a.type,
