@@ -22,6 +22,7 @@ import {
   History,
   Activity,
   Flag,
+  Cpu,
 } from 'lucide-react';
 
 export type SettingsTab =
@@ -46,7 +47,8 @@ export type SettingsTab =
   | 'data'
   | 'audit'
   | 'system-health'
-  | 'feature-flags';
+  | 'feature-flags'
+  | 'ai-models';
 
 export interface SettingsCategory {
   group: string;
@@ -104,6 +106,7 @@ export const SETTINGS_GROUPS: SettingsCategory[] = [
     group: 'System & Security',
     items: [
       { id: 'integrations', label: 'Integrations & AI', icon: Plug, roles: ['Owner'] },
+      { id: 'ai-models', label: 'AI Model Management', icon: Cpu, roles: ['Owner'] },
       { id: 'security', label: 'Security Policy', icon: ShieldAlert, roles: ['Owner'] },
       { id: 'data', label: 'Data & Import', icon: Database, roles: ['Owner'] },
       { id: 'audit', label: 'Audit Log', icon: History, roles: ['Owner'] },

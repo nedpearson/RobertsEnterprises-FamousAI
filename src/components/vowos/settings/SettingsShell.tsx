@@ -25,6 +25,7 @@ import { DataSettingsTab } from './tabs/DataSettingsTab';
 import { AuditSettingsTab } from './tabs/AuditSettingsTab';
 import { SystemHealthSettingsTab } from './tabs/SystemHealthSettingsTab';
 import { FeatureFlagsSettingsTab } from './tabs/FeatureFlagsSettingsTab';
+import AIModelSettingsTab from './tabs/AIModelSettingsTab';
 import { Search } from 'lucide-react';
 import { inputCls } from '../ui';
 
@@ -239,6 +240,9 @@ export default function SettingsShell() {
             resetTrigger={resetTrigger}
           />
         );
+      case 'ai-models':
+        saveFnRef.current = null;
+        return <AIModelSettingsTab />;
       default:
         saveFnRef.current = null;
         return null;
