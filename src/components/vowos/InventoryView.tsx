@@ -15,6 +15,8 @@ import { GownFormModal, AdjustStockModal } from './GownModals';
 import { TransferModal } from './TransfersView';
 import { LocationBadge } from './LocationSelect';
 import OTBForecastingWidget from '@/features/inventory/components/OTBForecastingWidget';
+import ThermalBarcodePrinter from '@/features/inventory/components/ThermalBarcodePrinter';
+import { Printer } from 'lucide-react';
 
 
 const CONDITION_BADGE: Record<string, string> = {
@@ -113,16 +115,27 @@ export default function InventoryView() {
   };
 
 
+  const [thermalPrinterOpen, setThermalPrinterOpen] = useState(false);
+
   return (
     <div>
       <PageHeader
         title="Gown Inventory"
         subtitle={`${gowns.length} styles · ${stats.units} pieces ${scopeLabel}`}
         action={
-          <button data-tour-id="btn-add-gown" onClick={openAdd} className={btnPrimary}>
-            <Plus className="h-4 w-4" />
-            Add Gown
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setThermalPrinterOpen(true)}
+              className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-800 hover:bg-stone-50 transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
+            >
+              <Printer className="h-4 w-4 text-rose-500" /> Print Thermal Barcode Tags
+            </button>
+
+            <button data-tour-id="btn-add-gown" onClick={openAdd} className={btnPrimary}>
+              <Plus className="h-4 w-4" />
+              Add Gown
+            </button>
+          </div>
         }
       />
 
@@ -362,6 +375,7 @@ export default function InventoryView() {
       <GownFormModal open={formOpen} gown={editingGown} onClose={() => setFormOpen(false)} />
       <AdjustStockModal gown={stockGown} onClose={() => setStockGown(null)} />
       <TransferModal open={!!transferGown} gown={transferGown} onClose={() => setTransferGown(null)} />
+      <ThermalBarcodePrinter isOpen={thermalPrinterOpen} onClose={() => setThermalPrinterOpen(false)} />
     </div>
   );
 }

@@ -78,7 +78,20 @@ interface LocationStats {
   transfersOut: number;
 }
 
+import { sendExecutiveDigestEmail } from '@/lib/services/executiveDigestService';
+import { Mail, CheckCircle2 } from 'lucide-react';
+
 export default function ReportsView() {
+  const [digestSending, setDigestSending] = useState(false);
+  const [digestSuccess, setDigestSuccess] = useState(false);
+
+  const handleSendDigest = async () => {
+    setDigestSending(true);
+    const res = await sendExecutiveDigestEmail();
+    setDigestSending(false);
+    setDigestSuccess(true);
+    setTimeout(() => setDigestSuccess(false), 4000);
+  };
   const [tab, setTab] = useState<TabKey>('revenue');
   const {
     brides: customers,
@@ -243,13 +256,31 @@ export default function ReportsView() {
         title="Insights & Analytics"
         subtitle="Real-time financial performance, revenue trends, store analytics, and growth metrics"
         action={
-          SELF_EXPORT_TABS.includes(tab) ? undefined : (
-            <button onClick={() => downloadCsv(exportData.name, exportData.rows)} className={btnSecondary}>
-              <Download className="h-4 w-4" /> Export CSV
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSendDigest}
+              disabled={digestSending}
+              className="rounded-xl bg-stone-900 text-white px-3.5 py-2 text-xs font-bold hover:bg-stone-800 transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
+            >
+              <Mail className="h-4 w-4 text-rose-400" />
+              {digestSending ? 'Sending Digest...' : 'Dispatch Monday 7AM Executive Digest'}
             </button>
-          )
+
+            {!SELF_EXPORT_TABS.includes(tab) && (
+              <button onClick={() => downloadCsv(exportData.name, exportData.rows)} className={btnSecondary}>
+                <Download className="h-4 w-4" /> Export CSV
+              </button>
+            )}
+          </div>
         }
       />
+
+      {digestSuccess && (
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs font-bold text-emerald-800 text-center flex items-center justify-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <span>Executive Weekly Intelligence Digest sent to Ramsey Roberts (nedpearson@gmail.com)!</span>
+        </div>
+      )}
 
 
       <div data-tour-id="tabs-reports" className="flex overflow-x-auto border-b border-stone-200 gap-1 pb-1 scrollbar-none">

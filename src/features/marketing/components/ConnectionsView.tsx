@@ -11,6 +11,7 @@ import {
   testConnectionReadonly,
 } from '../api/marketingApi';
 import { Modal, btnPrimary, btnSecondary } from '@/components/vowos/ui';
+import CallRailDniTester from './CallRailDniTester';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -18,6 +19,7 @@ import {
   ExternalLink,
   RefreshCw,
   Lock,
+  PhoneCall,
   Radio,
   Sliders,
   Check,
@@ -46,6 +48,7 @@ export default function ConnectionsView() {
   const [activeOAuthProvider, setActiveOAuthProvider] = useState<MarketingProvider | null>(null);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [orgInput, setOrgInput] = useState('');
+  const [dniTesterOpen, setDniTesterOpen] = useState(false);
 
   const refreshList = () => {
     setConnections(getMarketingConnections());
@@ -238,15 +241,26 @@ export default function ConnectionsView() {
                   </button>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setActiveOAuthProvider(conn.provider);
-                    setOrgInput(conn.externalOrganization?.name || '');
-                  }}
-                  className="rounded-xl bg-stone-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-stone-800 transition-colors flex items-center gap-1.5"
-                >
-                  <ActionIcon className="h-3.5 w-3.5 text-rose-300" /> {actionLabel}
-                </button>
+                <div className="flex items-center gap-2">
+                  {conn.provider === 'call_tracking' && (
+                    <button
+                      onClick={() => setDniTesterOpen(true)}
+                      className="rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <PhoneCall className="h-3.5 w-3.5 text-emerald-600" /> Verify DNI Snippet
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setActiveOAuthProvider(conn.provider);
+                      setOrgInput(conn.externalOrganization?.name || '');
+                    }}
+                    className="rounded-xl bg-stone-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-stone-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ActionIcon className="h-3.5 w-3.5 text-rose-300" /> {actionLabel}
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -465,6 +479,8 @@ export default function ConnectionsView() {
           </div>
         </Modal>
       )}
+
+      <CallRailDniTester isOpen={dniTesterOpen} onClose={() => setDniTesterOpen(false)} />
     </div>
   );
 }
