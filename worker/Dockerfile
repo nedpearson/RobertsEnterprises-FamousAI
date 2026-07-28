@@ -10,6 +10,6 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-ENV PORT=3001
-EXPOSE 3001
+ENV PORT=8080
+EXPOSE 8080
 CMD ["node", "dist/index.js"]
