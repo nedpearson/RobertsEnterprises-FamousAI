@@ -48,14 +48,14 @@ export default function AICommandCenterView({ brandFilter, onNavigateTab }: AICo
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => onNavigateTab('ai-copilot')}
-              className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-purple-500 transition-all"
+              onClick={() => onNavigateTab('copilot')}
+              className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-purple-500 transition-all cursor-pointer"
             >
               <Zap className="h-4 w-4" /> Ask Copilot
             </button>
             <button
-              onClick={() => onNavigateTab('ai-recommendations')}
-              className="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md px-4 py-2.5 text-xs font-bold text-white border border-white/20 hover:bg-white/20 transition-all"
+              onClick={() => onNavigateTab('copilot')}
+              className="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-md px-4 py-2.5 text-xs font-bold text-white border border-white/20 hover:bg-white/20 transition-all cursor-pointer"
             >
               Review Actions ({recommendations.length})
             </button>
@@ -101,8 +101,8 @@ export default function AICommandCenterView({ brandFilter, onNavigateTab }: AICo
                   </p>
                 </div>
                 <button
-                  onClick={() => onNavigateTab('ai-recommendations')}
-                  className="rounded-lg bg-stone-900 text-white px-3 py-1.5 text-xs font-bold hover:bg-stone-800 transition-all flex items-center gap-1"
+                  onClick={() => onNavigateTab('copilot')}
+                  className="rounded-lg bg-stone-900 text-white px-3 py-1.5 text-xs font-bold hover:bg-stone-800 transition-all flex items-center gap-1 cursor-pointer"
                 >
                   View <ArrowRight className="h-3.5 w-3.5" />
                 </button>
@@ -128,8 +128,8 @@ export default function AICommandCenterView({ brandFilter, onNavigateTab }: AICo
                   <p className="text-xs text-amber-800 mt-0.5">Severity: {risk.severity.toUpperCase()}</p>
                 </div>
                 <button
-                  onClick={() => onNavigateTab('ai-creative')}
-                  className="rounded-lg bg-amber-600 text-white px-3 py-1.5 text-xs font-bold hover:bg-amber-700 transition-all"
+                  onClick={() => onNavigateTab('creatives')}
+                  className="rounded-lg bg-amber-600 text-white px-3 py-1.5 text-xs font-bold hover:bg-amber-700 transition-all cursor-pointer"
                 >
                   Inspect
                 </button>
