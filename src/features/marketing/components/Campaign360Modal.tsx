@@ -10,14 +10,21 @@ interface Campaign360ModalProps {
 }
 
 export default function Campaign360Modal({ campaign, onClose }: Campaign360ModalProps) {
-  const roas = campaign.actualSpendCents > 0 ? (campaign.attributedRevenueCents / campaign.actualSpendCents).toFixed(2) : '0.00';
+  const rawRev = campaign.attributedRevenueCents || 0;
+  const rawSpend = campaign.actualSpendCents || 0;
+  const roasCalc = rawSpend > 0 ? rawRev / rawSpend : 0;
+  const roas = isNaN(roasCalc) || !isFinite(roasCalc) ? '0.00' : roasCalc.toFixed(2);
+
+  const formattedObjective = (campaign.objective || 'General Awareness')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <Modal open={true} onClose={onClose} title="Campaign 360 Drilldown" maxWidth="max-w-5xl">
       <div className="flex flex-col md:flex-row gap-6">
         
         {/* Left Column: Creatives & Targeting */}
-        <div className="flex-1 space-y-6">
+        <div className="w-full md:w-80 flex-shrink-0 space-y-6">
           <div className="rounded-2xl border border-stone-200/80 bg-stone-50/50 p-5">
             <h3 className="font-bold text-stone-900 flex items-center gap-2 mb-4 text-sm">
               <Target className="h-4 w-4 text-rose-500" /> Active Creatives &amp; Placements
@@ -30,7 +37,7 @@ export default function Campaign360Modal({ campaign, onClose }: Campaign360Modal
                      <span className="font-bold text-xs uppercase tracking-wider text-stone-700">{p}</span>
                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
                    </div>
-                   <div className="h-24 rounded-lg bg-stone-100 flex items-center justify-center text-[10px] font-bold text-stone-400 border border-stone-200/50 border-dashed">
+                   <div className="h-20 rounded-lg bg-stone-100 flex items-center justify-center text-[10px] font-bold text-stone-500 border border-stone-200/50 border-dashed text-center px-1">
                       {p === 'meta' ? 'Instagram Reel Feed' : p === 'google' ? 'Search Ad Copy' : p === 'tiktok' ? 'UGC Video' : 'Pinterest Board'}
                    </div>
                  </div>
@@ -54,14 +61,14 @@ export default function Campaign360Modal({ campaign, onClose }: Campaign360Modal
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-1">Audience Type</p>
-                  <p className="text-sm font-medium text-stone-900">{campaign.audienceType}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">Audience Target</p>
+                  <p className="text-xs font-semibold text-stone-800 leading-snug">{campaign.targetAudience || 'Engaged Women 22-38'}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-1">Goal</p>
-                  <p className="text-sm font-medium text-stone-900 capitalize">{campaign.objective}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-0.5">Campaign Goal</p>
+                  <p className="text-xs font-semibold text-stone-800">{formattedObjective}</p>
                 </div>
               </div>
             </div>
