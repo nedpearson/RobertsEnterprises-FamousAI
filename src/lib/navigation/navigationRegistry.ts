@@ -83,11 +83,12 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
   { id: 'today', label: 'TODAY', order: 1, defaultExpanded: true },
   { id: 'clients', label: 'CLIENTS & SALES', order: 2, defaultExpanded: true },
   { id: 'gowns', label: 'GOWNS & OPERATIONS', order: 3, defaultExpanded: true },
-  { id: 'finance', label: 'FINANCE', order: 4, defaultExpanded: false },
-  { id: 'team', label: 'TEAM', order: 5, defaultExpanded: false },
-  { id: 'insights', label: 'INSIGHTS', order: 6, defaultExpanded: false },
-  { id: 'admin', label: 'ADMIN', order: 7, defaultExpanded: false },
-  { id: 'external', label: 'EXTERNAL BUSINESS PAGE', order: 8, defaultExpanded: true },
+  { id: 'growth', label: 'GROWTH & MARKETING', order: 4, defaultExpanded: true },
+  { id: 'finance', label: 'FINANCE', order: 5, defaultExpanded: false },
+  { id: 'team', label: 'TEAM', order: 6, defaultExpanded: false },
+  { id: 'insights', label: 'INSIGHTS', order: 7, defaultExpanded: false },
+  { id: 'admin', label: 'ADMIN', order: 8, defaultExpanded: false },
+  { id: 'external', label: 'EXTERNAL BUSINESS PAGE', order: 9, defaultExpanded: true },
 ];
 
 export const NAVIGATION_ITEMS: NavigationItem[] = [
