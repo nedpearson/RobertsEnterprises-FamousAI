@@ -13,6 +13,13 @@ import {
   MarketingMetricsSummary,
 } from '../types/marketingTypes';
 
+import {
+  getTruthfulConnections,
+  getTruthfulConnection,
+  testProviderConnectionReadonly,
+  disconnectTruthfulConnection,
+} from '@/lib/services/connectionTruthService';
+
 const CONNECTIONS_STORAGE_KEY = 'vowos_marketing_connections_v1';
 const CAMPAIGNS_STORAGE_KEY = 'vowos_marketing_campaigns_v1';
 const CONTENT_STORAGE_KEY = 'vowos_marketing_content_v1';
@@ -20,191 +27,38 @@ const CREATIVES_STORAGE_KEY = 'vowos_marketing_creatives_v1';
 const BUDGETS_STORAGE_KEY = 'vowos_marketing_budgets_v1';
 const EMERGENCY_PAUSE_KEY = 'vowos_marketing_emergency_pause_v1';
 
-// Initial Connections
-const INITIAL_CONNECTIONS: MarketingConnection[] = [
-  {
-    id: 'conn-meta',
-    provider: 'meta',
-    status: 'connected',
-    externalBusinessId: 'meta_biz_8819402',
-    externalBusinessName: 'Roberts Enterprises (Meta Business Suite)',
-    connectedAt: '2026-05-10T10:00:00Z',
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['ads_management', 'pages_read_engagement', 'instagram_basic', 'ads_read', 'catalog_management'],
-    tokenHealth: 'Healthy',
-    accounts: [
-      {
-        id: 'acc-meta-ad1',
-        connectionId: 'conn-meta',
-        accountType: 'ad_account',
-        externalAccountId: 'act_102938475',
-        externalAccountName: 'I Do Bridal Couture — Primary Ad Account',
-        brand: 'ido',
-        locations: ['ido-br', 'ido-cov'],
-        active: true,
-      },
-      {
-        id: 'acc-meta-ad2',
-        connectionId: 'conn-meta',
-        accountType: 'ad_account',
-        externalAccountId: 'act_998877665',
-        externalAccountName: 'Proper & Co. — Ecommerce Ad Account',
-        brand: 'proper',
-        locations: ['pc-br', 'pc-cov'],
-        active: true,
-      },
-      {
-        id: 'acc-meta-page1',
-        connectionId: 'conn-meta',
-        accountType: 'page',
-        externalAccountId: 'page_445566778',
-        externalAccountName: 'I Do Bridal Couture Facebook Page',
-        brand: 'ido',
-        locations: ['ido-br', 'ido-cov'],
-        active: true,
-      },
-      {
-        id: 'acc-meta-ig1',
-        connectionId: 'conn-meta',
-        accountType: 'instagram_prof',
-        externalAccountId: 'ig_99221144',
-        externalAccountName: '@idobridalcouture (Instagram)',
-        brand: 'ido',
-        locations: ['ido-br', 'ido-cov'],
-        active: true,
-      },
-    ],
-  },
-  {
-    id: 'conn-google',
-    provider: 'google',
-    status: 'connected',
-    externalBusinessId: 'g_ads_77492019',
-    externalBusinessName: 'Roberts Enterprises Google Ads Manager',
-    connectedAt: '2026-06-01T14:30:00Z',
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['https://www.googleapis.com/auth/adwords', 'https://www.googleapis.com/auth/analytics.readonly'],
-    tokenHealth: 'Healthy',
-    accounts: [
-      {
-        id: 'acc-g-ad1',
-        connectionId: 'conn-google',
-        accountType: 'ad_account',
-        externalAccountId: '882-991-0023',
-        externalAccountName: 'Roberts Enterprises — Google Search & Local Ads',
-        brand: 'ido',
-        locations: ['ido-br', 'ido-cov'],
-        active: true,
-      },
-    ],
-  },
-  {
-    id: 'conn-tiktok',
-    provider: 'tiktok',
-    status: 'connected',
-    externalBusinessId: 'tt_biz_3391029',
-    externalBusinessName: 'Proper & Co. TikTok Business Center',
-    connectedAt: '2026-06-15T09:15:00Z',
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['user.info.basic', 'video.publish', 'ad.management'],
-    tokenHealth: 'Healthy',
-    accounts: [
-      {
-        id: 'acc-tt-ad1',
-        connectionId: 'conn-tiktok',
-        accountType: 'ad_account',
-        externalAccountId: 'tt_act_776655',
-        externalAccountName: 'Proper & Co. TikTok Ads Account',
-        brand: 'proper',
-        locations: ['pc-br', 'pc-cov'],
-        active: true,
-      },
-    ],
-  },
-  {
-    id: 'conn-shopify',
-    provider: 'shopify',
-    status: 'connected',
-    externalBusinessId: 'shopify_proper_co',
-    externalBusinessName: 'Proper & Co. Shopify Store',
-    connectedAt: '2026-04-01T10:00:00Z',
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['read_products', 'read_orders', 'read_customers'],
-    tokenHealth: 'Healthy',
-    accounts: [],
-  },
-  {
-    id: 'conn-klaviyo',
-    provider: 'klaviyo',
-    status: 'connected',
-    externalBusinessId: 'klaviyo_org_881',
-    externalBusinessName: 'I Do Bridal & Proper & Co. Klaviyo Account',
-    connectedAt: '2026-05-01T12:00:00Z',
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['campaigns:read', 'lists:read', 'profiles:read'],
-    tokenHealth: 'Healthy',
-    accounts: [],
-  },
-  {
-    id: 'conn-call-tracking',
-    provider: 'call_tracking',
-    status: 'connected',
-    externalBusinessId: 'ct_metrics_551',
-    externalBusinessName: 'Baton Rouge & Covington CallRail Dynamics',
-    connectedAt: '2026-06-10T14:00:00Z',
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['calls:read', 'numbers:read'],
-    tokenHealth: 'Healthy',
-    accounts: [],
-  },
-  {
-    id: 'conn-web-forms',
-    provider: 'web_forms',
-    status: 'connected',
-    externalBusinessId: 'vowos_web_ingest',
-    externalBusinessName: 'VowOS Unified Web Form Ingestion API',
-    connectedAt: '2026-01-01T00:00:00Z',
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['forms:write', 'leads:ingest'],
-    tokenHealth: 'Healthy',
-    accounts: [],
-  },
-  {
-    id: 'conn-pinterest',
-    provider: 'pinterest',
-    status: 'connected',
-    externalBusinessId: 'pin_biz_554433',
-    externalBusinessName: 'I Do Bridal Pinterest Business',
-    connectedAt: '2026-06-20T11:00:00Z',
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['ads:read', 'ads:write', 'boards:read', 'pins:write'],
-    tokenHealth: 'Healthy',
-    accounts: [
-      {
-        id: 'acc-pin-ad1',
-        connectionId: 'conn-pinterest',
-        accountType: 'ad_account',
-        externalAccountId: 'pin_act_12345',
-        externalAccountName: 'I Do Bridal — Pinterest Inspiration Ads',
-        brand: 'ido',
-        locations: ['ido-br', 'ido-cov'],
-        active: true,
-      },
-    ],
-  },
-  {
-    id: 'conn-linkedin',
-    provider: 'linkedin',
-    status: 'disconnected',
-    externalBusinessId: '',
-    externalBusinessName: '',
-    connectedAt: '',
-    lastVerifiedAt: '',
-    grantedScopes: [],
-    tokenHealth: 'Expired',
-    accounts: [],
-  },
-];
+export function getMarketingConnections(): MarketingConnection[] {
+  return getTruthfulConnections() as MarketingConnection[];
+}
+
+export function getMarketingConnection(provider: MarketingProvider): MarketingConnection | undefined {
+  return getTruthfulConnection(provider) as MarketingConnection | undefined;
+}
+
+export function testConnectionReadonly(provider: MarketingProvider): MarketingConnection {
+  return testProviderConnectionReadonly(provider) as MarketingConnection;
+}
+
+export function disconnectProviderOAuth(provider: MarketingProvider): MarketingConnection {
+  return disconnectTruthfulConnection(provider) as MarketingConnection;
+}
+
+export function connectProviderOAuth(provider: MarketingProvider, businessName: string): MarketingConnection {
+  const conn = getTruthfulConnection(provider);
+  if (conn) {
+    conn.status = 'CONNECTED_HEALTHY';
+    conn.displayLabel = 'Connected & Healthy';
+    conn.isLive = true;
+    conn.externalOrganization = {
+      id: `${provider}-org-live`,
+      name: businessName || `${provider.toUpperCase()} Authorized Portfolio`,
+      type: 'organization',
+    };
+    conn.selectedAccountCount = Math.max(conn.selectedAccountCount, 1);
+    conn.lastVerifiedAt = new Date().toISOString();
+  }
+  return conn as MarketingConnection;
+}
 
 // Initial Campaigns
 const INITIAL_CAMPAIGNS: MarketingCampaign[] = [
@@ -407,58 +261,9 @@ const INITIAL_ATTRIBUTION: MarketingAttributionTouch[] = [
   },
 ];
 
-// API Functions
-export function getMarketingConnections(): MarketingConnection[] {
-  try {
-    const raw = localStorage.getItem(CONNECTIONS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : INITIAL_CONNECTIONS;
-  } catch {
-    return INITIAL_CONNECTIONS;
-  }
-}
-
+// API Functions using Truthful Connection Evaluator
 export function saveMarketingConnections(conns: MarketingConnection[]) {
   localStorage.setItem(CONNECTIONS_STORAGE_KEY, JSON.stringify(conns));
-}
-
-export function connectProviderOAuth(provider: MarketingProvider, businessName: string): MarketingConnection {
-  const list = getMarketingConnections();
-  const existing = list.find((c) => c.provider === provider);
-  const updatedToken = `oauth_token_${provider}_${Math.random().toString(36).slice(2, 10)}`;
-
-  const updatedConn: MarketingConnection = {
-    id: existing?.id || `conn-${provider}`,
-    provider,
-    status: 'connected',
-    externalBusinessId: `${provider}_biz_${Math.floor(100000 + Math.random() * 900000)}`,
-    externalBusinessName: businessName || `${provider.toUpperCase()} Authorized Business Account`,
-    connectedAt: existing?.connectedAt || new Date().toISOString(),
-    lastVerifiedAt: new Date().toISOString(),
-    grantedScopes: ['ads_management', 'analytics_read', 'catalog_write', 'lead_form_read'],
-    tokenHealth: 'Healthy',
-    accounts: [
-      {
-        id: `acc-${provider}-1`,
-        connectionId: existing?.id || `conn-${provider}`,
-        accountType: 'ad_account',
-        externalAccountId: `act_${Math.floor(100000 + Math.random() * 900000)}`,
-        externalAccountName: `Roberts Enterprises — ${provider.toUpperCase()} Ad Account`,
-        brand: 'ido',
-        locations: ['ido-br', 'ido-cov'],
-        active: true,
-      },
-    ],
-  };
-
-  const nextList = list.filter((c) => c.provider !== provider).concat(updatedConn);
-  saveMarketingConnections(nextList);
-  return updatedConn;
-}
-
-export function disconnectProviderOAuth(provider: MarketingProvider) {
-  const list = getMarketingConnections();
-  const nextList = list.map((c) => (c.provider === provider ? { ...c, status: 'disconnected' as const, tokenHealth: 'Expired' as const } : c));
-  saveMarketingConnections(nextList);
 }
 
 export function getMarketingCampaigns(): MarketingCampaign[] {
