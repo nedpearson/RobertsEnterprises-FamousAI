@@ -19,7 +19,8 @@ import { DemoModeBanner } from '@/components/demo/DemoModeBanner';
 import { DemoCursorOverlay } from '@/components/demo/DemoCursorOverlay';
 import { TourControlBar } from '@/components/demo/TourControlBar';
 import { DemoLauncherModal } from '@/components/demo/DemoLauncherModal';
-import TrainingCenterView from '@/components/demo/TrainingCenterView';
+import TrainingCenterView from '@/features/training/components/TrainingCenterView';
+import { VirtualCursorOverlay } from '@/features/training/components/VirtualCursorOverlay';
 
 import DashboardView from '@/components/vowos/DashboardView';
 import CustomersView from '@/components/vowos/CustomersView';
@@ -282,6 +283,7 @@ export default function AppLayout() {
           <DemoLauncherModal open={demoModalOpen} onClose={() => setDemoModalOpen(false)} onNavigateNeeded={setView} />
           <CommandPaletteModal open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} onNavigate={setView} />
           <DemoCursorOverlay />
+          <VirtualCursorOverlay />
           <TourControlBar onNavigateNeeded={setView} />
 
           <footer className="mt-10 border-t border-stone-200 pt-6 pb-4 text-center text-xs text-stone-400">
