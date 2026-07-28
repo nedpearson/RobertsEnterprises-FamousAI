@@ -18,7 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/use-toast';
 
-export const PUBLIC_VIEWS: ViewKey[] = ['dashboard', 'training'];
+export const PUBLIC_VIEWS: ViewKey[] = ['dashboard', 'training', 'bride-portal'];
 
 export const NAV_ITEMS = NAVIGATION_ITEMS.map((item) => ({
   key: item.id as ViewKey,
@@ -47,6 +47,8 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   training: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   onlinestore: ['Owner', 'Manager'],
   marketing: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  'bride-portal': ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  'fitting-room': ['Owner', 'Manager', 'Stylist', 'Front Desk'],
 };
 
 export function canAccessView(role: StaffRole | null, view: ViewKey, staffId?: string | null): boolean {

@@ -54,7 +54,9 @@ export type ViewKey =
   | 'timeclock'
   | 'training'
   | 'onlinestore'
-  | 'marketing';
+  | 'marketing'
+  | 'bride-portal'
+  | 'fitting-room';
 
 export interface NavigationSection {
   id: NavigationSectionId;

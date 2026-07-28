@@ -41,6 +41,8 @@ import PayrollView from '@/components/vowos/payroll/PayrollView';
 import TimeClockView from '@/components/vowos/TimeClockView';
 import OnlineStorePage from '@/features/proper-commerce/pages/OnlineStorePage';
 import MarketingPage from '@/features/marketing/pages/MarketingPage';
+import BridePortalView from '@/features/bride-portal/BridePortalView';
+import ConsultantFittingRoomView from '@/features/fitting-room/ConsultantFittingRoomView';
 
 
 
@@ -277,6 +279,8 @@ export default function AppLayout() {
               {view === 'training' && <TrainingCenterView onNavigate={setView} />}
               {view === 'onlinestore' && <OnlineStorePage />}
               {view === 'marketing' && <MarketingPage />}
+              {view === 'bride-portal' && <BridePortalView />}
+              {view === 'fitting-room' && <ConsultantFittingRoomView />}
             </VowosErrorBoundary>
           )}
 
