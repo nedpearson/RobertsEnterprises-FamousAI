@@ -15,15 +15,13 @@ export default function MobileNavigation({ view, onNavigate, onRequestSignIn }: 
   const { session, profile } = useAuth();
   const role = profile?.role ?? null;
 
-  // Select top 4 items for bottom bar based on role and mobile priority
+  // Select top 4 items for bottom bar based on role (Today, My Leads, Appointments, Brides)
   const bottomBarItems = [
     NAVIGATION_ITEMS.find((i) => i.id === 'dashboard')!,
-    NAVIGATION_ITEMS.find((i) => i.id === 'customers')!,
+    NAVIGATION_ITEMS.find((i) => i.id === 'marketing')!,
     NAVIGATION_ITEMS.find((i) => i.id === 'appointments')!,
-    role === 'Stylist'
-      ? NAVIGATION_ITEMS.find((i) => i.id === 'alterations')!
-      : NAVIGATION_ITEMS.find((i) => i.id === 'inventory')!,
-  ];
+    NAVIGATION_ITEMS.find((i) => i.id === 'customers')!,
+  ].filter(Boolean);
 
   return (
     <>

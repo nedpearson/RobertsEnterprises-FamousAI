@@ -118,17 +118,6 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     searchKeywords: ['bride', 'customers', 'clients', 'profiles', 'wedding', 'bride 360'],
   },
   {
-    id: 'leads',
-    label: 'Leads',
-    shortLabel: 'Leads',
-    icon: Sparkles,
-    path: '/leads',
-    section: 'clients',
-    allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
-    mobilePriority: 10,
-    searchKeywords: ['leads', 'prospects', 'inquiries', 'consultations', 'pipeline'],
-  },
-  {
     id: 'appointments',
     label: 'Appointments',
     shortLabel: 'Schedule',
@@ -275,14 +264,14 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
   // GROWTH & MARKETING
   {
     id: 'marketing',
-    label: 'Marketing',
-    shortLabel: 'Marketing',
+    label: 'Growth & Marketing',
+    shortLabel: 'Growth',
     icon: Megaphone,
-    path: '/marketing',
+    path: '/growth',
     section: 'growth',
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
     mobilePriority: 7.5,
-    searchKeywords: ['marketing', 'facebook', 'instagram', 'google ads', 'tiktok', 'pinterest', 'meta', 'campaigns', 'ad spend', 'roas'],
+    searchKeywords: ['growth', 'marketing', 'leads', 'pipeline', 'facebook', 'instagram', 'google ads', 'tiktok', 'pinterest', 'meta', 'campaigns', 'ad spend', 'roas'],
   },
 
   // INSIGHTS
@@ -342,7 +331,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
 export const VIEW_TO_PATH: Record<ViewKey, string> = {
   dashboard: '/today',
   customers: '/brides',
-  leads: '/leads',
+  leads: '/growth/leads',
   inventory: '/inventory',
   transfers: '/transfers',
   appointments: '/appointments',
@@ -359,7 +348,7 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
   timeclock: '/timeclock',
   training: '/training',
   onlinestore: '/onlinestore',
-  marketing: '/marketing',
+  marketing: '/growth',
 };
 
 /** Map path to view key */
@@ -368,13 +357,17 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/dashboard': 'dashboard', // Legacy alias
   '/brides': 'customers',
   '/customers': 'customers', // Legacy alias
-  '/leads': 'leads',
+  '/growth': 'marketing',
+  '/growth/leads': 'leads',
+  '/growth/lead-generation': 'marketing',
+  '/growth/campaigns': 'marketing',
+  '/marketing': 'marketing', // Legacy redirect
+  '/leads': 'leads', // Legacy redirect
   '/inventory': 'inventory',
   '/transfers': 'transfers',
   '/appointments': 'appointments',
   '/communications': 'communications',
   '/onlinestore': 'onlinestore',
-  '/marketing': 'marketing',
   '/contracts': 'contracts',
   '/alterations': 'alterations',
   '/invoices': 'invoices',

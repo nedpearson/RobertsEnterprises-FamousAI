@@ -106,6 +106,50 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
         />
       </div>
 
+      {/* Daily Lead Quick Access Panel */}
+      <div className="rounded-2xl border border-stone-200/80 bg-gradient-to-r from-rose-50/70 via-white to-amber-50/70 p-5 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="rounded-xl bg-rose-500 p-2 text-white shadow-xs">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="font-serif text-base font-bold text-stone-900">Daily Lead Execution &amp; SLA Shortcuts</h2>
+              <p className="text-xs text-stone-500">Fast access to active lead queues in Growth &amp; Marketing</p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('marketing')}
+            className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border border-rose-200 shadow-2xs"
+          >
+            Open Lead Pipeline <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
+          {[
+            { label: 'My New Leads', count: 6, bg: 'bg-white', text: 'text-stone-900', border: 'border-stone-200', tag: 'New' },
+            { label: 'Uncontacted Paid', count: 2, bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-200', tag: 'SLA 5m' },
+            { label: 'Follow-Ups Due', count: 4, bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', tag: 'Due' },
+            { label: 'SLA Warnings', count: 1, bg: 'bg-red-50', text: 'text-red-800', border: 'border-red-200', tag: 'Urgent' },
+            { label: 'Appt Requests', count: 3, bg: 'bg-violet-50', text: 'text-violet-800', border: 'border-violet-200', tag: 'Suite' },
+            { label: 'High-Value VIPs', count: 5, bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-200', tag: '$4k+' },
+          ].map((item) => (
+            <button
+              key={item.label}
+              onClick={() => onNavigate('marketing')}
+              className={`flex flex-col justify-between p-3 rounded-xl border ${item.bg} ${item.border} hover:shadow-xs transition-all text-left group`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400">{item.tag}</span>
+                <span className={`text-sm font-extrabold ${item.text}`}>{item.count}</span>
+              </div>
+              <p className="text-xs font-bold text-stone-800 group-hover:text-rose-600 transition-colors mt-2">{item.label}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
         {/* Revenue chart with Month-level Drilldowns */}
         <div data-tour-id="chart-revenue" className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm xl:col-span-3">
