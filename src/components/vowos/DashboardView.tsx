@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DollarSign, Users, CalendarDays, Shirt, ArrowRight, ExternalLink, PackageSearch, UserCheck, Calendar, Clock, CheckCircle2, ChevronRight, BarChart2 } from 'lucide-react';
+import { DollarSign, Users, CalendarDays, Shirt, ArrowRight, ExternalLink, PackageSearch, UserCheck, Calendar, Clock, CheckCircle2, ChevronRight, BarChart2, Sparkles } from 'lucide-react';
 import { revenueByMonth, formatCents, formatDate, HERO_IMAGE, Appointment, PurchaseOrder, Gown, Bride } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { StatCard, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';

@@ -1,19 +1,7 @@
 import { CommerceConnection, CatalogProduct, CommerceOrder, CommerceSyncIssue } from '../types/properCommerceTypes';
 import { formatCents } from '@/data/vowosData';
 import { StatCard } from '@/components/vowos/ui';
-import {
-  ShoppingBag,
-  Package,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  ClipboardList,
-  RefreshCw,
-  Layers,
-  Store
-} from 'lucide-react';
+import { ShoppingBag, Package, TrendingUp, AlertCircle, CheckCircle2, Clock, ArrowRight, ClipboardList, RefreshCw, Layers, Store } from 'lucide-react';
 
 interface OnlineStoreOverviewProps {
   connection: CommerceConnection;

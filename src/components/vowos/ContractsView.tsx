@@ -1,17 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, FormEvent } from 'react';
-import {
-  FileSignature,
-  Loader2,
-  Plus,
-  Copy,
-  Check,
-  Mail,
-  MessageSquare,
-  ExternalLink,
-  PenLine,
-  Clock,
-  FileText,
-} from 'lucide-react';
+import { FileSignature, Loader2, Plus, Copy, Check, Mail, MessageSquare, ExternalLink, PenLine, Clock, FileText } from 'lucide-react';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { locationById, formatCents, formatDate, LocationId } from '@/data/vowosData';
 import { LocationSelect } from './LocationSelect';

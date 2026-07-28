@@ -1,23 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  MessageSquare,
-  Mail,
-  Search,
-  Send,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-  CalendarCheck,
-  Link2,
-  BellRing,
-  Sparkles,
-  Zap,
-  RefreshCw,
-  X,
-  ArrowDownLeft,
-  Sunrise,
-  Phone,
-} from 'lucide-react';
+import { MessageSquare, Mail, Search, Send, Loader2, CheckCircle2, AlertCircle, CalendarCheck, Link2, BellRing, Sparkles, Zap, RefreshCw, X, ArrowDownLeft, Sunrise, Phone } from 'lucide-react';
 import { Customer, formatCents, formatDate, locationById } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { supabase } from '@/lib/supabase';

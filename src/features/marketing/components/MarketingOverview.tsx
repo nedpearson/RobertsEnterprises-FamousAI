@@ -1,20 +1,5 @@
 import { useState } from 'react';
-import {
-  TrendingUp,
-  Megaphone,
-  DollarSign,
-  Users,
-  CalendarCheck,
-  PauseCircle,
-  AlertTriangle,
-  PlayCircle,
-  PlusCircle,
-  CheckCircle2,
-  ExternalLink,
-  ShieldAlert,
-  ShoppingBag,
-  Sparkles,
-} from 'lucide-react';
+import { TrendingUp, Megaphone, DollarSign, Users, CalendarCheck, PauseCircle, AlertTriangle, PlayCircle, PlusCircle, CheckCircle2, ExternalLink, ShieldAlert, ShoppingBag, Sparkles } from 'lucide-react';
 import { formatCents } from '@/data/vowosData';
 import { getMarketingMetricsSummary, setEmergencyPauseStatus, getMarketingConnections } from '../api/marketingApi';
 import { btnPrimary, btnSecondary } from '@/components/vowos/ui';

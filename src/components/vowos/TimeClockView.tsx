@@ -1,24 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  AlarmClock,
-  LogIn,
-  LogOut,
-  Coffee,
-  Repeat,
-  MapPin,
-  WifiOff,
-  Wifi,
-  Loader2,
-  ShieldAlert,
-  Users,
-  Building2,
-  Clock,
-  KeyRound,
-  CheckCircle2,
-  AlertTriangle,
-  Sparkles,
-  QrCode,
-} from 'lucide-react';
+import { AlarmClock, LogIn, LogOut, Coffee, Repeat, MapPin, WifiOff, Wifi, Loader2, ShieldAlert, Users, Building2, Clock, KeyRound, CheckCircle2, AlertTriangle, Sparkles, QrCode } from 'lucide-react';
 import { useAuth, StaffRole, STAFF_ROLES } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';

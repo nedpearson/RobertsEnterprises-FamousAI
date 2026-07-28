@@ -1,23 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import {
-  Gem,
-  Loader2,
-  AlertTriangle,
-  CalendarDays,
-  FileSignature,
-  Scissors,
-  Receipt,
-  CheckCircle2,
-  CreditCard,
-  PenLine,
-  MapPin,
-  Phone,
-  Heart,
-  Ruler,
-  Download,
-  Smartphone,
-} from 'lucide-react';
+import { Gem, Loader2, AlertTriangle, CalendarDays, FileSignature, Scissors, Receipt, CheckCircle2, CreditCard, PenLine, MapPin, Phone, Heart, Ruler, Download, Smartphone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import {
   Customer,

@@ -2,20 +2,7 @@ import { useState, useRef } from 'react';
 import { generateVendorTemplateCSV, addCatalogProduct } from '../api/properCommerceApi';
 import { CatalogProduct, PurchaseMode } from '../types/properCommerceTypes';
 import { formatCents } from '@/data/vowosData';
-import {
-  Download,
-  Upload,
-  FileSpreadsheet,
-  CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
-  RefreshCw,
-  Eye,
-  Check,
-  ShieldAlert,
-  Layers,
-  Sparkles
-} from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Eye, Check, ShieldAlert, Layers, Sparkles } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface VendorImportWizardProps {

@@ -2,21 +2,7 @@ import { useState } from 'react';
 import { Lead, LeadStage, formatCents, formatDate, teamMembers } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { Modal, StatusBadge } from './ui';
-import {
-  Sparkles,
-  Calendar,
-  DollarSign,
-  UserCheck,
-  Mail,
-  Phone,
-  MessageSquare,
-  ArrowRight,
-  CheckCircle2,
-  CalendarPlus,
-  UserPlus,
-  Tag,
-  Clock
-} from 'lucide-react';
+import { Sparkles, Calendar, DollarSign, UserCheck, Mail, Phone, MessageSquare, ArrowRight, CheckCircle2, CalendarPlus, UserPlus, Tag, Clock } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface Lead360ModalProps {

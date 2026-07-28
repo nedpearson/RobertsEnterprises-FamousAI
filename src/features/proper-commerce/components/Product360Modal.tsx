@@ -3,24 +3,7 @@ import { CatalogProduct, InventoryMovement, PurchaseMode } from '../types/proper
 import { updateCatalogProduct, recordStockAdjustment } from '../api/properCommerceApi';
 import { formatCents, marginPct, formatDate } from '@/data/vowosData';
 import { Modal } from '@/components/vowos/ui';
-import {
-  Package,
-  Globe,
-  Lock,
-  Tag,
-  MapPin,
-  History,
-  Code,
-  Edit3,
-  CheckCircle2,
-  ExternalLink,
-  Plus,
-  Minus,
-  RefreshCw,
-  Layers,
-  DollarSign,
-  ShieldCheck
-} from 'lucide-react';
+import { Package, Globe, Lock, Tag, MapPin, History, Code, Edit3, CheckCircle2, ExternalLink, Plus, Minus, RefreshCw, Layers, DollarSign, ShieldCheck } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface Product360ModalProps {

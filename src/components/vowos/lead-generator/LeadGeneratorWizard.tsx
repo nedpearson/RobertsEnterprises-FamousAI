@@ -1,24 +1,5 @@
 import { useState } from 'react';
-import {
-  Sparkles,
-  ArrowRight,
-  ArrowLeft,
-  CheckCircle2,
-  Building,
-  MapPin,
-  FormInput,
-  Route,
-  Target,
-  Zap,
-  Eye,
-  Globe,
-  Share2,
-  Smartphone,
-  ShieldCheck,
-  Loader2,
-  Copy,
-  Check
-} from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, Building, MapPin, FormInput, Route, Target, Zap, Eye, Globe, Share2, Smartphone, ShieldCheck, Loader2, Copy, Check } from 'lucide-react';
 import { leadService, LeadGenerationAsset } from '@/lib/services/leadIntelligenceService';
 import { toast } from '@/components/ui/use-toast';
 import { btnPrimary, btnSecondary, inputCls } from '../ui';

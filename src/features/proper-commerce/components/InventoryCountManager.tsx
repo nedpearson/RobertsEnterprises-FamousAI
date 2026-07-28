@@ -2,18 +2,7 @@ import { useState } from 'react';
 import { InventoryCountSession } from '../types/properCommerceTypes';
 import { createCountSession, submitCountSession, approveCountSession } from '../api/properCommerceApi';
 import { Modal } from '@/components/vowos/ui';
-import {
-  ClipboardList,
-  Plus,
-  Barcode,
-  EyeOff,
-  CheckCircle2,
-  AlertTriangle,
-  Check,
-  X,
-  Search,
-  Scan
-} from 'lucide-react';
+import { ClipboardList, Plus, Barcode, EyeOff, CheckCircle2, AlertTriangle, Check, X, Search, Scan } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface InventoryCountManagerProps {

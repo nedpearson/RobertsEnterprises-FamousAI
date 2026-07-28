@@ -1,9 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Gem, MapPin, Clock, Phone, CalendarHeart, CheckCircle2, AlertCircle, Video, ArrowLeft,
-  CreditCard, ChevronLeft,
-} from 'lucide-react';
+import { Gem, MapPin, Clock, Phone, CalendarHeart, CheckCircle2, AlertCircle, Video, ArrowLeft, CreditCard, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import CardPaymentForm, { CardPaymentResult } from '@/components/vowos/CardPaymentForm';
 import {

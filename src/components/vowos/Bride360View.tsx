@@ -8,25 +8,7 @@ import {
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { fetchContracts, fetchAlterations, ContractRecord, AlterationJob } from '@/lib/contractsAlterations';
 import { fetchMessages, MessageRecord } from '@/lib/messaging';
-import {
-  Users,
-  Calendar,
-  Shirt,
-  FileSignature,
-  CreditCard,
-  Scissors,
-  MessageSquare,
-  FileText,
-  Activity,
-  ArrowLeft,
-  Phone,
-  Mail,
-  MapPin,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  Plus
-} from 'lucide-react';
+import { Users, Calendar, Shirt, FileSignature, CreditCard, Scissors, MessageSquare, FileText, Activity, ArrowLeft, Phone, Mail, MapPin, CheckCircle2, Clock, Sparkles, Plus } from 'lucide-react';
 import { btnPrimary } from './ui';
 
 export type Bride360Tab =

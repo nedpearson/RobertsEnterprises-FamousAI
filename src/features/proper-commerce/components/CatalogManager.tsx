@@ -3,21 +3,7 @@ import { CatalogProduct, PurchaseMode } from '../types/properCommerceTypes';
 import { bulkPublishProducts, bulkUnpublishProducts, updateCatalogProduct } from '../api/properCommerceApi';
 import { formatCents, marginPct } from '@/data/vowosData';
 import { StatusBadge, Modal, inputCls, btnPrimary } from '@/components/vowos/ui';
-import {
-  Search,
-  Plus,
-  Filter,
-  CheckCircle2,
-  Globe,
-  Lock,
-  Tag,
-  Package,
-  Layers,
-  ShoppingBag,
-  Store,
-  DollarSign,
-  AlertCircle
-} from 'lucide-react';
+import { Search, Plus, Filter, CheckCircle2, Globe, Lock, Tag, Package, Layers, ShoppingBag, Store, DollarSign, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface CatalogManagerProps {

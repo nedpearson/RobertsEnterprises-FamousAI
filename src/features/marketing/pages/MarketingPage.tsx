@@ -31,32 +31,7 @@ import { leadService, UnifiedLeadRecord } from '@/lib/services/leadIntelligenceS
 import Lead360Modal from '@/components/vowos/Lead360Modal';
 import BookAppointmentModal from '@/components/vowos/BookAppointmentModal';
 
-import {
-  TrendingUp,
-  Megaphone,
-  Calendar,
-  Image,
-  DollarSign,
-  Users,
-  Zap,
-  BarChart3,
-  CheckCircle2,
-  Radio,
-  Settings,
-  PlusCircle,
-  Filter,
-  Sparkles,
-  Bot,
-  Cpu,
-  Layers,
-  Eye,
-  ShieldCheck,
-  Inbox,
-  Clock,
-  PieChart,
-  Tag,
-  ChevronDown
-} from 'lucide-react';
+import { TrendingUp, Megaphone, Calendar, Image, DollarSign, Users, Zap, BarChart3, CheckCircle2, Radio, Settings, PlusCircle, Filter, Sparkles, Bot, Cpu, Layers, Eye, ShieldCheck, Inbox, Clock, PieChart, Tag, ChevronDown } from 'lucide-react';
 
 export type GrowthTab =
   | 'command-center'

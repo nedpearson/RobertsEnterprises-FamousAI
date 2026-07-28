@@ -2,20 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Customer } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { Modal } from './ui';
-import {
-  Upload,
-  Camera,
-  RotateCcw,
-  RotateCw,
-  ZoomIn,
-  ZoomOut,
-  Trash2,
-  Check,
-  X,
-  RefreshCw,
-  AlertCircle,
-  Image as ImageIcon
-} from 'lucide-react';
+import { Upload, Camera, RotateCcw, RotateCw, ZoomIn, ZoomOut, Trash2, Check, X, RefreshCw, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface BridePhotoModalProps {

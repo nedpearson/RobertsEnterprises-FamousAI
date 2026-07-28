@@ -1,8 +1,5 @@
 import { useState } from 'react';
-import {
-  CalendarDays, CalendarPlus, CalendarRange, Check, Copy, ExternalLink, LayoutList, Loader2,
-  Pencil, Printer, QrCode, Trash2, Search, Wallet, CreditCard,
-} from 'lucide-react';
+import { CalendarDays, CalendarPlus, CalendarRange, Check, Copy, ExternalLink, LayoutList, Loader2, Pencil, Printer, QrCode, Trash2, Search, Wallet, CreditCard } from 'lucide-react';
 import {
   Appointment,
   formatDate,

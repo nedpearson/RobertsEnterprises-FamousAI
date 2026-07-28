@@ -1,25 +1,5 @@
 import { useState } from 'react';
-import {
-  ArrowRight,
-  Sparkles,
-  Loader2,
-  ChevronRight,
-  UserPlus,
-  Phone,
-  Mail,
-  Plus,
-  Layers,
-  Inbox,
-  Clock,
-  CalendarCheck,
-  Globe,
-  PieChart,
-  BarChart3,
-  Zap,
-  Settings,
-  AlertTriangle,
-  Tag
-} from 'lucide-react';
+import { ArrowRight, Sparkles, Loader2, ChevronRight, UserPlus, Phone, Mail, Plus, Layers, Inbox, Clock, CalendarCheck, Globe, PieChart, BarChart3, Zap, Settings, AlertTriangle, Tag } from 'lucide-react';
 import { LEAD_STAGES, LeadStage, Lead, formatCents, formatDate } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, btnPrimary, btnSecondary } from './ui';

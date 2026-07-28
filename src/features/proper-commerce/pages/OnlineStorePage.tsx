@@ -29,18 +29,7 @@ import CommerceSettingsView from '../components/CommerceSettingsView';
 import ShopifyConnectModal from '../components/ShopifyConnectModal';
 
 import { PageHeader } from '@/components/vowos/ui';
-import {
-  ShoppingBag,
-  Package,
-  Layers,
-  MapPin,
-  ClipboardList,
-  FileText,
-  BarChart3,
-  Settings,
-  AlertCircle,
-  Link2
-} from 'lucide-react';
+import { ShoppingBag, Package, Layers, MapPin, ClipboardList, FileText, BarChart3, Settings, AlertCircle, Link2 } from 'lucide-react';
 
 export type ProperCommerceTab =
   | 'overview'

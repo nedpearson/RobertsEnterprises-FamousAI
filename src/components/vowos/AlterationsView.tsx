@@ -1,15 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, FormEvent } from 'react';
-import {
-  Scissors,
-  Loader2,
-  Plus,
-  Bell,
-  CalendarClock,
-  PackageCheck,
-  ChevronRight,
-  Square,
-  CheckSquare,
-} from 'lucide-react';
+import { Scissors, Loader2, Plus, Bell, CalendarClock, PackageCheck, ChevronRight, Square, CheckSquare } from 'lucide-react';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { locationById, formatCents, formatDate, LocationId } from '@/data/vowosData';
 import { LocationSelect } from './LocationSelect';

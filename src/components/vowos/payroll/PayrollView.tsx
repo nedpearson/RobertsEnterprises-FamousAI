@@ -1,24 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Coins,
-  Calendar,
-  AlertTriangle,
-  UserCheck,
-  FileSpreadsheet,
-  Building,
-  CheckCircle,
-  HelpCircle,
-  Plus,
-  Trash2,
-  Lock,
-  ArrowRight,
-  TrendingUp,
-  CreditCard,
-  History,
-  FileText,
-  DollarSign,
-  Briefcase
-} from 'lucide-react';
+import { Coins, Calendar, AlertTriangle, UserCheck, FileSpreadsheet, Building, CheckCircle, HelpCircle, Plus, Trash2, Lock, ArrowRight, TrendingUp, CreditCard, History, FileText, DollarSign, Briefcase } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';

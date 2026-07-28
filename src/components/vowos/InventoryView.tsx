@@ -1,8 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  Search, Plus, Pencil, PackagePlus, Loader2, ArrowLeftRight, AlertTriangle, Boxes, DollarSign, TrendingUp,
-  Check, X,
-} from 'lucide-react';
+import { Search, Plus, Pencil, PackagePlus, Loader2, ArrowLeftRight, AlertTriangle, Boxes, DollarSign, TrendingUp, Check, X } from 'lucide-react';
 import {
   Gown,
   GOWN_STYLES,

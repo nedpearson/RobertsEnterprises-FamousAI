@@ -1,19 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Gem,
-  ChevronDown,
-  ChevronRight,
-  Lock,
-  LogOut,
-  ExternalLink,
-  SlidersHorizontal,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Copy,
-  Check,
-  Eye,
-  CalendarHeart
-} from 'lucide-react';
+import { Gem, ChevronDown, ChevronRight, Lock, LogOut, ExternalLink, SlidersHorizontal, PanelLeftClose, PanelLeftOpen, Copy, Check, Eye, CalendarHeart } from 'lucide-react';
 import { useAuth, StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import {
