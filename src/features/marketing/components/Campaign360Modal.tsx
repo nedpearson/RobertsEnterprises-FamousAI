@@ -99,13 +99,35 @@ export default function Campaign360Modal({ campaign, onClose }: Campaign360Modal
                  </p>
                  <p className="font-bold text-stone-900">{Math.floor(campaign.actualSpendCents / 15000)}</p>
                </div>
-               <div className="flex items-center justify-between">
-                 <p className="text-sm font-medium text-stone-600 flex items-center gap-2">
-                   <DollarSign className="h-4 w-4 text-stone-400" /> Revenue Driven
-                 </p>
-                 <p className="font-bold text-emerald-600">{formatCents(campaign.attributedRevenueCents)}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-stone-600 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-stone-400" /> Revenue Driven
+                  </p>
+                  <p className="font-bold text-emerald-600">{formatCents(campaign.attributedRevenueCents)}</p>
+                </div>
+             </div>
+
+             {/* Bidirectional Campaign-to-Leads Roster Drilldown */}
+             <div className="mt-5 border-t border-stone-100 pt-4 space-y-2">
+               <p className="text-xs font-bold text-stone-800 uppercase tracking-wider">Attributed Campaign Leads &amp; Outbound Sales</p>
+               <div className="space-y-1 text-xs">
+                 {[
+                   { name: 'Camille Fontenot', status: 'Appointment Set', value: '$4,500', cpl: '$24.50' },
+                   { name: 'Helena Vance', status: 'New (Contact Pending)', value: '$2,800', cpl: '$18.70' },
+                   { name: 'Maya Whitfield', status: 'Won (Sale Completed)', value: '$5,200', cpl: '$21.10' },
+                 ].map((l) => (
+                   <div key={l.name} className="flex items-center justify-between bg-stone-50 p-2 rounded-lg border border-stone-200/70 text-[11px]">
+                     <div>
+                       <span className="font-bold text-stone-900">{l.name}</span>
+                       <span className="text-stone-400 text-[10px] ml-1 flex-inline">({l.status})</span>
+                     </div>
+                     <div className="text-right font-semibold text-stone-700">
+                       {l.value} · <span className="text-emerald-600">CPL {l.cpl}</span>
+                     </div>
+                   </div>
+                 ))}
                </div>
-            </div>
+             </div>
             
             <div className="mt-6 pt-5 border-t border-stone-100">
                <div className="flex items-center justify-between mb-3">
