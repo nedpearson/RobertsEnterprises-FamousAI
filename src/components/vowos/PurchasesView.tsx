@@ -6,9 +6,12 @@ import { PageHeader, StatusBadge, StatCard, Modal, inputCls, btnPrimary, btnSeco
 import { getVendorPortals, saveVendorPortal, VendorPortal } from '@/lib/services/vendorPortalStore';
 import { toast } from '@/components/ui/use-toast';
 
+import PODetailDrilldownModal from '@/features/inventory/components/PODetailDrilldownModal';
+
 export default function PurchasesView() {
   const { purchaseOrders: list, brides, loading, markPoDelivered, updatePoStatus, updatePurchaseOrder, deletePurchaseOrder, addPurchaseOrder } = useVowosData();
   const [activeTab, setActiveTab] = useState<'orders' | 'vault' | 'customers' | 'analytics'>('orders');
+  const [selectedDrilldownPo, setSelectedDrilldownPo] = useState<PurchaseOrder | null>(null);
 
   // Search & Filter controls
   const [searchTerm, setSearchTerm] = useState('');
@@ -399,9 +402,11 @@ export default function PurchasesView() {
                     <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-600">
                       <PackageSearch className="h-6 w-6" />
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 cursor-pointer group" onClick={() => setSelectedDrilldownPo(po)}>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-stone-900">{po.id}</p>
+                        <p className="font-semibold text-stone-900 group-hover:text-rose-600 transition-colors flex items-center gap-1">
+                          {po.id} <Eye className="h-3.5 w-3.5 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
                         <StatusBadge status={po.status} />
                         {po.assignedStaff && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 px-2.5 py-0.5 text-[10px] font-bold text-violet-700">
@@ -903,6 +908,8 @@ export default function PurchasesView() {
           </div>
         </Modal>
       )}
+
+      <PODetailDrilldownModal po={selectedDrilldownPo} onClose={() => setSelectedDrilldownPo(null)} />
     </div>
   );
 }

@@ -84,6 +84,7 @@ import { Mail, CheckCircle2 } from 'lucide-react';
 export default function ReportsView() {
   const [digestSending, setDigestSending] = useState(false);
   const [digestSuccess, setDigestSuccess] = useState(false);
+  const [drilldownData, setDrilldownData] = useState<any>(null);
 
   const handleSendDigest = async () => {
     setDigestSending(true);
@@ -514,6 +515,23 @@ export default function ReportsView() {
         <ReportTable
           headers={['Invoice', 'Customer', 'Amount', 'Balance', 'Due', 'Status']}
           rows={openOrders.map((i) => [i.id, i.customer, formatCents(i.amountCents), formatCents(i.amountCents - i.paidCents), formatDate(i.dueDate), <StatusBadge key={i.id} status={i.status} />])}
+          onRowClick={(idx) => {
+            const item = openOrders[idx];
+            if (item) {
+              setDrilldownData({
+                title: `Invoice ${item.id}`,
+                subtitle: `Customer: ${item.customer}`,
+                status: item.status,
+                fields: [
+                  { label: 'Customer Name', value: item.customer },
+                  { label: 'Invoice Total', value: formatCents(item.amountCents), bold: true },
+                  { label: 'Amount Paid', value: formatCents(item.paidCents) },
+                  { label: 'Remaining Balance', value: formatCents(item.amountCents - item.paidCents) },
+                  { label: 'Due Date', value: formatDate(item.dueDate) },
+                ],
+              });
+            }
+          }}
         />
       )}
 
@@ -521,6 +539,22 @@ export default function ReportsView() {
         <ReportTable
           headers={['PO', 'Vendor', 'Items', 'ETA', 'Status']}
           rows={pendingDeliveries.map((p) => [p.id, p.vendor, p.items, formatDate(p.expectedDelivery), <StatusBadge key={p.id} status={p.status} />])}
+          onRowClick={(idx) => {
+            const item = pendingDeliveries[idx];
+            if (item) {
+              setDrilldownData({
+                title: `Purchase Order ${item.id}`,
+                subtitle: `Vendor: ${item.vendor}`,
+                status: item.status,
+                fields: [
+                  { label: 'Vendor Name', value: item.vendor },
+                  { label: 'Ordered Items', value: String(item.items) },
+                  { label: 'Expected Delivery (ETA)', value: formatDate(item.expectedDelivery) },
+                  { label: 'Delivery Status', value: item.status },
+                ],
+              });
+            }
+          }}
         />
       )}
 
@@ -591,6 +625,24 @@ export default function ReportsView() {
                 ),
                 <StatusBadge key={a.id} status={a.status} />,
               ])}
+              onRowClick={(idx) => {
+                const item = realAppts[idx];
+                if (item) {
+                  setDrilldownData({
+                    title: `Appointment ${item.id}`,
+                    subtitle: `Bride: ${item.customer}`,
+                    status: item.status,
+                    fields: [
+                      { label: 'Customer Name', value: item.customer },
+                      { label: 'Appointment Type', value: item.type },
+                      { label: 'Looking For', value: item.lookingFor || 'Bridal Gowns' },
+                      { label: 'Stated Budget', value: budgetLabel(item.budgetCents) },
+                      { label: 'Date & Time', value: `${formatDate(item.date)} at ${item.time}` },
+                      { label: 'Assigned Stylist', value: item.stylist },
+                    ],
+                  });
+                }
+              }}
             />
           </div>
         );
@@ -601,14 +653,34 @@ export default function ReportsView() {
         <ReportTable
           headers={['Lead', 'Email', 'Source', 'Budget', 'Stage']}
           rows={followUps.map((l) => [l.name, l.email, l.source, formatCents(l.budgetCents), <StatusBadge key={l.id} status={l.stage} />])}
+          onRowClick={(idx) => {
+            const item = followUps[idx];
+            if (item) {
+              setDrilldownData({
+                title: `Lead ${item.name}`,
+                subtitle: `Email: ${item.email}`,
+                status: item.stage,
+                fields: [
+                  { label: 'Bride Name', value: item.name },
+                  { label: 'Email Address', value: item.email },
+                  { label: 'Marketing Channel Source', value: item.source },
+                  { label: 'Target Budget', value: formatCents(item.budgetCents) },
+                  { label: 'Lead Stage', value: item.stage },
+                ],
+              });
+            }
+          }}
         />
       )}
+
+      <ReportRowDrilldownModal isOpen={!!drilldownData} onClose={() => setDrilldownData(null)} data={drilldownData} />
     </div>
   );
 }
 
-function ReportTable({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
+import ReportRowDrilldownModal from '@/features/reports/components/ReportRowDrilldownModal';
 
+function ReportTable({ headers, rows, onRowClick }: { headers: string[]; rows: ReactNode[][]; onRowClick?: (rowIndex: number) => void }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
       <div className="overflow-x-auto">
@@ -624,7 +696,11 @@ function ReportTable({ headers, rows }: { headers: string[]; rows: ReactNode[][]
           </thead>
           <tbody className="divide-y divide-stone-100">
             {rows.map((r, i) => (
-              <tr key={i} className="transition-colors hover:bg-rose-50/40">
+              <tr
+                key={i}
+                onClick={() => onRowClick && onRowClick(i)}
+                className={`transition-colors hover:bg-rose-50/40 ${onRowClick ? 'cursor-pointer' : ''}`}
+              >
                 {r.map((cell, j) => (
                   <td key={j} className="px-5 py-3.5 text-stone-700">
                     {cell}
