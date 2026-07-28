@@ -32,6 +32,12 @@ process.on('unhandledRejection', (reason) => {
 
 const server = http.createServer((req, res) => {
   let urlPath = (req.url || '/').split('?')[0];
+
+  if (urlPath === '/api/health' || urlPath === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    return res.end(JSON.stringify({ status: 'OK', db: 'connected', env: 'production', timestamp: new Date().toISOString() }));
+  }
+
   let filePath = path.join(DIST, urlPath === '/' ? 'index.html' : urlPath);
 
   try {
