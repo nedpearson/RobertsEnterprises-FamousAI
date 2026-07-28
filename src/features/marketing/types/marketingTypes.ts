@@ -1,4 +1,7 @@
 import { LocationId } from '@/data/vowosData';
+import { ConnectionTruthDescriptor } from '@/lib/services/connectionTruthService';
+
+export type { ConnectionTruthDescriptor };
 
 export type MarketingProvider = 'meta' | 'google' | 'tiktok' | 'pinterest' | 'linkedin' | 'shopify' | 'klaviyo' | 'call_tracking' | 'web_forms';
 export type MarketingBrand = 'ido' | 'proper';
@@ -24,17 +27,12 @@ export type PostStatus = 'idea' | 'draft' | 'awaiting_approval' | 'approved' | '
 export type CreativeType = 'image' | 'video' | 'carousel' | 'story_reel' | 'pin' | 'lead_form' | 'product_ad';
 export type AspectRatio = '1:1' | '9:16' | '16:9' | '4:5' | '2:3';
 
-export interface MarketingConnection {
-  id: string;
-  provider: MarketingProvider;
-  status: 'connected' | 'disconnected' | 'token_expired' | 'error';
-  externalBusinessId: string;
-  externalBusinessName: string;
-  connectedAt: string;
-  lastVerifiedAt: string;
-  grantedScopes: string[];
-  tokenHealth: 'Healthy' | 'Expiring Soon' | 'Expired';
-  accounts: MarketingAccount[];
+export interface MarketingConnection extends ConnectionTruthDescriptor {
+  externalBusinessId?: string;
+  externalBusinessName?: string;
+  connectedAt?: string;
+  tokenHealth?: 'Healthy' | 'Expiring Soon' | 'Expired';
+  accounts?: MarketingAccount[];
 }
 
 export interface MarketingAccount {
