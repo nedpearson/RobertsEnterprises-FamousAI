@@ -1,6 +1,6 @@
 import { LocationId } from '@/data/vowosData';
 
-export type MarketingProvider = 'meta' | 'google' | 'tiktok' | 'pinterest' | 'linkedin';
+export type MarketingProvider = 'meta' | 'google' | 'tiktok' | 'pinterest' | 'linkedin' | 'shopify' | 'klaviyo' | 'call_tracking' | 'web_forms';
 export type MarketingBrand = 'ido' | 'proper';
 export type MarketingObjective =
   | 'bridal_appointments'

@@ -57,6 +57,10 @@ export default function ConnectionsView() {
     tiktok: 'TikTok Business Center & Ads',
     pinterest: 'Pinterest Business & Product Catalog',
     linkedin: 'LinkedIn Campaign Manager',
+    shopify: 'Shopify E-Commerce Store Connection',
+    klaviyo: 'Klaviyo Email & SMS Marketing Platform',
+    call_tracking: 'CallRail & Dynamic Phone Call Tracking',
+    web_forms: 'VowOS Unified Web Form Ingestion API',
   };
 
   return (

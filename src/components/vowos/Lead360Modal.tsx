@@ -148,6 +148,45 @@ export default function Lead360Modal({
           </div>
         </div>
 
+        {/* 10-Tier Source Chain & Cost Attribution Panel */}
+        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
+              <Tag className="h-4 w-4 text-rose-500" /> Complete 10-Tier Source Chain &amp; Cost Allocation
+            </span>
+            <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+              Direct Provider Cost: $24.50
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+            <div className="rounded-lg bg-white p-2 border border-stone-200">
+              <span className="text-[9px] text-stone-400 uppercase font-bold block">1. Provider</span>
+              <span className="font-bold text-stone-900">Meta Ads (Instagram)</span>
+            </div>
+            <div className="rounded-lg bg-white p-2 border border-stone-200">
+              <span className="text-[9px] text-stone-400 uppercase font-bold block">2. Ad Account</span>
+              <span className="font-bold text-stone-900">act-9921 (BR Luxury)</span>
+            </div>
+            <div className="rounded-lg bg-white p-2 border border-stone-200">
+              <span className="text-[9px] text-stone-400 uppercase font-bold block">3. Campaign</span>
+              <span className="font-bold text-stone-900">BR Fall 2026 Lookbook</span>
+            </div>
+            <div className="rounded-lg bg-white p-2 border border-stone-200">
+              <span className="text-[9px] text-stone-400 uppercase font-bold block">4. Ad Set</span>
+              <span className="font-bold text-stone-900">BR 25-40 High Income</span>
+            </div>
+            <div className="rounded-lg bg-white p-2 border border-stone-200">
+              <span className="text-[9px] text-stone-400 uppercase font-bold block">5. Ad &amp; Creative</span>
+              <span className="font-bold text-stone-900">Fleur Gown 15s Reel</span>
+            </div>
+            <div className="rounded-lg bg-white p-2 border border-stone-200">
+              <span className="text-[9px] text-stone-400 uppercase font-bold block">6. Cost Allocation</span>
+              <span className="font-bold text-emerald-600">Direct Provider API</span>
+            </div>
+          </div>
+        </div>
+
         {/* Notes */}
         <div className="space-y-1.5 text-xs">
           <label className="block font-bold text-stone-800">Lead Interaction Notes &amp; Preferences</label>

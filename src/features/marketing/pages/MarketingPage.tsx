@@ -19,6 +19,7 @@ import ExperimentsView from '../../marketing-ai/experiments/ExperimentsView';
 import CreativeIntelligenceView from '../../marketing-ai/creative-intelligence/CreativeIntelligenceView';
 import CompetitorTrendsView from '../../marketing-ai/competitors/CompetitorTrendsView';
 import GovernanceView from '../../marketing-ai/governance/GovernanceView';
+import LeadGeneratorWizard from '@/components/vowos/lead-generator/LeadGeneratorWizard';
 import {
   TrendingUp,
   Megaphone,
@@ -84,6 +85,7 @@ export default function MarketingPage() {
     { id: 'campaigns', label: 'Campaigns', icon: Megaphone },
     { id: 'content', label: 'Content Calendar', icon: Calendar },
     { id: 'prospecting', label: 'AI Prospecting', icon: Users },
+    { id: 'leads', label: 'Lead Generation', icon: PlusCircle },
     { id: 'budget', label: 'Budget Center', icon: DollarSign },
     { id: 'automations', label: 'Automations', icon: Zap },
     { id: 'connections', label: 'Connections', icon: Radio },
@@ -202,6 +204,12 @@ export default function MarketingPage() {
         {activeTab === 'attribution' && <AttributionView />}
         {activeTab === 'automations' && <AutomationsView />}
         {activeTab === 'prospecting' && <AIProspectingView brandFilter={brandFilter} />}
+        {activeTab === 'leads' && (
+          <LeadGeneratorWizard
+            onComplete={() => setActiveTab('campaigns')}
+            onCancel={() => setActiveTab('campaigns')}
+          />
+        )}
         {activeTab === 'reports' && <MarketingReportsView />}
         {activeTab === 'approvals' && <ApprovalsView />}
         {activeTab === 'settings' && <MarketingSettingsView />}
