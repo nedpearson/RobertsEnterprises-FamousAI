@@ -8,6 +8,9 @@ import PaymentLinkModal from './PaymentLinkModal';
 
 import BridalIdentity from './BridalIdentity';
 
+import ItemizedSalesDetailModal, { DetailedSaleItem } from '@/features/sales/components/ItemizedSalesDetailModal';
+import { Eye, Shirt } from 'lucide-react';
+
 const FILTERS = ['All', 'Paid', 'Partial', 'Open', 'Overdue'] as const;
 
 export default function InvoicesView() {
@@ -17,6 +20,7 @@ export default function InvoicesView() {
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [linkInvoiceId, setLinkInvoiceId] = useState<string | null>(null);
+  const [itemizedSale, setItemizedSale] = useState<DetailedSaleItem | null>(null);
 
   useEffect(() => {
     if (typeof sessionStorage !== 'undefined') {
@@ -129,10 +133,41 @@ export default function InvoicesView() {
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => {
+                              const bride = brides.find((b) => b.name.toLowerCase() === inv.customer.toLowerCase());
+                              setItemizedSale({
+                                id: `item-${inv.id}`,
+                                invoiceId: inv.id,
+                                customerName: inv.customer,
+                                weddingDate: bride?.weddingDate || '2026-11-14',
+                                designer: inv.description.includes('Monique') ? 'Monique Lhuillier' : inv.description.includes('Ines') ? 'Ines Di Santo' : 'I Do Atelier',
+                                gownName: inv.description || 'Custom Bridal Gown',
+                                styleNumber: `STYLE-${inv.id}`,
+                                sku: `SKU-881029384912`,
+                                gownType: 'Couture Bridal Gown',
+                                size: 'Bridal Size 10 (Bust 34", Waist 26", Hips 38")',
+                                color: 'Ivory / French Silk Satin & Chantilly Lace',
+                                fabric: 'Silk Satin & Hand-Beaded Lace',
+                                condition: 'New Custom Atelier Order',
+                                wholesaleCostCents: Math.round(inv.amountCents * 0.4),
+                                retailPriceCents: inv.amountCents,
+                                paidCents: inv.paidCents,
+                                locationId: inv.location || 'ido-br',
+                                stylist: bride?.stylist || 'Ramsey Roberts',
+                                saleDate: inv.dueDate || '2026-07-20',
+                              });
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100 cursor-pointer"
+                            title="Inspect full designer, gown style, size, fabric, cost, and price specs"
+                          >
+                            <Shirt className="h-3.5 w-3.5 text-rose-600" /> Item Specs
+                          </button>
+
                           {balance > 0 && (
                             <button
                               onClick={() => setLinkInvoiceId(inv.id)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:border-rose-300 hover:text-rose-600"
+                              className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-600 transition-colors hover:border-rose-300 hover:text-rose-600 cursor-pointer"
                               title="Copy, email, or text a payment link"
                             >
                               <Link2 className="h-3.5 w-3.5" /> Payment Link
@@ -141,7 +176,7 @@ export default function InvoicesView() {
                           {balance > 0 && (
                             <button
                               onClick={() => setPayingInvoiceId(inv.id)}
-                              className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-stone-700"
+                              className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-stone-700 cursor-pointer"
                             >
                               Record Payment
                             </button>
@@ -171,6 +206,7 @@ export default function InvoicesView() {
           onClose={() => setLinkInvoiceId(null)}
         />
       )}
+      <ItemizedSalesDetailModal item={itemizedSale} onClose={() => setItemizedSale(null)} />
     </div>
   );
 }
