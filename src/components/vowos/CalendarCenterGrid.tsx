@@ -58,6 +58,16 @@ export default function CalendarCenterGrid({
     <div className="flex-1 flex flex-col bg-white h-full relative">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center space-x-2">
+          <Button variant="outline" size="icon" onClick={() => calendarRef.current?.getApi().prev()}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => calendarRef.current?.getApi().today()}>
+            Today
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => calendarRef.current?.getApi().next()}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </Button>
+          <div className="h-6 w-px bg-stone-200 mx-2" />
           <Button 
             variant={viewName === 'timeGridDay' ? 'default' : 'outline'} 
             size="sm" 

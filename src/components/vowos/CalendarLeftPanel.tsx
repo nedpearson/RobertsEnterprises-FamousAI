@@ -13,8 +13,8 @@ interface CalendarLeftPanelProps {
 }
 
 export default function CalendarLeftPanel({ requests, onSelectRequest }: CalendarLeftPanelProps) {
-  const pendingRequests = requests.filter(r => r.status === 'submitted');
-  const waitlist = requests.filter(r => r.status === 'waitlist');
+  const pendingRequests = requests.filter(r => r.status.toLowerCase() !== 'waitlist');
+  const waitlist = requests.filter(r => r.status.toLowerCase() === 'waitlist');
 
   return (
     <div className="flex flex-col h-full bg-stone-50 border-r w-72 flex-shrink-0">
@@ -51,11 +51,18 @@ export default function CalendarLeftPanel({ requests, onSelectRequest }: Calenda
                     <span className="font-medium text-stone-900 text-sm truncate pr-2">
                       {req.customer?.name || 'Unknown'}
                     </span>
-                    {req.priority === 'high' && (
+                    {(req.priority === 'high' || req.priority === 'Urgent') && (
                       <span className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0 mt-1.5" />
                     )}
                   </div>
                   <p className="text-xs text-stone-500 mb-2 truncate">Bridal Consultation</p>
+                  
+                  {req.notes && req.notes.startsWith('AI') && (
+                    <div className="mb-2 p-2 bg-indigo-50 border border-indigo-100 rounded text-xs text-indigo-700 font-medium">
+                      ✨ {req.notes}
+                    </div>
+                  )}
+
                   <div className="flex items-center text-xs text-stone-400 bg-stone-50 px-2 py-1 rounded inline-flex">
                     <Clock className="w-3 h-3 mr-1" />
                     {format(new Date(req.submitted_at), 'MMM d, h:mm a')}
