@@ -5,11 +5,11 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DO $$
 DECLARE
-    v_demo_user_id UUID := 'd0000000-0000-0000-0000-000000000000';
-    v_emp1_id UUID := 'e0000000-0000-0000-0000-000000000001';
-    v_emp2_id UUID := 'e0000000-0000-0000-0000-000000000002';
-    v_emp3_id UUID := 'e0000000-0000-0000-0000-000000000003';
-    v_emp4_id UUID := 'e0000000-0000-0000-0000-000000000004';
+    v_demo_user_id UUID;
+    v_emp1_id UUID;
+    v_emp2_id UUID;
+    v_emp3_id UUID;
+    v_emp4_id UUID;
     
     v_business_id UUID := 'b0000000-0000-0000-0000-000000000000';
     v_loc1_id UUID := 'c0000000-0000-0000-0000-000000000001';
@@ -25,18 +25,48 @@ DECLARE
     
     i INT;
 BEGIN
-    -- 1. Create Demo Users in auth.users
-    INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
-    VALUES 
-        (v_demo_user_id, '00000000-0000-0000-0000-000000000000', 'demo123@gmail.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Demo Owner", "role": "Owner"}'),
-        (v_emp1_id, '00000000-0000-0000-0000-000000000000', 'sarah@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Sarah Smith", "role": "Stylist"}'),
-        (v_emp2_id, '00000000-0000-0000-0000-000000000000', 'jessica@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Jessica Lee", "role": "Stylist"}'),
-        (v_emp3_id, '00000000-0000-0000-0000-000000000000', 'emily@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Emily Chen", "role": "Stylist"}'),
-        (v_emp4_id, '00000000-0000-0000-0000-000000000000', 'michael@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Michael Taylor", "role": "Manager"}')
-    ON CONFLICT (id) DO NOTHING;
-    
+    -- 1. Create or Get Demo User
+    SELECT id INTO v_demo_user_id FROM auth.users WHERE email = 'demo123@gmail.com';
+    IF v_demo_user_id IS NULL THEN
+        v_demo_user_id := gen_random_uuid();
+        INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
+        VALUES (v_demo_user_id, '00000000-0000-0000-0000-000000000000', 'demo123@gmail.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Demo Owner", "role": "Owner"}');
+    END IF;
+
     -- Update demo user password just in case they were created previously without the right password
-    UPDATE auth.users SET encrypted_password = crypt('password123', gen_salt('bf')) WHERE email = 'demo123@gmail.com';
+    UPDATE auth.users SET encrypted_password = crypt('password123', gen_salt('bf')) WHERE id = v_demo_user_id;
+
+    -- Employee 1
+    SELECT id INTO v_emp1_id FROM auth.users WHERE email = 'sarah@robertsenterprises.com';
+    IF v_emp1_id IS NULL THEN
+        v_emp1_id := gen_random_uuid();
+        INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
+        VALUES (v_emp1_id, '00000000-0000-0000-0000-000000000000', 'sarah@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Sarah Smith", "role": "Stylist"}');
+    END IF;
+
+    -- Employee 2
+    SELECT id INTO v_emp2_id FROM auth.users WHERE email = 'jessica@robertsenterprises.com';
+    IF v_emp2_id IS NULL THEN
+        v_emp2_id := gen_random_uuid();
+        INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
+        VALUES (v_emp2_id, '00000000-0000-0000-0000-0000-000000000000', 'jessica@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Jessica Lee", "role": "Stylist"}');
+    END IF;
+
+    -- Employee 3
+    SELECT id INTO v_emp3_id FROM auth.users WHERE email = 'emily@robertsenterprises.com';
+    IF v_emp3_id IS NULL THEN
+        v_emp3_id := gen_random_uuid();
+        INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
+        VALUES (v_emp3_id, '00000000-0000-0000-0000-0000-000000000000', 'emily@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Emily Chen", "role": "Stylist"}');
+    END IF;
+
+    -- Employee 4
+    SELECT id INTO v_emp4_id FROM auth.users WHERE email = 'michael@robertsenterprises.com';
+    IF v_emp4_id IS NULL THEN
+        v_emp4_id := gen_random_uuid();
+        INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
+        VALUES (v_emp4_id, '00000000-0000-0000-0000-0000-000000000000', 'michael@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Michael Taylor", "role": "Manager"}');
+    END IF;
 
     -- 2. Create Business & Locations
     INSERT INTO businesses (id, name) VALUES (v_business_id, 'Roberts Enterprises (Demo)') ON CONFLICT (id) DO NOTHING;
