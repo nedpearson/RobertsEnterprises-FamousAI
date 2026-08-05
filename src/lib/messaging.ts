@@ -4,7 +4,7 @@
 // full conversation history per bride. Inbound texts arrive via the `sms-inbound`
 // Twilio webhook and appear in the same thread (direction = 'inbound').
 
-import { supabase } from '@/lib/supabase';
+import { supabase, getActiveDataPlane } from '@/lib/supabase';
 import { Appointment, Customer, Invoice, locationById, formatCents, formatDate } from '@/data/vowosData';
 
 export type MessageChannel = 'sms' | 'email';
@@ -90,21 +90,28 @@ export async function sendAndLogMessage(
 ): Promise<{ ok: boolean; error: string | null }> {
   let ok = false;
   let errMsg: string | null = null;
-  try {
-    const { data, error } = await supabase.functions.invoke('send-message', {
-      body: {
-        channel: input.channel,
-        to: input.to,
-        subject: input.subject,
-        body: input.body,
-        html: input.html,
-      },
-    });
-    if (error) errMsg = error.message;
-    else if (data?.ok) ok = true;
-    else errMsg = data?.error || 'Unknown send failure';
-  } catch (e: any) {
-    errMsg = e?.message || 'Network error while sending';
+
+  if (getActiveDataPlane() === 'demo') {
+    // In Demo Mode, simulate the external send
+    console.log(`[DEMO MODE] Simulating sending ${input.channel} to ${input.to}`);
+    ok = true;
+  } else {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-message', {
+        body: {
+          channel: input.channel,
+          to: input.to,
+          subject: input.subject,
+          body: input.body,
+          html: input.html,
+        },
+      });
+      if (error) errMsg = error.message;
+      else if (data?.ok) ok = true;
+      else errMsg = data?.error || 'Unknown send failure';
+    } catch (e: any) {
+      errMsg = e?.message || 'Network error while sending';
+    }
   }
 
   await supabase.from('messages').insert({

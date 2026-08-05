@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { DEMO_PERSONAS, DEMO_STORES, DemoPersona, DemoStore } from './demoData';
 import { DEMO_SCENARIOS, ScenarioDefinition } from './scenariosLibrary';
 import { tourEngine, TourState, CursorPosition, TrainingMode } from './tourEngine';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface DemoContextType {
   isDemoMode: boolean;
@@ -37,7 +38,7 @@ interface DemoContextType {
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
 export const DemoProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(getActiveDataPlane() === 'demo');
   const [demoSessionId, setDemoSessionId] = useState<string | null>(null);
   const [activePersona, setActivePersona] = useState<DemoPersona>(DEMO_PERSONAS[0]);
   const [activeStore, setActiveStore] = useState<DemoStore>(DEMO_STORES[0]);

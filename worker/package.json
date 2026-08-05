@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "node dist/modules/marketing-ai/tests/engine.test.js"
+    "test": "node dist/modules/marketing-ai/tests/engine.test.js",
+    "db:demo:reset": "ts-node scripts/demo-reset.ts"
   },
   "keywords": [],
   "author": "",

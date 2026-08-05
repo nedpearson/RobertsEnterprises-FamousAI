@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, setActiveDataPlane } from '@/lib/supabase';
 
 export type StaffRole = 'Owner' | 'Manager' | 'Stylist' | 'Front Desk';
 
@@ -37,6 +37,7 @@ interface AuthContextValue {
   profile: StaffProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInAsDemo: () => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, name: string, role: StaffRole) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   /** Re-read the signed-in user's profile (e.g. after an owner changes their role). */
@@ -101,11 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    setActiveDataPlane('production');
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error ? error.message : null };
   };
 
+  const signInAsDemo = async () => {
+    setActiveDataPlane('demo');
+    // Using a known test password for the demo account
+    const { error } = await supabase.auth.signInWithPassword({ email: 'demo123@gmail.com', password: 'password123' });
+    return { error: error ? error.message : null };
+  };
+
   const signUp = async (email: string, password: string, name: string, role: StaffRole) => {
+    setActiveDataPlane('production');
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -135,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut, refreshProfile }}
+      value={{ session, user: session?.user ?? null, profile, loading, signIn, signInAsDemo, signUp, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

@@ -5,7 +5,7 @@ import { useAuth, StaffRole, STAFF_ROLES, ROLE_DESCRIPTIONS } from '@/contexts/A
 import { Modal, inputCls, btnPrimary } from './ui';
 
 export default function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInAsDemo } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,6 +14,19 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const handleDemoSignIn = async () => {
+    setError(null);
+    setBusy(true);
+    const { error } = await signInAsDemo();
+    setBusy(false);
+    if (error) {
+      setError(error);
+    } else {
+      setSuccess('Welcome to Demo Mode!');
+      setTimeout(handleClose, 900);
+    }
+  };
 
   const reset = () => {
     setError(null);
@@ -166,6 +179,25 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
             <button type="submit" disabled={busy} className={`${btnPrimary} w-full justify-center disabled:opacity-60`}>
               {busy ? 'Please wait...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
             </button>
+
+            {mode === 'signin' && (
+              <div className="mt-8 border-t border-stone-200 pt-6">
+                <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-4">
+                  <h4 className="font-serif text-lg text-stone-800">Demo Access</h4>
+                  <p className="mt-1 text-xs text-stone-500">
+                    Want to see FamousAI in action without affecting real business data?
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={handleDemoSignIn}
+                    className="mt-4 w-full rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 disabled:opacity-50"
+                  >
+                    Launch Demo Mode
+                  </button>
+                </div>
+              </div>
+            )}
 
             <p className="text-center text-[11px] text-stone-400">
               Staff access is managed by Roberts Enterprises. Your role controls what you can edit.

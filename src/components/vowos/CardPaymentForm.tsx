@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { CreditCard, Loader2, Lock } from 'lucide-react';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, getActiveDataPlane } from '@/lib/supabase';
 import { formatCents } from '@/data/vowosData';
 import {
   stripePromise,
@@ -88,6 +88,24 @@ function InnerForm({ baseCents, description, metadata, baseLabel = 'amount', but
 
     try {
       // 1) Server computes the surcharge from saved settings + brand and creates the PaymentIntent
+      
+      if (getActiveDataPlane() === 'demo') {
+        console.log('[DEMO MODE] Simulating Stripe payment success.');
+        await new Promise((res) => setTimeout(res, 800)); // fake delay
+        const pct = surchargePctFor(brand, settings);
+        const sc = surchargeCentsFor(baseCents, brand, settings);
+        await onSuccess({
+          paymentIntentId: 'pi_demo_123456789',
+          baseCents,
+          surchargeCents: sc,
+          surchargePct: pct,
+          totalCents: baseCents + sc,
+          brand: brand,
+          brandLabel: cardBrandLabel(brand),
+        });
+        return;
+      }
+
       const { data, error: fnErr } = await supabase.functions.invoke('create-payment', {
         body: { amount_cents: baseCents, card_brand: brand, description, metadata },
       });

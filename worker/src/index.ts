@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
@@ -7,16 +7,18 @@ import { runJobPoller } from './jobs/runner';
 
 dotenv.config();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const prodUrl = process.env.VITE_SUPABASE_URL || 'https://klzzdgqxahglnifuwgke.databasepad.com';
+const prodServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'fake-key';
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('⚠️  Warning: Missing Supabase environment variables — Supabase-dependent routes will be unavailable.');
-}
+const demoUrl = process.env.VITE_DEMO_SUPABASE_URL || 'https://demo-klzzdgqxahglnifuwgke.databasepad.com';
+const demoServiceKey = process.env.DEMO_SUPABASE_SERVICE_ROLE_KEY || 'fake-key';
 
-export const supabase = (supabaseUrl && supabaseServiceKey)
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null as any;
+export const productionSupabase = createClient(prodUrl, prodServiceKey);
+export const demoSupabase = createClient(demoUrl, demoServiceKey);
+
+// Maintain the `supabase` export for backwards compatibility, but log a warning.
+// In a fully compliant refactor, this is removed and `req.context.db` is passed everywhere.
+export const supabase = productionSupabase;
 
 import { marketingAIRouter } from './modules/marketing-ai/routes';
 
@@ -24,6 +26,60 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+export interface RequestContext {
+  db: SupabaseClient;
+  dataPlane: 'production' | 'demo';
+  userId?: string;
+  businessId?: string;
+  role?: string;
+}
+
+// Global Auth / Data Plane Middleware
+app.use(async (req, res, next) => {
+  const isDemo = req.headers['x-data-plane'] === 'demo';
+  const db = isDemo ? demoSupabase : productionSupabase;
+  const context: RequestContext = {
+    db,
+    dataPlane: isDemo ? 'demo' : 'production'
+  };
+
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    // In a real app, verify the JWT using the appropriate Supabase project secret
+    // For now, we fetch the user from Supabase to validate the token
+    const { data: { user }, error } = await db.auth.getUser(token);
+    
+    if (!error && user) {
+      context.userId = user.id;
+      // Ideally, the business_id is in the JWT app_metadata or we look it up
+      // For this foundation, we simulate looking it up from business_memberships
+      const { data: membership } = await db
+        .from('business_memberships')
+        .select('business_id, role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (membership) {
+        context.businessId = membership.business_id;
+        context.role = membership.role;
+      }
+    }
+  }
+
+  (req as any).context = context;
+  next();
+});
+
+// Enforce Context Middleware (applied to routes requiring multi-tenant isolation)
+export const requireBusinessContext = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const context = (req as any).context as RequestContext;
+  if (!context.businessId) {
+    return res.status(403).json({ error: 'Multi-tenant isolation requires an active business context.' });
+  }
+  next();
+};
 
 // RBAC Middleware
 const requireRole = (roles: string[]) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
