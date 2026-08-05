@@ -30,18 +30,18 @@ BEGIN
     IF v_demo_user_id IS NULL THEN
         v_demo_user_id := gen_random_uuid();
         INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
-        VALUES (v_demo_user_id, '00000000-0000-0000-0000-000000000000', 'demo123@gmail.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Demo Owner", "role": "Owner"}');
+        VALUES (v_demo_user_id, '00000000-0000-0000-0000-000000000000', 'demo123@gmail.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"name": "Demo Owner", "role": "Owner"}');
     END IF;
 
     -- Update demo user password just in case they were created previously without the right password
-    UPDATE auth.users SET encrypted_password = crypt('password123', gen_salt('bf')) WHERE id = v_demo_user_id;
+    UPDATE auth.users SET email_confirmed_at = COALESCE(email_confirmed_at, now()), encrypted_password = extensions.crypt('password123', extensions.gen_salt('bf')) WHERE id = v_demo_user_id;
 
     -- Employee 1
     SELECT id INTO v_emp1_id FROM auth.users WHERE email = 'sarah@robertsenterprises.com';
     IF v_emp1_id IS NULL THEN
         v_emp1_id := gen_random_uuid();
         INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
-        VALUES (v_emp1_id, '00000000-0000-0000-0000-000000000000', 'sarah@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Sarah Smith", "role": "Stylist"}');
+        VALUES (v_emp1_id, '00000000-0000-0000-0000-000000000000', 'sarah@robertsenterprises.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"name": "Sarah Smith", "role": "Stylist"}');
     END IF;
 
     -- Employee 2
@@ -49,7 +49,7 @@ BEGIN
     IF v_emp2_id IS NULL THEN
         v_emp2_id := gen_random_uuid();
         INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
-        VALUES (v_emp2_id, '00000000-0000-0000-0000-0000-000000000000', 'jessica@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Jessica Lee", "role": "Stylist"}');
+        VALUES (v_emp2_id, '00000000-0000-0000-0000-000000000000', 'jessica@robertsenterprises.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"name": "Jessica Lee", "role": "Stylist"}');
     END IF;
 
     -- Employee 3
@@ -57,7 +57,7 @@ BEGIN
     IF v_emp3_id IS NULL THEN
         v_emp3_id := gen_random_uuid();
         INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
-        VALUES (v_emp3_id, '00000000-0000-0000-0000-0000-000000000000', 'emily@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Emily Chen", "role": "Stylist"}');
+        VALUES (v_emp3_id, '00000000-0000-0000-0000-000000000000', 'emily@robertsenterprises.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"name": "Emily Chen", "role": "Stylist"}');
     END IF;
 
     -- Employee 4
@@ -65,7 +65,7 @@ BEGIN
     IF v_emp4_id IS NULL THEN
         v_emp4_id := gen_random_uuid();
         INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_user_meta_data)
-        VALUES (v_emp4_id, '00000000-0000-0000-0000-0000-000000000000', 'michael@robertsenterprises.com', crypt('password123', gen_salt('bf')), now(), '{"name": "Michael Taylor", "role": "Manager"}');
+        VALUES (v_emp4_id, '00000000-0000-0000-0000-000000000000', 'michael@robertsenterprises.com', extensions.crypt('password123', extensions.gen_salt('bf')), now(), '{"name": "Michael Taylor", "role": "Manager"}');
     END IF;
 
     -- 2. Create Business & Locations
@@ -194,4 +194,5 @@ BEGIN
         );
     END LOOP;
 
+    UPDATE auth.users SET email_confirmed_at = now() WHERE email_confirmed_at IS NULL AND email IN ('demo123@gmail.com', 'sarah@robertsenterprises.com', 'jessica@robertsenterprises.com', 'emily@robertsenterprises.com', 'michael@robertsenterprises.com');
 END $$;

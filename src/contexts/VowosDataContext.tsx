@@ -354,7 +354,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const refresh = useCallback(async () => {
     const [bridesRes, leadsRes, apptsRes, invRes, poRes, gownsRes, transfersRes] = await Promise.all([
-      supabase.from('brides').select('*').order('created_at', { ascending: false }),
+      supabase.from('customers').select('*').order('created_at', { ascending: false }),
       supabase.from('leads').select('*').order('created_at', { ascending: true }),
       supabase.from('appointments').select('*').order('date', { ascending: true }),
       supabase.from('invoices').select('*').order('due_date', { ascending: true }),
@@ -410,7 +410,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         location: input.location ?? defaultLocation,
         portalToken,
       };
-      const { error } = await supabase.from('brides').insert({
+      const { error } = await supabase.from('customers').insert({
         id: newBride.id,
         name: newBride.name,
         email: newBride.email,
@@ -631,7 +631,7 @@ export const VowosDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (!bride) return; // invoice customer isn't a tracked bride — skip silently
       const newSpend = bride.spendCents + deltaCents;
       setBrides((prev) => prev.map((b) => (b.id === bride.id ? { ...b, spendCents: newSpend } : b)));
-      const { error } = await supabase.from('brides').update({ spend_cents: newSpend }).eq('id', bride.id);
+      const { error } = await supabase.from('customers').update({ spend_cents: newSpend }).eq('id', bride.id);
       if (error) {
         setBrides((prev) =>
           prev.map((b) => (b.id === bride.id ? { ...b, spendCents: bride.spendCents } : b)),
