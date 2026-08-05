@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 const prodUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yyexmcaumkzxvhplipkl.supabase.co';
 const prodKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_lASIBvmSjXthkgf4D__cLw_OpMrfeyb';
 
-const demoUrl = import.meta.env.VITE_DEMO_SUPABASE_URL || 'https://demo-klzzdgqxahglnifuwgke.databasepad.com';
-const demoKey = import.meta.env.VITE_DEMO_SUPABASE_ANON_KEY || 'dummy_demo_key';
+const demoUrl = import.meta.env.VITE_DEMO_SUPABASE_URL || prodUrl;
+const demoKey = import.meta.env.VITE_DEMO_SUPABASE_ANON_KEY || prodKey;
 
 export const productionSupabase = createClient(prodUrl, prodKey);
 export const demoSupabase = createClient(demoUrl, demoKey);
