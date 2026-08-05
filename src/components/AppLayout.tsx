@@ -27,7 +27,7 @@ import CustomersView from '@/components/vowos/CustomersView';
 import LeadsView from '@/components/vowos/LeadsView';
 import InventoryView from '@/components/vowos/InventoryView';
 import TransfersView from '@/components/vowos/TransfersView';
-import AppointmentsView from '@/components/vowos/AppointmentsView';
+import Calendar360View from '@/components/vowos/Calendar360View';
 import InvoicesView from '@/components/vowos/InvoicesView';
 import PurchasesView from '@/components/vowos/PurchasesView';
 import ReportsView from '@/components/vowos/ReportsView';
@@ -119,8 +119,6 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-[#faf8f5]">
-      <DemoModeBanner />
-
       <Sidebar
         view={view}
         onNavigate={setView}
@@ -131,7 +129,8 @@ export default function AppLayout() {
         onToggleCompact={() => setCompactSidebar(!compactSidebar)}
       />
 
-      <div className={`transition-all duration-200 ${compactSidebar ? 'lg:pl-20' : 'lg:pl-64'}`}>
+      <div className={`flex flex-col transition-all duration-200 ${compactSidebar ? 'lg:pl-20' : 'lg:pl-64'}`}>
+        <DemoModeBanner />
         {/* Top bar */}
         <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#faf8f5]/90 backdrop-blur">
           <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
@@ -263,7 +262,7 @@ export default function AppLayout() {
               {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
               {view === 'inventory' && <InventoryView />}
               {view === 'transfers' && <TransfersView />}
-              {view === 'appointments' && <AppointmentsView />}
+              {view === 'appointments' && <Calendar360View />}
               {view === 'communications' && <CommunicationsView />}
               {view === 'contracts' && <ContractsView />}
               {view === 'alterations' && <AlterationsView />}
