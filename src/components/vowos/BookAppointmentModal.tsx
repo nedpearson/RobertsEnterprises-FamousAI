@@ -42,7 +42,7 @@ export default function BookAppointmentModal({
   /** When provided, the modal becomes an edit/reschedule form for this appointment. */
   appointment?: Appointment | null;
   /** Prefills for new bookings (e.g. clicking a calendar cell books that day/stylist). */
-  defaults?: { date?: string; time?: string; stylist?: string } | null;
+  defaults?: { date?: string; time?: string; stylist?: string; request?: any } | null;
 }) {
 
   const {
@@ -87,16 +87,17 @@ export default function BookAppointmentModal({
       setBudgetCents(appointment.budgetCents);
       setFeeCollected(appointment.feePaid);
     } else {
-      setBrideChoice('');
-      setCustomName('');
-      setType('Bridal Consultation');
+      const hasRequestCustomer = !!defaults?.request?.customer?.name;
+      setBrideChoice(hasRequestCustomer ? OTHER : '');
+      setCustomName(defaults?.request?.customer?.name || '');
+      setType((defaults?.request?.type as Appointment['type']) || 'Bridal Consultation');
       // Book into the store the staffer is currently viewing
       setLocation(activeLocation === 'all' ? 'ido-br' : activeLocation);
       // Calendar cells pass prefills (book this day / this stylist / this slot)
       setDate(defaults?.date ?? '');
       setTime(defaults?.time ?? '');
       setStylist(defaults?.stylist ?? teamMembers[0]);
-      setLookingFor('');
+      setLookingFor(defaults?.request?.looking_for || '');
       setBudgetCents(0);
       setFeeCollected(true);
     }
@@ -106,6 +107,59 @@ export default function BookAppointmentModal({
   }, [open, appointment, activeLocation, defaults]);
 
 
+
+  const [isSuggesting, setIsSuggesting] = useState(false);
+
+  const handleAISuggest = () => {
+    setIsSuggesting(true);
+    setTimeout(() => {
+      // AI Logic: Find an available slot over the next 7 days, avoiding existing appointments
+      let foundDate = '';
+      let foundTime = '';
+      let foundStylist = '';
+      
+      const today = new Date();
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const dStr = d.toISOString().slice(0, 10);
+        
+        // Skip Sundays (0) if you want, but this is generic
+        for (const t of ['10:00 AM', '11:30 AM', '1:00 PM', '2:30 PM', '4:00 PM']) {
+          for (const s of teamMembers) {
+            const conflict = allAppointments.some(a => 
+              a.date === dStr && a.time === t && a.stylist === s && a.status !== 'Cancelled'
+            );
+            if (!conflict) {
+              foundDate = dStr;
+              foundTime = t;
+              foundStylist = s;
+              break;
+            }
+          }
+          if (foundDate) break;
+        }
+        if (foundDate) break;
+      }
+      
+      if (foundDate) {
+        setDate(foundDate);
+        setTime(foundTime);
+        setStylist(foundStylist);
+        toast({ 
+          title: '✨ AI Smart Suggestion Applied', 
+          description: `Found an open slot with ${foundStylist} on ${foundDate} at ${foundTime}.` 
+        });
+      } else {
+        toast({ 
+          title: 'No availability', 
+          description: 'No openings found in the next 7 days.',
+          variant: 'destructive'
+        });
+      }
+      setIsSuggesting(false);
+    }, 800);
+  };
 
   const customerName = isEdit
     ? appointment!.customer
@@ -385,6 +439,18 @@ export default function BookAppointmentModal({
         )}
 
 
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-stone-900">Schedule</label>
+          <button
+            type="button"
+            onClick={handleAISuggest}
+            disabled={isSuggesting}
+            className="flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+          >
+            {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <span>✨</span>}
+            AI Smart Suggest
+          </button>
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="ba-date" className={labelCls}>

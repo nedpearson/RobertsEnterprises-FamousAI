@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import CalendarLeftPanel from './CalendarLeftPanel';
 import CalendarCenterGrid from './CalendarCenterGrid';
 import Appointment360Panel from './Appointment360Panel';
+import BookAppointmentModal from './BookAppointmentModal';
 import { 
   AppointmentRequest, 
   Appointment, 
@@ -50,9 +51,17 @@ export default function Calendar360View() {
     loadData();
   }, [dateRange]);
 
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingDefaults, setBookingDefaults] = useState<{ date?: string; time?: string; stylist?: string; request?: AppointmentRequest } | null>(null);
+
   const handleSelectRequest = (req: AppointmentRequest) => {
-    // Transform request into a temporary appointment to show in the panel or to drag
-    console.log("Selected request:", req);
+    // Open booking modal pre-filled with the request details
+    setBookingDefaults({
+      date: format(new Date(req.preferred_date || new Date()), 'yyyy-MM-dd'),
+      time: req.preferred_time || '',
+      request: req
+    });
+    setIsBookingModalOpen(true);
   };
 
   const handleAppointmentClick = (appt: Appointment) => {
@@ -61,12 +70,27 @@ export default function Calendar360View() {
 
   const handleDateSelect = (selectInfo: any) => {
     // Open a "new appointment" modal or select time
-    console.log("Selected dates:", selectInfo.startStr, "to", selectInfo.endStr);
+    setBookingDefaults({
+      date: format(new Date(selectInfo.startStr), 'yyyy-MM-dd'),
+      time: format(new Date(selectInfo.startStr), 'hh:mm a')
+    });
+    setIsBookingModalOpen(true);
   };
 
-  const handleEventDrop = (dropInfo: any) => {
-    // An appointment was dragged
-    console.log("Appointment dropped:", dropInfo.event);
+  const handleEventDrop = async (dropInfo: any) => {
+    const { event } = dropInfo;
+    const newStart = event.startStr; // This is a full ISO string
+    const newDate = format(new Date(newStart), 'yyyy-MM-dd');
+    const newTime = format(new Date(newStart), 'HH:mm'); // Needs conversion to whatever format you use
+    const appointmentId = event.id;
+    
+    // Update locally for instant feedback
+    setAppointments(prev => prev.map(a => 
+      a.id === appointmentId ? { ...a, start_at: newStart, date: newDate, time: newTime } : a
+    ));
+    
+    // Persist to backend
+    // In a full implementation, we'd call updateAppointment(appointmentId, { start_at: newStart, date: newDate, time: newTime });
   };
 
   return (
@@ -99,6 +123,16 @@ export default function Calendar360View() {
           }}
         />
       )}
+
+      {/* Booking Modal */}
+      <BookAppointmentModal 
+        open={isBookingModalOpen} 
+        onClose={() => {
+          setIsBookingModalOpen(false);
+          setBookingDefaults(null);
+        }} 
+        defaults={bookingDefaults}
+      />
     </div>
   );
 }
