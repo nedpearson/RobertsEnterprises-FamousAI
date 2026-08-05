@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize database clients
-const prodUrl = import.meta.env.VITE_SUPABASE_URL || 'https://klzzdgqxahglnifuwgke.databasepad.com';
+const prodUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yyexmcaumkzxvhplipkl.supabase.co';
 const prodKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImQxNTgzN2FjLWZkM2QtNGJhZS04YTE4LWM1OWVkZTViMzgxZSJ9.eyJwcm9qZWN0SWQiOiJrbHp6ZGdxeGFoZ2xuaWZ1d2drZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzg0NTAzNzgzLCJleHAiOjIwOTk4NjM3ODMsImlzcyI6ImZhbW91cy5kYXRhYmFzZXBhZCIsImF1ZCI6ImZhbW91cy5jbGllbnRzIn0.-E5LJCHH9pneroAOuCwd5B-iZFGyJDqS56Bk_fggF-k';
 
 const demoUrl = import.meta.env.VITE_DEMO_SUPABASE_URL || 'https://demo-klzzdgqxahglnifuwgke.databasepad.com';
