@@ -98,6 +98,10 @@ const requireRole = (roles: string[]) => (req: express.Request, res: express.Res
 // Mount Marketing AI Router
 app.use('/api/marketing-ai', marketingAIRouter);
 
+// Mount Scheduling Router
+import { schedulingRouter } from './modules/scheduling/routes';
+app.use('/api/scheduling', schedulingRouter);
+
 // OAuth Connect Endpoint
 app.get('/api/auth/connect/:provider', (req, res) => {
   const { provider } = req.params;

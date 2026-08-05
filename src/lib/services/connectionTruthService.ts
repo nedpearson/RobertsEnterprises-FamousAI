@@ -93,7 +93,7 @@ export const CANONICAL_STATUS_LABELS: Record<CanonicalConnectionStatus, { label:
 };
 
 // Initial Truthful Store for All 9 Connections
-let TRUTHFUL_CONNECTIONS: Record<MarketingProvider, ConnectionTruthDescriptor> = {
+const TRUTHFUL_CONNECTIONS: Record<MarketingProvider, ConnectionTruthDescriptor> = {
   meta: {
     provider: 'meta',
     title: 'Meta Business Suite (Facebook & Instagram)',
