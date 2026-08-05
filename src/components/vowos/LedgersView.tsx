@@ -100,6 +100,28 @@ export default function LedgersView() {
                     />
                   </div>
 
+                  {/* Level 2 Sub-Drill-Down 0: Detailed Gown/Inventory Info */}
+                  {(() => {
+                    const soldGown = gowns.find(g => i.description.includes(g.name) || i.description.includes(g.sku) || g.name.includes(i.description));
+                    if (!soldGown) return null;
+                    return (
+                      <NestedDrillDownNode
+                        level={2}
+                        title={`Merchandise Details · ${soldGown.designer} ${soldGown.name}`}
+                        subtitle={`SKU: ${soldGown.sku} · Category: ${soldGown.category}`}
+                      >
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-stone-50 p-3 rounded-lg text-sm text-stone-700">
+                          <DetailItem label="Designer" value={soldGown.designer} />
+                          <DetailItem label="Style/Type" value={soldGown.style} />
+                          <DetailItem label="Size" value={soldGown.size} />
+                          <DetailItem label="Color" value={soldGown.color} />
+                          <DetailItem label="Condition" value={soldGown.condition} />
+                          <DetailItem label="Retail Price" value={formatCents(soldGown.priceCents)} />
+                        </div>
+                      </NestedDrillDownNode>
+                    );
+                  })()}
+
                   {/* Level 2 Sub-Drill-Down 1: Double-Entry GL Journal Postings */}
                   <NestedDrillDownNode
                     level={2}
@@ -279,6 +301,28 @@ export default function LedgersView() {
                     value={brideByName.get(i.customer) ? formatCents(brideByName.get(i.customer)!.spendCents) : '—'}
                   />
                 </div>
+
+                {/* Level 2 Sub-Drill-Down 0: Detailed Gown/Inventory Info */}
+                {(() => {
+                  const soldGown = gowns.find(g => i.description.includes(g.name) || i.description.includes(g.sku) || g.name.includes(i.description));
+                  if (!soldGown) return null;
+                  return (
+                    <NestedDrillDownNode
+                      level={2}
+                      title={`Merchandise Details · ${soldGown.designer} ${soldGown.name}`}
+                      subtitle={`SKU: ${soldGown.sku} · Category: ${soldGown.category}`}
+                    >
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-stone-50 p-3 rounded-lg text-sm text-stone-700">
+                        <DetailItem label="Designer" value={soldGown.designer} />
+                        <DetailItem label="Style/Type" value={soldGown.style} />
+                        <DetailItem label="Size" value={soldGown.size} />
+                        <DetailItem label="Color" value={soldGown.color} />
+                        <DetailItem label="Condition" value={soldGown.condition} />
+                        <DetailItem label="Retail Price" value={formatCents(soldGown.priceCents)} />
+                      </div>
+                    </NestedDrillDownNode>
+                  );
+                })()}
 
                 {/* Level 2 Sub-Drill-Down 1: Commission Split & Revenue Recognition */}
                 <NestedDrillDownNode

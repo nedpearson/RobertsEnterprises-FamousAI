@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { runJobPoller } from './jobs/runner';
 
 dotenv.config();
@@ -20,8 +21,23 @@ export const supabase = (supabaseUrl && supabaseServiceKey)
 import { marketingAIRouter } from './modules/marketing-ai/routes';
 
 const app = express();
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+// RBAC Middleware
+const requireRole = (roles: string[]) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Missing authorization header' });
+  
+  // In a real implementation, verify JWT and extract user role
+  // For demonstration, we'll check a mock header or assume the role is provided
+  const userRole = req.headers['x-user-role'] as string || 'staff';
+  if (!roles.includes(userRole)) {
+    return res.status(403).json({ error: `Requires one of roles: ${roles.join(', ')}` });
+  }
+  next();
+};
 
 // Mount Marketing AI Router
 app.use('/api/marketing-ai', marketingAIRouter);
@@ -47,7 +63,7 @@ app.get('/api/auth/callback/:provider', async (req, res) => {
   res.send('Authorization successful. You can close this window.');
 });
 
-app.post('/api/campaigns/pause-all', async (req, res) => {
+app.post('/api/campaigns/pause-all', requireRole(['owner', 'manager']), async (req, res) => {
   const { brand } = req.body;
   if (!brand) return res.status(400).json({ error: 'Brand required' });
   
