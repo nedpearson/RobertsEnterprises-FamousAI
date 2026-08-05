@@ -77,7 +77,7 @@ export async function fetchAppointmentRequests() {
     .from('appointment_requests')
     .select('*, customer:customers(name, email, phone)')
     .order('submitted_at', { ascending: false });
-  if (error) {
+  if (error || (data && data.length === 0 && getActiveDataPlane() === 'demo')) {
     if (getActiveDataPlane() === 'demo') return generateSyntheticData(new Date().toISOString(), new Date().toISOString()).reqs;
     console.error('Error fetching appointment requests:', error);
     return [];

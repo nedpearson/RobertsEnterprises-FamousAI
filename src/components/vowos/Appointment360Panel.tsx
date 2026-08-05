@@ -16,13 +16,21 @@ import type { FileRecord } from '@/lib/files';
 interface Appointment360PanelProps {
   appointment: Appointment | null;
   onClose: () => void;
+  onUpdate?: (id: string, updates: Partial<Appointment>) => void;
 }
 
-export default function Appointment360Panel({ appointment, onClose }: Appointment360PanelProps) {
+export default function Appointment360Panel({ appointment, onClose, onUpdate }: Appointment360PanelProps) {
   const [communications, setCommunications] = useState<Communication[]>([]);
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    duration: 90,
+    type: appointment?.type || 'Bridal Consultation',
+    employee: appointment?.employee?.name || '',
+    room: appointment?.room?.name || '',
+  });
 
   if (!appointment) return null;
 
@@ -36,6 +44,17 @@ export default function Appointment360Panel({ appointment, onClose }: Appointmen
     setIsUploading(true);
     // TODO: implement upload logic
     setTimeout(() => setIsUploading(false), 1000);
+  };
+
+  const handleSave = () => {
+    if (onUpdate) {
+      onUpdate(appointment.id, {
+        type: editData.type,
+        employee: { name: editData.employee },
+        room: { name: editData.room },
+      });
+    }
+    setIsEditing(false);
   };
 
   return (
@@ -103,16 +122,52 @@ export default function Appointment360Panel({ appointment, onClose }: Appointmen
             </div>
             
             <div className="bg-white rounded-lg border p-4 space-y-4">
-              <h3 className="font-medium text-stone-900 border-b pb-2">Appointment Details</h3>
+              <div className="flex justify-between items-center border-b pb-2">
+                <h3 className="font-medium text-stone-900">Appointment Details</h3>
+                <Button variant="ghost" size="sm" onClick={() => isEditing ? handleSave() : setIsEditing(true)}>
+                  {isEditing ? 'Save' : 'Edit'}
+                </Button>
+              </div>
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-stone-500 text-sm">Duration</span>
-                  <span className="text-stone-900 text-sm font-medium">90 mins</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-500 text-sm">Type</span>
-                  <span className="text-stone-900 text-sm font-medium">Bridal Consultation</span>
-                </div>
+                {isEditing ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-500 text-sm">Duration (mins)</span>
+                      <input type="number" className="border rounded px-2 py-1 text-sm w-24" value={editData.duration} onChange={e => setEditData({...editData, duration: Number(e.target.value)})} />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-500 text-sm">Type</span>
+                      <input type="text" className="border rounded px-2 py-1 text-sm w-40" value={editData.type} onChange={e => setEditData({...editData, type: e.target.value})} />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-500 text-sm">Stylist</span>
+                      <input type="text" className="border rounded px-2 py-1 text-sm w-40" value={editData.employee} onChange={e => setEditData({...editData, employee: e.target.value})} />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-500 text-sm">Room</span>
+                      <input type="text" className="border rounded px-2 py-1 text-sm w-40" value={editData.room} onChange={e => setEditData({...editData, room: e.target.value})} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500 text-sm">Duration</span>
+                      <span className="text-stone-900 text-sm font-medium">90 mins</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500 text-sm">Type</span>
+                      <span className="text-stone-900 text-sm font-medium">{appointment.type || 'Bridal Consultation'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500 text-sm">Stylist</span>
+                      <span className="text-stone-900 text-sm font-medium">{appointment.employee?.name || 'Unassigned'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-stone-500 text-sm">Room</span>
+                      <span className="text-stone-900 text-sm font-medium">{appointment.room?.name || 'Any'}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </TabsContent>
