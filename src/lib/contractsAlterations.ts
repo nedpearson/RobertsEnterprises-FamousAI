@@ -33,8 +33,8 @@ export interface ContractRecord {
 }
 
 export const mapContract = (r: any): ContractRecord => ({
-  id: r.id,
-  customer: r.customer,
+  id: r.id || '',
+  customer: r.customer || '',
   location: (r.location ?? 'ido-br') as LocationId,
   gown: r.gown ?? '',
   amountCents: r.amount_cents ?? 0,
@@ -227,8 +227,8 @@ export const ALTERATION_TASK_PRESETS = [
 export const SEAMSTRESSES = ['Rosa M.', 'Linh P.', 'Odette B.'];
 
 export const mapAlteration = (r: any): AlterationJob => ({
-  id: r.id,
-  customer: r.customer,
+  id: r.id || '',
+  customer: r.customer || '',
   gown: r.gown ?? '',
   seamstress: r.seamstress ?? '',
   status: (r.status ?? 'Not Started') as AlterationStatus,
