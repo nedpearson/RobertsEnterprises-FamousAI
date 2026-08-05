@@ -12,6 +12,11 @@ import PayInvoice from "./pages/PayInvoice";
 import SignContract from "./pages/SignContract";
 import BridePortal from "./pages/BridePortal";
 import NotFound from "./pages/NotFound";
+import EmployeeScheduleCalendar from "./pages/scheduling/EmployeeScheduleCalendar";
+import AssignmentCenter from "./pages/scheduling/AssignmentCenter";
+import ConfirmedAppointments from "./pages/scheduling/ConfirmedAppointments";
+import { CombinedOperationsCalendar } from "./pages/scheduling/CombinedOperationsCalendar";
+import BookingRequestForm from "./pages/public/BookingRequestForm";
 
 import { VowosErrorBoundary } from "@/components/vowos/ErrorBoundary";
 
@@ -35,6 +40,14 @@ const App = () => (
                   <Route path="/pay/:invoiceId" element={<PayInvoice />} />
                   <Route path="/sign/:contractId" element={<SignContract />} />
                   <Route path="/portal/:brideId" element={<BridePortal />} />
+                  
+                  {/* Scheduling Routes */}
+                  <Route path="/scheduling/calendar" element={<EmployeeScheduleCalendar />} />
+                  <Route path="/scheduling/assignment-center" element={<AssignmentCenter />} />
+                  <Route path="/scheduling/appointments" element={<ConfirmedAppointments />} />
+                  <Route path="/scheduling/unified" element={<CombinedOperationsCalendar />} />
+                  <Route path="/booking-request" element={<BookingRequestForm />} />
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
