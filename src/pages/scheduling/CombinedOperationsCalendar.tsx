@@ -335,9 +335,10 @@ export function CombinedOperationsCalendar() {
       <div className="flex-1 min-w-0 flex flex-col bg-background relative overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center bg-background z-10">
           <h2 className="font-semibold text-lg">Operations Calendar</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">{schedules.length} Staff Scheduled</Badge>
             <Badge variant="outline">{requests.length} Pending</Badge>
+            <Button size="sm" onClick={() => { setManualAptData({ start_at: new Date().toISOString(), employee_id: '' }); setIsManualAptOpen(true); }} className="ml-2 gap-1.5"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>New Appointment</Button>
           </div>
         </div>
         <div className="flex-1 p-4 overflow-y-auto relative z-0">
