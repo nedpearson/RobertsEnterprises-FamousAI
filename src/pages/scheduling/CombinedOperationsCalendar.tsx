@@ -7,13 +7,18 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Appointment360Panel } from './Appointment360Panel';
 import { AIAssignmentDrawer } from './AIAssignmentDrawer';
 import { 
   useBusiness, 
   useAppointmentRequests, 
   useAppointments, 
-  useEmployeeSchedules 
+  useEmployeeSchedules,
+  useStaffProfiles 
 } from '@/lib/services/schedulingService';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,6 +26,12 @@ import { useQueryClient } from '@tanstack/react-query';
 export function CombinedOperationsCalendar() {
   const [selectedRequest, setSelectedRequest] = useState<Record<string, any> | null>(null);
   const [assigningRequest, setAssigningRequest] = useState<Record<string, any> | null>(null);
+  const [isManualAptOpen, setIsManualAptOpen] = useState(false);
+  const [manualAptData, setManualAptData] = useState<any>({
+    title: 'New Appointment',
+    start_at: '',
+    employee_id: ''
+  });
   
   const queryClient = useQueryClient();
   const queueRef = useRef<HTMLDivElement>(null);
@@ -31,6 +42,7 @@ export function CombinedOperationsCalendar() {
   const { data: requests = [] } = useAppointmentRequests(businessId);
   const { data: appointments = [] } = useAppointments(businessId);
   const { data: schedules = [] } = useEmployeeSchedules(businessId);
+  const { data: staff = [] } = useStaffProfiles();
 
   // Map schedules to background events
   const calendarEvents = useMemo(() => {
@@ -126,6 +138,40 @@ export function CombinedOperationsCalendar() {
       } else {
         queryClient.invalidateQueries({ queryKey: ['appointments'] });
       }
+    }
+  };
+
+  const handleDateClick = (info: Record<string, any>) => {
+    // Only open manual modal if they click an empty slot
+    setManualAptData({
+      ...manualAptData,
+      start_at: info.date.toISOString(),
+      employee_id: ''
+    });
+    setIsManualAptOpen(true);
+  };
+
+  const handleCreateManualAppointment = async () => {
+    if (!businessId || !manualAptData.start_at) return;
+    
+    // Default to a 90 minute block, generic customer and service for MVP
+    const start = new Date(manualAptData.start_at);
+    const end = new Date(start.getTime() + 90 * 60 * 1000);
+    
+    const newApt = {
+      business_id: businessId,
+      start_at: start.toISOString(),
+      end_at: end.toISOString(),
+      employee_id: manualAptData.employee_id || null,
+      confirmation_status: 'confirmed'
+    };
+    
+    const { error } = await supabase.from('appointments').insert(newApt);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setIsManualAptOpen(false);
+    } else {
+      console.error("Failed to create manual appointment", error);
     }
   };
 
@@ -310,6 +356,7 @@ export function CombinedOperationsCalendar() {
             events={calendarEvents}
             eventClick={handleEventClick}
             editable={true}
+            dateClick={handleDateClick}
             eventDrop={handleEventDropOrResize}
             eventResize={handleEventDropOrResize}
             eventReceive={handleEventReceive}

@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { User, Phone, Mail, Clock, DollarSign, FileText, CheckCircle, MessageSquare, Play, Calendar } from 'lucide-react';
-import { useAppointment360 } from '@/lib/services/schedulingService';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAppointment360, useStaffProfiles } from '@/lib/services/schedulingService';
 import { OutcomeModal } from './OutcomeModal';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,6 +20,14 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
   
   const queryClient = useQueryClient();
   const { data: apt360, isLoading } = useAppointment360(appointmentId);
+  const { data: staff = [] } = useStaffProfiles();
+
+  const handleAssignStaff = async (employeeId: string) => {
+    if (!appointmentId) return;
+    await supabase.from('appointments').update({ employee_id: employeeId }).eq('id', appointmentId);
+    queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    queryClient.invalidateQueries({ queryKey: ['appointment360', appointmentId] });
+  };
 
   const handleCheckIn = async () => {
     if (!appointmentId) return;
@@ -115,9 +124,27 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
                   </div>
                   <div>
                     <span className="text-muted-foreground block mb-1.5 text-xs font-medium">Assigned To</span>
-                    <p className="font-medium text-foreground flex items-center gap-2">
-                      <User className="h-3.5 w-3.5 text-indigo-500"/> {apt360?.appointment?.employee?.first_name || request?.employeeName || 'Unassigned'}
-                    </p>
+                    {appointmentId ? (
+                      <Select 
+                        value={apt360?.appointment?.employee_id || ''} 
+                        onValueChange={handleAssignStaff}
+                      >
+                        <SelectTrigger className="h-8 text-xs border-indigo-100 bg-white">
+                          <SelectValue placeholder="Assign staff..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {staff.map((s: any) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.first_name} {s.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="font-medium text-foreground flex items-center gap-2">
+                        <User className="h-3.5 w-3.5 text-indigo-500"/> {request?.employeeName || 'Unassigned'}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <span className="text-muted-foreground block mb-1.5 text-xs font-medium">Time</span>

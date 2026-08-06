@@ -62,6 +62,17 @@ export const fetchAppointments = async (businessId: string, locationId?: string 
   }
 };
 
+export const fetchStaffProfiles = async () => {
+  try {
+    const { data, error } = await supabase.from('staff_profiles').select('*');
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.warn('Failed to fetch staff profiles:', err);
+    return [];
+  }
+};
+
 export const fetchEmployeeSchedules = async (businessId: string, locationId?: string | 'all') => {
   try {
     let query = supabase.from('employee_schedules').select(`
@@ -180,6 +191,13 @@ export const useAppointment360 = (appointmentId: string | undefined) => {
     queryKey: ['appointment360', appointmentId],
     queryFn: () => fetchAppointment360(appointmentId!),
     enabled: !!appointmentId
+  });
+};
+
+export const useStaffProfiles = () => {
+  return useQuery({
+    queryKey: ['staff_profiles'],
+    queryFn: () => fetchStaffProfiles()
   });
 };
 
