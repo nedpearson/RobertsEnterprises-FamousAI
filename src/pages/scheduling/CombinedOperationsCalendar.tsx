@@ -7,12 +7,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Appointment360Panel } from './Appointment360Panel';
 import { AIAssignmentDrawer } from './AIAssignmentDrawer';
+import { NewAppointmentModal } from './NewAppointmentModal';
+import { useVowosData } from '@/contexts/VowosDataContext';
 import { 
   useBusiness, 
   useAppointmentRequests, 
@@ -26,22 +24,18 @@ import { useQueryClient } from '@tanstack/react-query';
 export function CombinedOperationsCalendar() {
   const [selectedRequest, setSelectedRequest] = useState<Record<string, any> | null>(null);
   const [assigningRequest, setAssigningRequest] = useState<Record<string, any> | null>(null);
-  const [isManualAptOpen, setIsManualAptOpen] = useState(false);
-  const [manualAptData, setManualAptData] = useState<any>({
-    title: 'New Appointment',
-    start_at: '',
-    employee_id: ''
-  });
+  const [newAppointmentData, setNewAppointmentData] = useState<{ start_at: string, employee_id: string } | null>(null);
   
   const queryClient = useQueryClient();
   const queueRef = useRef<HTMLDivElement>(null);
   
+  const { activeLocation } = useVowosData();
   const { data: business } = useBusiness();
   const businessId = business?.id;
   
-  const { data: requests = [] } = useAppointmentRequests(businessId);
-  const { data: appointments = [] } = useAppointments(businessId);
-  const { data: schedules = [] } = useEmployeeSchedules(businessId);
+  const { data: requests = [] } = useAppointmentRequests(businessId, activeLocation);
+  const { data: appointments = [] } = useAppointments(businessId, activeLocation);
+  const { data: schedules = [] } = useEmployeeSchedules(businessId, activeLocation);
   const { data: staff = [] } = useStaffProfiles();
 
   // Map schedules to background events
@@ -99,8 +93,6 @@ export function CombinedOperationsCalendar() {
   const handleAIConfirmAssignment = async (recommendation: any) => {
     if (!assigningRequest || !businessId) return;
     
-    // We would typically hit a server action or RPC here to fully convert it
-    // For MVP frontend demo, we will insert directly into appointments
     const newApt = {
       business_id: businessId,
       request_id: assigningRequest.id,
@@ -142,37 +134,10 @@ export function CombinedOperationsCalendar() {
   };
 
   const handleDateClick = (info: Record<string, any>) => {
-    // Only open manual modal if they click an empty slot
-    setManualAptData({
-      ...manualAptData,
+    setNewAppointmentData({
       start_at: info.date.toISOString(),
       employee_id: ''
     });
-    setIsManualAptOpen(true);
-  };
-
-  const handleCreateManualAppointment = async () => {
-    if (!businessId || !manualAptData.start_at) return;
-    
-    // Default to a 90 minute block, generic customer and service for MVP
-    const start = new Date(manualAptData.start_at);
-    const end = new Date(start.getTime() + 90 * 60 * 1000);
-    
-    const newApt = {
-      business_id: businessId,
-      start_at: start.toISOString(),
-      end_at: end.toISOString(),
-      employee_id: manualAptData.employee_id || null,
-      confirmation_status: 'confirmed'
-    };
-    
-    const { error } = await supabase.from('appointments').insert(newApt);
-    if (!error) {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      setIsManualAptOpen(false);
-    } else {
-      console.error("Failed to create manual appointment", error);
-    }
   };
 
   useEffect(() => {
@@ -206,7 +171,6 @@ export function CombinedOperationsCalendar() {
       return;
     }
     
-    // We would prompt for an employee, but for MVP we will just insert it as unassigned or assign to first available
     const newApt = {
       business_id: businessId,
       request_id: reqId,
@@ -338,7 +302,7 @@ export function CombinedOperationsCalendar() {
           <div className="flex gap-2 items-center">
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">{schedules.length} Staff Scheduled</Badge>
             <Badge variant="outline">{requests.length} Pending</Badge>
-            <Button size="sm" onClick={() => { setManualAptData({ start_at: new Date().toISOString(), employee_id: '' }); setIsManualAptOpen(true); }} className="ml-2 gap-1.5"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>New Appointment</Button>
+            <Button size="sm" onClick={() => setNewAppointmentData({ start_at: new Date().toISOString(), employee_id: '' })} className="ml-2 gap-1.5"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>New Appointment</Button>
           </div>
         </div>
         <div className="flex-1 p-4 overflow-y-auto relative z-0">
@@ -383,6 +347,13 @@ export function CombinedOperationsCalendar() {
         isOpen={!!assigningRequest}
         onClose={() => setAssigningRequest(null)}
         onAssign={handleAIConfirmAssignment}
+      />
+
+      {/* MODAL: New Appointment */}
+      <NewAppointmentModal 
+        isOpen={!!newAppointmentData}
+        initialData={newAppointmentData}
+        onClose={() => setNewAppointmentData(null)}
       />
     </div>
     </>
