@@ -6,91 +6,66 @@ export const useBusiness = () => {
   return useQuery({
     queryKey: ['activeBusiness'],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase.from('businesses').select('*').limit(1).single();
-        if (error) throw error;
-        return data;
-      } catch (err) {
-        console.warn('Failed to fetch business, using fallback', err);
-        return { id: 'b_demo_123', name: 'Roberts Enterprises Demo' };
-      }
+      const { data, error } = await supabase.from('businesses').select('*').limit(1).single();
+      if (error) throw error;
+      return data;
     }
   });
 };
 
 // Fetchers
 export const fetchAppointmentRequests = async (businessId: string, locationId?: string | 'all') => {
-  try {
-    let query = supabase.from('appointment_requests').select(`
-      *,
-      customer:customers(*)
-    `).eq('business_id', businessId);
-    
-    if (locationId && locationId !== 'all') {
-      query = query.eq('preferred_location_id', locationId);
-    }
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.warn('Failed to fetch appointment requests:', err);
-    return [];
+  let query = supabase.from('appointment_requests').select(`
+    *,
+    customer:customers(*)
+  `).eq('business_id', businessId);
+  
+  if (locationId && locationId !== 'all') {
+    query = query.eq('preferred_location_id', locationId);
   }
+  
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 };
 
 export const fetchAppointments = async (businessId: string, locationId?: string | 'all') => {
-  try {
-    let query = supabase.from('appointments').select(`
-      *,
-      customer:customers(*),
-      employee:staff_profiles(*),
-      room:rooms(*),
-      service:appointment_services(*)
-    `).eq('business_id', businessId);
-    
-    if (locationId && locationId !== 'all') {
-      query = query.eq('location_id', locationId);
-    }
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.warn('Failed to fetch appointments:', err);
-    return [];
+  let query = supabase.from('appointments').select(`
+    *,
+    customer:customers(*),
+    employee:staff_profiles(*),
+    room:rooms(*),
+    service:appointment_services(*)
+  `).eq('business_id', businessId);
+  
+  if (locationId && locationId !== 'all') {
+    query = query.eq('location_id', locationId);
   }
+  
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 };
 
 export const fetchStaffProfiles = async () => {
-  try {
-    const { data, error } = await supabase.from('staff_profiles').select('*');
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.warn('Failed to fetch staff profiles:', err);
-    return [];
-  }
+  const { data, error } = await supabase.from('staff_profiles').select('*');
+  if (error) throw error;
+  return data || [];
 };
 
 export const fetchEmployeeSchedules = async (businessId: string, locationId?: string | 'all') => {
-  try {
-    let query = supabase.from('employee_schedules').select(`
-      *,
-      employee:staff_profiles(*)
-    `).eq('business_id', businessId);
-    
-    if (locationId && locationId !== 'all') {
-      query = query.eq('location_id', locationId);
-    }
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.warn('Failed to fetch employee schedules:', err);
-    return [];
+  let query = supabase.from('employee_schedules').select(`
+    *,
+    employee:staff_profiles(*)
+  `).eq('business_id', businessId);
+  
+  if (locationId && locationId !== 'all') {
+    query = query.eq('location_id', locationId);
   }
+  
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 };
 
 export const fetchAppointmentHolds = async (businessId: string) => {
@@ -135,21 +110,16 @@ export const fetchAppointment360 = async (appointmentId: string) => {
 };
 
 export const fetchAIRecommendations = async (requestId: string) => {
-  try {
-    const { data, error } = await supabase.from('appointment_assignment_recommendations')
-      .select(`
-        *,
-        employee:staff_profiles(*)
-      `)
-      .eq('request_id', requestId)
-      .order('score', { ascending: false });
-      
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.warn('Failed to fetch AI recommendations:', err);
-    return [];
-  }
+  const { data, error } = await supabase.from('appointment_assignment_recommendations')
+    .select(`
+      *,
+      employee:staff_profiles(*)
+    `)
+    .eq('request_id', requestId)
+    .order('score', { ascending: false });
+    
+  if (error) throw error;
+  return data || [];
 };
 
 // --- React Query Hooks ---
