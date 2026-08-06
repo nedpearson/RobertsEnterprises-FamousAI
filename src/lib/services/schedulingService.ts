@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Default business context for MVP
 export const useBusiness = () => {
@@ -206,3 +206,46 @@ export const useServices = (businessId: string | undefined) => {
     enabled: !!businessId
   });
 };
+
+export const useUpdateAppointmentStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appointmentId, status }: { appointmentId: string, status: string }) => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .update({ confirmation_status: status })
+        .eq('id', appointmentId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment360', variables.appointmentId] });
+    }
+  });
+};
+
+export const useAssignStaff = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appointmentId, employeeId }: { appointmentId: string, employeeId: string }) => {
+      const { data, error } = await supabase
+        .from('appointments')
+        .update({ employee_id: employeeId })
+        .eq('id', appointmentId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment360', variables.appointmentId] });
+    }
+  });
+};
+

@@ -21,8 +21,12 @@ import {
 } from '@/lib/services/schedulingService';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 
 export function CombinedOperationsCalendar() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const appointmentIdFromUrl = searchParams.get('appointmentId');
+
   const [selectedRequest, setSelectedRequest] = useState<Record<string, any> | null>(null);
   const [assigningRequest, setAssigningRequest] = useState<Record<string, any> | null>(null);
   const [newAppointmentData, setNewAppointmentData] = useState<{ start_at: string, employee_id: string } | null>(null);
@@ -39,6 +43,47 @@ export function CombinedOperationsCalendar() {
   const { data: appointments = [] } = useAppointments(businessId, activeLocation);
   const { data: schedules = [] } = useEmployeeSchedules(businessId, activeLocation);
   const { data: staff = [] } = useStaffProfiles();
+
+  // Sync URL to local state on load
+  useEffect(() => {
+    if (appointmentIdFromUrl) {
+      const apt = appointments.find((a: any) => a.id === appointmentIdFromUrl);
+      if (apt && !selectedRequest) {
+        setSelectedRequest({
+          id: apt.id,
+          customerName: apt.customer?.first_name + ' ' + apt.customer?.last_name,
+          serviceName: apt.service?.name || 'Appointment',
+          status: apt.confirmation_status || 'confirmed',
+          time: `${new Date(apt.start_at).toLocaleTimeString()} - ${new Date(apt.end_at).toLocaleTimeString()}`,
+          employeeName: apt.employee?.first_name || 'Unassigned',
+          roomName: apt.room?.name || 'Any Room'
+        });
+      } else {
+        const req = requests.find((r: any) => r.id === appointmentIdFromUrl);
+        if (req && !selectedRequest) {
+          setSelectedRequest({
+            id: req.id,
+            customerName: req.customer?.first_name + ' ' + req.customer?.last_name,
+            serviceName: req.service?.name || 'Requested Service',
+            status: req.status,
+            time: req.preferred_date_1,
+            employeeName: 'Unassigned',
+            roomName: 'TBD'
+          });
+        }
+      }
+    } else {
+      setSelectedRequest(null);
+    }
+  }, [appointmentIdFromUrl, appointments, requests]);
+
+  const updateSelectedRequestUrl = (req: Record<string, any> | null) => {
+    if (req) {
+      setSearchParams({ appointmentId: req.id });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Map schedules to background events
   const calendarEvents = useMemo(() => {
@@ -78,7 +123,7 @@ export function CombinedOperationsCalendar() {
   const handleEventClick = (info: Record<string, any>) => {
     if (info.event.extendedProps?.appointment) {
       const apt = info.event.extendedProps.appointment;
-      setSelectedRequest({
+      const req = {
         id: apt.id,
         customerName: apt.customer?.first_name + ' ' + apt.customer?.last_name,
         serviceName: apt.service?.name || 'Appointment',
@@ -86,7 +131,9 @@ export function CombinedOperationsCalendar() {
         time: `${new Date(apt.start_at).toLocaleTimeString()} - ${new Date(apt.end_at).toLocaleTimeString()}`,
         employeeName: apt.employee?.first_name || 'Unassigned',
         roomName: apt.room?.name || 'Any Room'
-      });
+      };
+      setSelectedRequest(req);
+      updateSelectedRequestUrl(req);
     }
   };
 
@@ -208,15 +255,19 @@ export function CombinedOperationsCalendar() {
           ${selectedRequest?.id === req.id 
             ? 'border-l-primary shadow-md ring-1 ring-primary/20 bg-primary/5' 
             : 'border-l-indigo-300 hover:border-l-primary'}`}
-        onClick={() => setSelectedRequest({
-          id: req.id,
-          customerName,
-          serviceName,
-          status: req.status || 'pending',
-          time: 'Flexible',
-          employeeName: 'Unassigned',
-          roomName: 'TBD'
-        })}
+        onClick={() => {
+          const reqData = {
+            id: req.id,
+            customerName,
+            serviceName,
+            status: req.status || 'pending',
+            time: 'Flexible',
+            employeeName: 'Unassigned',
+            roomName: 'TBD'
+          };
+          setSelectedRequest(reqData);
+          updateSelectedRequestUrl(reqData);
+        }}
       >
         <CardHeader className="p-3 pb-2 flex flex-row items-start justify-between space-y-0">
           <div className="flex items-center gap-2">
@@ -371,7 +422,7 @@ export function CombinedOperationsCalendar() {
           <Appointment360Panel 
             appointmentId={selectedRequest.id} 
             request={selectedRequest} 
-            onClose={() => setSelectedRequest(null)} 
+            onClose={() => updateSelectedRequestUrl(null)} 
           />
         </div>
       )}

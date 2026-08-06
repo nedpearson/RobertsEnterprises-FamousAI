@@ -9,38 +9,33 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { User, Phone, Mail, Clock, DollarSign, FileText, CheckCircle, MessageSquare, Play, Calendar } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAppointment360, useStaffProfiles } from '@/lib/services/schedulingService';
+import { useAppointment360, useStaffProfiles, useAIRecommendations, useUpdateAppointmentStatus, useAssignStaff } from '@/lib/services/schedulingService';
 import { OutcomeModal } from './OutcomeModal';
-import { supabase } from '@/lib/supabase';
-import { useQueryClient } from '@tanstack/react-query';
 
 export function Appointment360Panel({ appointmentId, request, onClose }: { appointmentId: string, request: any, onClose: () => void }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [outcomeModalOpen, setOutcomeModalOpen] = useState(false);
   
-  const queryClient = useQueryClient();
   const { data: apt360, isLoading } = useAppointment360(appointmentId);
   const { data: staff = [] } = useStaffProfiles();
+  const { data: aiRecs = [] } = useAIRecommendations(request?.id || appointmentId);
+  
+  const assignMutation = useAssignStaff();
+  const statusMutation = useUpdateAppointmentStatus();
 
-  const handleAssignStaff = async (employeeId: string) => {
+  const handleAssignStaff = (employeeId: string) => {
     if (!appointmentId) return;
-    await supabase.from('appointments').update({ employee_id: employeeId }).eq('id', appointmentId);
-    queryClient.invalidateQueries({ queryKey: ['appointments'] });
-    queryClient.invalidateQueries({ queryKey: ['appointment360', appointmentId] });
+    assignMutation.mutate({ appointmentId, employeeId });
   };
 
-  const handleCheckIn = async () => {
+  const handleCheckIn = () => {
     if (!appointmentId) return;
-    await supabase.from('appointments').update({ confirmation_status: 'arrived' }).eq('id', appointmentId);
-    queryClient.invalidateQueries({ queryKey: ['appointments'] });
-    queryClient.invalidateQueries({ queryKey: ['appointment360', appointmentId] });
+    statusMutation.mutate({ appointmentId, status: 'arrived' });
   };
   
-  const handleStart = async () => {
+  const handleStart = () => {
     if (!appointmentId) return;
-    await supabase.from('appointments').update({ confirmation_status: 'in-progress' }).eq('id', appointmentId);
-    queryClient.invalidateQueries({ queryKey: ['appointments'] });
-    queryClient.invalidateQueries({ queryKey: ['appointment360', appointmentId] });
+    statusMutation.mutate({ appointmentId, status: 'in-progress' });
   };
 
   if (!request && !appointmentId) {
@@ -100,8 +95,9 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <div className="px-4 pt-2 border-b">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-5 w-full">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="ai">AI Match</TabsTrigger>
             <TabsTrigger value="comms">Comms</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="finance">Finance</TabsTrigger>
@@ -204,6 +200,62 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
               ) : (
                 <div className="border rounded-md p-3 text-sm text-muted-foreground italic text-center bg-muted/10">
                   No tasks or next actions
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-4 mt-0">
+            <div className="space-y-4">
+              <h3 className="font-semibold text-xs uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">AI Assignment Recommendations</h3>
+              {aiRecs.length > 0 ? (
+                <div className="space-y-3">
+                  {aiRecs.map((rec: any, idx: number) => (
+                    <Card key={rec.id} className={`overflow-hidden border transition-all ${idx === 0 ? 'border-indigo-300 shadow-md ring-1 ring-indigo-500/20 bg-indigo-50/30' : 'opacity-80 hover:opacity-100'}`}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 border bg-white">
+                              <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs">
+                                {rec.employee?.first_name?.[0]}{rec.employee?.last_name?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold text-sm">{rec.employee?.first_name} {rec.employee?.last_name}</p>
+                              <p className="text-xs text-muted-foreground">{rec.employee?.role || 'Staff'}</p>
+                            </div>
+                          </div>
+                          <Badge variant={idx === 0 ? "default" : "secondary"} className={idx === 0 ? "bg-indigo-600" : ""}>
+                            {rec.score}% Match
+                          </Badge>
+                        </div>
+                        
+                        <div className="text-xs text-muted-foreground mt-3 bg-muted/30 p-2 rounded-md">
+                          {rec.reasoning || "AI determined this is an optimal match."}
+                        </div>
+                        
+                        {appointmentId && apt360?.appointment?.employee_id !== rec.employee_id && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full mt-3 h-8 text-xs bg-white hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                            onClick={() => handleAssignStaff(rec.employee_id)}
+                            disabled={assignMutation.isPending}
+                          >
+                            Assign to {rec.employee?.first_name}
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-6 border rounded-md border-dashed bg-muted/5">
+                  <div className="h-10 w-10 rounded-full bg-indigo-100 text-indigo-500 flex items-center justify-center mx-auto mb-3">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  </div>
+                  <p className="text-sm font-medium">No AI recommendations available</p>
+                  <p className="text-xs text-muted-foreground mt-1">This request has not been processed by the AI matching engine yet.</p>
                 </div>
               )}
             </div>
