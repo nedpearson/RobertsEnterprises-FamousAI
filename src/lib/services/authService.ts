@@ -165,7 +165,7 @@ export function authorizeAction(params: AuthorizeParams): AuthorizationResult {
           return map && map[params.userId] !== undefined;
         }
       } catch (e) {
-        // Ignore JSON parse error
+        // ignore
       }
       return false;
     })();

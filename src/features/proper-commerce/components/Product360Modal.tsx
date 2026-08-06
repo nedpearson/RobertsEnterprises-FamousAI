@@ -17,14 +17,14 @@ export default function Product360Modal({ product, movements, onClose, onUpdate 
   const [activeTab, setActiveTab] = useState<'source' | 'stock' | 'ledger' | 'json'>('source');
   const [editingPrice, setEditingPrice] = useState(false);
   const [retailInput, setRetailInput] = useState(
-    product ? (product.variants[0]?.retailPriceCents / 100 || 0).toString() : '0'
+    (product?.variants?.[0]?.retailPriceCents / 100 || 0).toString()
   );
   const [costInput, setCostInput] = useState(
-    product ? (product.variants[0]?.costCents / 100 || 0).toString() : '0'
+    (product?.variants?.[0]?.costCents / 100 || 0).toString()
   );
 
   // Manual Stock Adjustment state
-  const [selectedVariantId, setSelectedVariantId] = useState(product?.variants[0]?.id || '');
+  const [selectedVariantId, setSelectedVariantId] = useState(product?.variants?.[0]?.id || '');
   const [adjustLocation, setAdjustLocation] = useState<'pc-br' | 'pc-cov'>('pc-br');
   const [adjustQty, setAdjustQty] = useState(1);
   const [adjustReason, setAdjustReason] = useState('Manual cycle adjustment');

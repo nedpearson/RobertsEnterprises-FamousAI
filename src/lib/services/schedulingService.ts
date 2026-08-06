@@ -32,33 +32,12 @@ export const fetchAppointmentRequests = async (businessId: string, locationId?: 
     
     const { data, error } = await query;
     if (error) throw error;
-    return data && data.length > 0 ? data : generateMockRequests();
+    return data || [];
   } catch (err) {
-    console.warn('Using mock appointment requests');
-    return generateMockRequests();
+    console.warn('Failed to fetch appointment requests:', err);
+    return [];
   }
 };
-
-function generateMockRequests() {
-  return [
-    {
-      id: 'req_1',
-      customer_id: 'cust_1',
-      service_id: 'svc_1',
-      customer: { first_name: 'Sarah', last_name: 'Jenkins' },
-      service: { name: 'Bridal Consultation' },
-      status: 'pending'
-    },
-    {
-      id: 'req_2',
-      customer_id: 'cust_2',
-      service_id: 'svc_2',
-      customer: { first_name: 'Emily', last_name: 'Chen' },
-      service: { name: 'Fitting' },
-      status: 'pending'
-    }
-  ];
-}
 
 export const fetchAppointments = async (businessId: string, locationId?: string | 'all') => {
   try {
@@ -76,42 +55,12 @@ export const fetchAppointments = async (businessId: string, locationId?: string 
     
     const { data, error } = await query;
     if (error) throw error;
-    return data && data.length > 0 ? data : generateMockAppointments();
+    return data || [];
   } catch (err) {
-    console.warn('Using mock appointments');
-    return generateMockAppointments();
+    console.warn('Failed to fetch appointments:', err);
+    return [];
   }
 };
-
-function generateMockAppointments() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const date = today.getDate();
-  
-  return [
-    {
-      id: 'apt_1',
-      customer: { first_name: 'Jessica', last_name: 'Smith' },
-      employee: { first_name: 'Jane', last_name: 'Stylist' },
-      room: { name: 'Suite A' },
-      service: { name: 'Bridal Styling' },
-      start_at: new Date(year, month, date, 10, 0).toISOString(),
-      end_at: new Date(year, month, date, 11, 30).toISOString(),
-      confirmation_status: 'confirmed'
-    },
-    {
-      id: 'apt_2',
-      customer: { first_name: 'Amanda', last_name: 'Davis' },
-      employee: { first_name: 'Jane', last_name: 'Stylist' },
-      room: { name: 'Suite B' },
-      service: { name: 'Alterations' },
-      start_at: new Date(year, month, date, 13, 0).toISOString(),
-      end_at: new Date(year, month, date, 14, 0).toISOString(),
-      confirmation_status: 'confirmed'
-    }
-  ];
-}
 
 export const fetchEmployeeSchedules = async (businessId: string, locationId?: string | 'all') => {
   try {
@@ -126,28 +75,12 @@ export const fetchEmployeeSchedules = async (businessId: string, locationId?: st
     
     const { data, error } = await query;
     if (error) throw error;
-    return data && data.length > 0 ? data : generateMockSchedules();
+    return data || [];
   } catch (err) {
-    console.warn('Using mock schedules');
-    return generateMockSchedules();
+    console.warn('Failed to fetch employee schedules:', err);
+    return [];
   }
 };
-
-function generateMockSchedules() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const date = today.getDate();
-  
-  return [
-    {
-      id: 'shift_1',
-      employee: { first_name: 'Jane', last_name: 'Stylist' },
-      start_time: new Date(year, month, date, 9, 0).toISOString(),
-      end_time: new Date(year, month, date, 17, 0).toISOString()
-    }
-  ];
-}
 
 export const fetchAppointmentHolds = async (businessId: string) => {
   const { data, error } = await supabase.from('appointment_holds')
@@ -185,15 +118,8 @@ export const fetchAppointment360 = async (appointmentId: string) => {
       financials: financials || []
     };
   } catch (err) {
-    console.warn('Using mock appointment 360 data');
-    const mockApt = generateMockAppointments().find(a => a.id === appointmentId) || generateMockAppointments()[0];
-    return {
-      appointment: mockApt,
-      communications: [{ id: 'msg_1', sender: 'system', content: 'Confirmation sent', created_at: new Date().toISOString() }],
-      files: [{ id: 'f_1', name: 'Inspiration_Board.pdf', size: 1024000 }],
-      notes: [{ id: 'n_1', content: 'VIP Customer - prefers champagne', author: { first_name: 'Admin' }, created_at: new Date().toISOString() }],
-      financials: [{ id: 'pay_1', amount: 150.00, status: 'paid' }]
-    };
+    console.warn('Failed to fetch appointment 360 data:', err);
+    throw err;
   }
 };
 
@@ -208,29 +134,12 @@ export const fetchAIRecommendations = async (requestId: string) => {
       .order('score', { ascending: false });
       
     if (error) throw error;
-    return data && data.length > 0 ? data : generateMockRecommendations();
+    return data || [];
   } catch (err) {
-    return generateMockRecommendations();
+    console.warn('Failed to fetch AI recommendations:', err);
+    return [];
   }
 };
-
-function generateMockRecommendations() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const date = today.getDate();
-  return [
-    {
-      id: 'rec_1',
-      employee: { first_name: 'Jane', last_name: 'Stylist', id: 'emp_1' },
-      recommended_start: new Date(year, month, date, 14, 0).toISOString(),
-      recommended_end: new Date(year, month, date, 15, 30).toISOString(),
-      score: 98,
-      match_reasons: ['Perfect schedule alignment', 'Customer favorite'],
-      conflict_warnings: []
-    }
-  ];
-}
 
 // --- React Query Hooks ---
 

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
@@ -12,11 +12,7 @@ import PayInvoice from "./pages/PayInvoice";
 import SignContract from "./pages/SignContract";
 import BridePortal from "./pages/BridePortal";
 import NotFound from "./pages/NotFound";
-import EmployeeScheduleCalendar from "./pages/scheduling/EmployeeScheduleCalendar";
-import AssignmentCenter from "./pages/scheduling/AssignmentCenter";
-import ConfirmedAppointments from "./pages/scheduling/ConfirmedAppointments";
 import { CombinedOperationsCalendar } from "./pages/scheduling/CombinedOperationsCalendar";
-import BookingRequestForm from "./pages/public/BookingRequestForm";
 
 import { VowosErrorBoundary } from "@/components/vowos/ErrorBoundary";
 
@@ -41,12 +37,14 @@ const App = () => (
                   <Route path="/sign/:contractId" element={<SignContract />} />
                   <Route path="/portal/:brideId" element={<BridePortal />} />
                   
-                  {/* Scheduling Routes */}
-                  <Route path="/scheduling/calendar" element={<EmployeeScheduleCalendar />} />
-                  <Route path="/scheduling/assignment-center" element={<AssignmentCenter />} />
-                  <Route path="/scheduling/appointments" element={<ConfirmedAppointments />} />
+                  {/* Canonical Scheduling Route */}
                   <Route path="/scheduling/unified" element={<CombinedOperationsCalendar />} />
-                  <Route path="/booking-request" element={<BookingRequestForm />} />
+                  
+                  {/* Legacy scheduling routes — redirect to canonical */}
+                  <Route path="/scheduling/calendar" element={<Navigate to="/scheduling/unified" replace />} />
+                  <Route path="/scheduling/assignment-center" element={<Navigate to="/scheduling/unified" replace />} />
+                  <Route path="/scheduling/appointments" element={<Navigate to="/scheduling/unified" replace />} />
+                  <Route path="/booking-request" element={<Navigate to="/scheduling/unified" replace />} />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>

@@ -521,7 +521,7 @@ export default function TimeClockCard() {
               try {
                 if (e.note?.startsWith('{')) punchMeta = JSON.parse(e.note);
               } catch {
-                // Ignore parse error
+                // ignore
               }
               const isGpsError = punchMeta.telemetry?.geofenceVerified === false;
               return (
