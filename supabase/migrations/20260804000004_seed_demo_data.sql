@@ -149,18 +149,23 @@ BEGIN
         END IF;
 
         -- Appointments for everyone
-        INSERT INTO appointments (business_id, location_id, customer_id, service_id, employee_id, room_id, start_at, end_at, status)
-        VALUES (
-            v_business_id,
-            v_loc1_id,
-            v_customer_id,
-            v_service1,
-            v_emp1_id,
-            v_room1,
-            (CURRENT_DATE + (i || ' days')::INTERVAL + '10:00:00'::TIME)::TIMESTAMPTZ,
-            (CURRENT_DATE + (i || ' days')::INTERVAL + '11:30:00'::TIME)::TIMESTAMPTZ,
-            'confirmed'
-        );
+        BEGIN
+            INSERT INTO appointments (business_id, location_id, customer_id, service_id, employee_id, room_id, start_at, end_at, status)
+            VALUES (
+                v_business_id,
+                v_loc1_id,
+                v_customer_id,
+                v_service1,
+                v_emp1_id,
+                v_room1,
+                (CURRENT_DATE + (i || ' days')::INTERVAL + '10:00:00'::TIME)::TIMESTAMPTZ,
+                (CURRENT_DATE + (i || ' days')::INTERVAL + '11:30:00'::TIME)::TIMESTAMPTZ,
+                'confirmed'
+            );
+        EXCEPTION WHEN OTHERS THEN
+            -- Ignore double booking errors on seed re-runs
+            NULL;
+        END;
     END LOOP;
 
     -- Leads (10 raw leads)
