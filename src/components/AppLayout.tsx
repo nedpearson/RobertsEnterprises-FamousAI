@@ -27,7 +27,7 @@ import CustomersView from '@/components/vowos/CustomersView';
 import LeadsView from '@/components/vowos/LeadsView';
 import InventoryView from '@/components/vowos/InventoryView';
 import TransfersView from '@/components/vowos/TransfersView';
-import Calendar360View from '@/components/vowos/Calendar360View';
+import { CombinedOperationsCalendar } from '@/pages/scheduling/CombinedOperationsCalendar';
 import InvoicesView from '@/components/vowos/InvoicesView';
 import PurchasesView from '@/components/vowos/PurchasesView';
 import ReportsView from '@/components/vowos/ReportsView';
@@ -262,7 +262,7 @@ export default function AppLayout() {
               {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
               {view === 'inventory' && <InventoryView />}
               {view === 'transfers' && <TransfersView />}
-              {view === 'appointments' && <Calendar360View />}
+              {view === 'appointments' && <CombinedOperationsCalendar />}
               {view === 'communications' && <CommunicationsView />}
               {view === 'contracts' && <ContractsView />}
               {view === 'alterations' && <AlterationsView />}
