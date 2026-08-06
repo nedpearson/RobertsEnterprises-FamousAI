@@ -520,7 +520,9 @@ export default function TimeClockCard() {
               let punchMeta: TimeEntryMetadata = { department: 'Sales', locationId: 'north', breaks: [], transfers: [] };
               try {
                 if (e.note?.startsWith('{')) punchMeta = JSON.parse(e.note);
-              } catch {}
+              } catch {
+                // Ignore parse error
+              }
               const isGpsError = punchMeta.telemetry?.geofenceVerified === false;
               return (
                 <span

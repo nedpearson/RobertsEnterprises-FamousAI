@@ -46,7 +46,7 @@ function printBookingQr(url: string) {
     <p>Tell us what you're looking for and your budget — a flat ${FEE_LABEL} booking fee reserves your private suite and is credited toward your purchase.</p>
     <img src="${qrImageUrl(url, 320)}" width="320" height="320" alt="Booking QR code" />
     <p class="url">${url}</p>
-    <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };<\/script>
+    <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };</script>
     </body></html>`);
   w.document.close();
 }

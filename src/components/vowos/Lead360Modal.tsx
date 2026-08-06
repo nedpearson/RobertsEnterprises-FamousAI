@@ -20,13 +20,13 @@ export default function Lead360Modal({
   onNavigateToBride,
   onBookAppointment,
 }: Lead360ModalProps) {
-  if (!lead) return null;
-
   const { advanceLead, updateLeadStage, addBride } = useVowosData();
-  const [notes, setNotes] = useState(`Interested in bridal gowns & veil styling. Preferred budget: ${formatCents(lead.budgetCents)}.`);
+  const [notes, setNotes] = useState(`Interested in bridal gowns & veil styling. Preferred budget: ${lead ? formatCents(lead.budgetCents) : '$0.00'}.`);
   const [assignedStylist, setAssignedStylist] = useState(teamMembers[0]);
   const [phoneInput, setPhoneInput] = useState('(225) 555-0199');
   const [converting, setConverting] = useState(false);
+
+  if (!lead) return null;
 
   const handleStageChange = async (newStage: LeadStage) => {
     await updateLeadStage(lead.id, newStage);

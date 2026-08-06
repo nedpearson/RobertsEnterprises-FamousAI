@@ -164,7 +164,9 @@ export function authorizeAction(params: AuthorizeParams): AuthorizationResult {
           const map = JSON.parse(cached);
           return map && map[params.userId] !== undefined;
         }
-      } catch (e) {}
+      } catch (e) {
+        // Ignore JSON parse error
+      }
       return false;
     })();
 

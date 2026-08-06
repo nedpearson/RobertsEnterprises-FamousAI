@@ -1,0 +1,68 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint . --quiet
+
+
+C:\dev\github\business\RobertsEnterprises-FamousAI\src\features\training\api\trainingApi.ts
+  351:11  error  Empty block statement  no-empty
+
+C:\dev\github\business\RobertsEnterprises-FamousAI\src\lib\services\authService.ts
+  167:19  error  Empty block statement  no-empty
+
+C:\dev\github\business\RobertsEnterprises-FamousAI\supabase\.temp\start-secrets\supabase_edge_runtime_RobertsEnterprises-FamousAI\main\index.ts
+  1:371    error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:1120   error  't' is never reassigned. Use 'const' instead                           prefer-const
+  1:1154   error  'r' is never reassigned. Use 'const' instead                           prefer-const
+  1:1195   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:1720   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:3410   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:3895   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:4162   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:4393   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:7950   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:8090   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:8207   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:8370   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:8583   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:8771   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:8914   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:9042   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:9509   error  'O' is never reassigned. Use 'const' instead                           prefer-const
+  1:9574   error  'Pe' is never reassigned. Use 'const' instead                          prefer-const
+  1:9738   error  'at' is never reassigned. Use 'const' instead                          prefer-const
+  1:9808   error  'o' is never reassigned. Use 'const' instead                           prefer-const
+  1:9828   error  'n' is never reassigned. Use 'const' instead                           prefer-const
+  1:11139  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:12850  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:13997  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:16709  error  'n' is never reassigned. Use 'const' instead                           prefer-const
+  1:16730  error  'i' is never reassigned. Use 'const' instead                           prefer-const
+  1:17380  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:17671  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:18386  error  Unnecessary escape character: \-                                       no-useless-escape
+  1:18618  error  'r' is never reassigned. Use 'const' instead                           prefer-const
+  1:18637  error  'o' is never reassigned. Use 'const' instead                           prefer-const
+  1:19330  error  Empty block statement                                                  no-empty
+  1:19559  error  'i' is never reassigned. Use 'const' instead                           prefer-const
+  1:19571  error  's' is never reassigned. Use 'const' instead                           prefer-const
+  1:19581  error  'f' is never reassigned. Use 'const' instead                           prefer-const
+  1:19592  error  'd' is never reassigned. Use 'const' instead                           prefer-const
+  1:19606  error  'a' is never reassigned. Use 'const' instead                           prefer-const
+  1:19611  error  'c' is never reassigned. Use 'const' instead                           prefer-const
+  1:19620  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:20365  error  'P' is never reassigned. Use 'const' instead                           prefer-const
+  1:20370  error  'C' is never reassigned. Use 'const' instead                           prefer-const
+  1:22599  error  Empty block statement                                                  no-empty
+  1:23219  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:24052  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:24823  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:25016  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:25129  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:25777  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:26138  error  Unexpected var, use let or const instead                               no-var
+  1:27620  error  'o' is never reassigned. Use 'const' instead                           prefer-const
+  1:28912  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  1:30740  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+✖ 55 problems (55 errors, 0 warnings)
+
