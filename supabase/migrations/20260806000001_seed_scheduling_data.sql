@@ -41,10 +41,10 @@ BEGIN
     (v_req3_id, v_business_id, v_cust3_id, v_service1, v_loc1_id, v_curr_date, 'waitlist');
     
     -- Insert AI Recommendations
-    INSERT INTO appointment_assignment_recommendations (request_id, employee_id, room_id, recommended_start, recommended_end, score, reasoning, flags)
+    INSERT INTO appointment_assignment_recommendations (request_id, employee_id, location_id, proposed_start_at, proposed_end_at, score, score_breakdown_json, disqualification_reasons_json)
     VALUES
-    (v_req1_id, v_emp1_id, 'f0000000-0000-0000-0000-000000000001', (v_curr_date + '14:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '15:30:00'::TIME)::TIMESTAMPTZ, 95, 'Sarah is available and specializes in Bridal Consultations.', ARRAY['high_match']),
-    (v_req1_id, v_emp2_id, 'f0000000-0000-0000-0000-000000000002', (v_curr_date + '14:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '15:30:00'::TIME)::TIMESTAMPTZ, 82, 'Jessica is a secondary option.', ARRAY['alternative']),
-    (v_req2_id, v_emp2_id, 'f0000000-0000-0000-0000-000000000002', (v_curr_date + '15:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '16:30:00'::TIME)::TIMESTAMPTZ, 88, 'Jessica has a gap in her schedule.', ARRAY['schedule_optimization']);
+    (v_req1_id, v_emp1_id, v_loc1_id, (v_curr_date + '14:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '15:30:00'::TIME)::TIMESTAMPTZ, 95, '{"availability": 100, "skill_match": 90}'::jsonb, '[]'::jsonb),
+    (v_req1_id, v_emp2_id, v_loc1_id, (v_curr_date + '14:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '15:30:00'::TIME)::TIMESTAMPTZ, 82, '{"availability": 100, "skill_match": 64}'::jsonb, '[]'::jsonb),
+    (v_req2_id, v_emp2_id, v_loc1_id, (v_curr_date + '15:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '16:30:00'::TIME)::TIMESTAMPTZ, 88, '{"availability": 100, "skill_match": 76}'::jsonb, '[]'::jsonb);
     
 END $$;
