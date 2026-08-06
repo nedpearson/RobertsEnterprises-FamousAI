@@ -122,6 +122,18 @@ export const fetchAIRecommendations = async (requestId: string) => {
   return data || [];
 };
 
+export const fetchCustomers = async (businessId: string) => {
+  const { data, error } = await supabase.from('customers').select('*').eq('business_id', businessId);
+  if (error) throw error;
+  return data || [];
+};
+
+export const fetchServices = async (businessId: string) => {
+  const { data, error } = await supabase.from('appointment_services').select('*').eq('business_id', businessId);
+  if (error) throw error;
+  return data || [];
+};
+
 // --- React Query Hooks ---
 
 export const useAppointmentRequests = (businessId: string | undefined, locationId: string | 'all' = 'all') => {
@@ -176,5 +188,21 @@ export const useAIRecommendations = (requestId: string | undefined) => {
     queryKey: ['ai_recommendations', requestId],
     queryFn: () => fetchAIRecommendations(requestId!),
     enabled: !!requestId
+  });
+};
+
+export const useCustomers = (businessId: string | undefined) => {
+  return useQuery({
+    queryKey: ['customers', businessId],
+    queryFn: () => fetchCustomers(businessId!),
+    enabled: !!businessId
+  });
+};
+
+export const useServices = (businessId: string | undefined) => {
+  return useQuery({
+    queryKey: ['services', businessId],
+    queryFn: () => fetchServices(businessId!),
+    enabled: !!businessId
   });
 };

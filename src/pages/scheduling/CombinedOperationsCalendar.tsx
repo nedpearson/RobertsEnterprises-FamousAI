@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Appointment360Panel } from './Appointment360Panel';
 import { AIAssignmentDrawer } from './AIAssignmentDrawer';
 import { NewAppointmentModal } from './NewAppointmentModal';
+import EmployeeScheduleCalendar from './EmployeeScheduleCalendar';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { 
   useBusiness, 
@@ -25,6 +26,7 @@ export function CombinedOperationsCalendar() {
   const [selectedRequest, setSelectedRequest] = useState<Record<string, any> | null>(null);
   const [assigningRequest, setAssigningRequest] = useState<Record<string, any> | null>(null);
   const [newAppointmentData, setNewAppointmentData] = useState<{ start_at: string, employee_id: string } | null>(null);
+  const [calendarView, setCalendarView] = useState<'operations' | 'workforce'>('operations');
   
   const queryClient = useQueryClient();
   const queueRef = useRef<HTMLDivElement>(null);
@@ -47,8 +49,8 @@ export function CombinedOperationsCalendar() {
       events.push({
         id: `shift_${shift.id}`,
         title: shift.employee?.first_name || 'Staff',
-        start: shift.start_time,
-        end: shift.end_time,
+        start: shift.start_at || shift.start_time,
+        end: shift.end_at || shift.end_time,
         display: 'background',
         backgroundColor: '#e2e8f0' // subtle background color
       });
@@ -69,6 +71,9 @@ export function CombinedOperationsCalendar() {
     
     return events;
   }, [schedules, appointments]);
+
+  const unassignedRequests = requests.filter((r: any) => r.status === 'pending');
+  const actionRequiredRequests = requests.filter((r: any) => r.status === 'waitlist' || r.status === 'reschedule_requested');
 
   const handleEventClick = (info: Record<string, any>) => {
     if (info.event.extendedProps?.appointment) {
@@ -186,8 +191,64 @@ export function CombinedOperationsCalendar() {
     await supabase.from('appointments').insert(newApt);
     await supabase.from('appointment_requests').update({ status: 'assigned' }).eq('id', reqId);
     
-    queryClient.invalidateQueries({ queryKey: ['appointments'] });
     queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
+  };
+
+  const renderRequestCard = (req: any) => {
+    const customerName = req.customer?.first_name ? `${req.customer.first_name} ${req.customer.last_name}` : 'Unknown Customer';
+    const initials = req.customer?.first_name ? req.customer.first_name[0] + (req.customer.last_name?.[0] || '') : '?';
+    const serviceName = req.service?.name || 'Requested Service';
+    
+    return (
+      <Card 
+        key={req.id} 
+        data-req-id={req.id}
+        data-title={customerName}
+        className={`fc-event-item cursor-move transition-all duration-200 border-l-4 overflow-hidden group hover:-translate-y-0.5 hover:shadow-md
+          ${selectedRequest?.id === req.id 
+            ? 'border-l-primary shadow-md ring-1 ring-primary/20 bg-primary/5' 
+            : 'border-l-indigo-300 hover:border-l-primary'}`}
+        onClick={() => setSelectedRequest({
+          id: req.id,
+          customerName,
+          serviceName,
+          status: req.status || 'pending',
+          time: 'Flexible',
+          employeeName: 'Unassigned',
+          roomName: 'TBD'
+        })}
+      >
+        <CardHeader className="p-3 pb-2 flex flex-row items-start justify-between space-y-0">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-7 w-7 border bg-white shadow-sm">
+              <AvatarFallback className="text-[10px] font-medium bg-indigo-50 text-indigo-700">{initials}</AvatarFallback>
+            </Avatar>
+            <CardTitle className="text-sm font-semibold">{customerName}</CardTitle>
+          </div>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-muted-foreground/10 font-medium">
+            {req.status?.toUpperCase() || 'PENDING'}
+          </Badge>
+        </CardHeader>
+        <CardContent className="p-3 pt-0">
+          <div className="flex justify-between items-center text-xs mt-1">
+            <div className="flex flex-col gap-1">
+              <span className="text-muted-foreground font-medium text-[11px] truncate max-w-[130px]" title={serviceName}>{serviceName}</span>
+              <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 px-1.5 py-0.5 rounded-sm w-fit font-medium text-[10px]">
+                Flexible Time
+              </span>
+            </div>
+            <Button 
+              size="sm" 
+              variant={selectedRequest?.id === req.id ? "default" : "outline"} 
+              className={`h-7 text-xs px-3 shadow-sm transition-opacity ${selectedRequest?.id === req.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+              onClick={(e) => handleAssignClick(req, e)}
+            >
+              Assign
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -224,9 +285,9 @@ export function CombinedOperationsCalendar() {
       <div className="w-80 flex flex-col border-r bg-background shrink-0">
         <div className="p-4 border-b bg-muted/10">
           <h2 className="font-semibold text-lg">Action Queue</h2>
-          <p className="text-sm text-muted-foreground">Unassigned & Pending</p>
+          <p className="text-sm text-muted-foreground">{unassignedRequests.length} Pending</p>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={queueRef}>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={queueRef}>
           {requests.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -236,69 +297,39 @@ export function CombinedOperationsCalendar() {
               <p className="text-xs text-muted-foreground/70 mt-1">New booking requests will appear here</p>
             </div>
           )}
-          {requests.map(req => {
-            const customerName = req.customer?.first_name ? `${req.customer.first_name} ${req.customer.last_name}` : 'Unknown Customer';
-            const initials = req.customer?.first_name ? req.customer.first_name[0] + (req.customer.last_name?.[0] || '') : '?';
-            const serviceName = req.service?.name || 'Requested Service';
-            
-            return (
-              <Card 
-                key={req.id} 
-                data-req-id={req.id}
-                data-title={customerName}
-                className={`fc-event-item cursor-move transition-all duration-200 border-l-4 overflow-hidden group hover:-translate-y-0.5 hover:shadow-md
-                  ${selectedRequest?.id === req.id 
-                    ? 'border-l-primary shadow-md ring-1 ring-primary/20 bg-primary/5' 
-                    : 'border-l-indigo-300 hover:border-l-primary'}`}
-                onClick={() => setSelectedRequest({
-                  id: req.id,
-                  customerName,
-                  serviceName,
-                  status: req.status || 'pending',
-                  time: 'Flexible',
-                  employeeName: 'Unassigned',
-                  roomName: 'TBD'
-                })}
-              >
-                <CardHeader className="p-3 pb-2 flex flex-row items-start justify-between space-y-0">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-7 w-7 border bg-white shadow-sm">
-                      <AvatarFallback className="text-[10px] font-medium bg-indigo-50 text-indigo-700">{initials}</AvatarFallback>
-                    </Avatar>
-                    <CardTitle className="text-sm font-semibold">{customerName}</CardTitle>
-                  </div>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-muted-foreground/10 font-medium">
-                    {req.status?.toUpperCase() || 'PENDING'}
-                  </Badge>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="flex justify-between items-center text-xs mt-1">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-muted-foreground font-medium text-[11px] truncate max-w-[130px]" title={serviceName}>{serviceName}</span>
-                      <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 px-1.5 py-0.5 rounded-sm w-fit font-medium text-[10px]">
-                        Flexible Time
-                      </span>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant={selectedRequest?.id === req.id ? "default" : "outline"} 
-                      className={`h-7 text-xs px-3 shadow-sm transition-opacity ${selectedRequest?.id === req.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                      onClick={(e) => handleAssignClick(req, e)}
-                    >
-                      Assign
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          
+          {actionRequiredRequests.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Action Required</h3>
+              {actionRequiredRequests.map(req => renderRequestCard(req))}
+            </div>
+          )}
+          
+          {unassignedRequests.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unassigned</h3>
+              {unassignedRequests.map(req => renderRequestCard(req))}
+            </div>
+          )}
         </div>
       </div>
-
       {/* CENTER PANEL: Combined Calendar Grid */}
       <div className="flex-1 min-w-0 flex flex-col bg-background relative overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center bg-background z-10">
-          <h2 className="font-semibold text-lg">Operations Calendar</h2>
+          <div className="flex items-center bg-muted p-1 rounded-md">
+            <button 
+              className={`px-3 py-1 text-sm font-medium rounded-sm transition-colors ${calendarView === 'operations' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setCalendarView('operations')}
+            >
+              Operations
+            </button>
+            <button 
+              className={`px-3 py-1 text-sm font-medium rounded-sm transition-colors ${calendarView === 'workforce' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setCalendarView('workforce')}
+            >
+              Workforce
+            </button>
+          </div>
           <div className="flex gap-2 items-center">
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">{schedules.length} Staff Scheduled</Badge>
             <Badge variant="outline">{requests.length} Pending</Badge>
@@ -306,27 +337,31 @@ export function CombinedOperationsCalendar() {
           </div>
         </div>
         <div className="flex-1 p-4 overflow-y-auto relative z-0">
-          <FullCalendar
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="timeGridWeek"
-            headerToolbar={{
-              left: 'prev,next today',
-              center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            }}
-            slotMinTime="08:00:00"
-            slotMaxTime="20:00:00"
-            allDaySlot={false}
-            height="100%"
-            events={calendarEvents}
-            eventClick={handleEventClick}
-            editable={true}
-            dateClick={handleDateClick}
-            eventDrop={handleEventDropOrResize}
-            eventResize={handleEventDropOrResize}
-            eventReceive={handleEventReceive}
-            droppable={true}
-          />
+          {calendarView === 'operations' ? (
+            <FullCalendar
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="timeGridWeek"
+              headerToolbar={{
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+              }}
+              slotMinTime="08:00:00"
+              slotMaxTime="20:00:00"
+              allDaySlot={false}
+              height="100%"
+              events={calendarEvents}
+              eventClick={handleEventClick}
+              editable={true}
+              dateClick={handleDateClick}
+              eventDrop={handleEventDropOrResize}
+              eventResize={handleEventDropOrResize}
+              eventReceive={handleEventReceive}
+              droppable={true}
+            />
+          ) : (
+            <EmployeeScheduleCalendar />
+          )}
         </div>
       </div>
 
