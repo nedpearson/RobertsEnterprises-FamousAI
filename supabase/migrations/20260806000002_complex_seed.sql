@@ -64,7 +64,7 @@ BEGIN
     -- SCENARIO A: Double Booking Conflict
     -- Both Victoria and Rachel want 2:00 PM today for a Bridal Consultation. Only Sarah is fully free at 2:00 PM.
     -- The AI should score Sarah highly for BOTH, but give Victoria (VIP) a higher priority score.
-    INSERT INTO appointment_requests (id, business_id, customer_id, service_id, preferred_location_id, preferred_date_1, preferred_time_1, status)
+    INSERT INTO appointment_requests (id, business_id, customer_id, service_id, preferred_location_id, preferred_date_1, preferred_window_1, status)
     VALUES
     (v_req_conflict_vip, v_business_id, v_vip_cust_id, v_service_bridal, v_loc1_id, v_curr_date, '14:00:00', 'pending'),
     (v_req_conflict_reg, v_business_id, v_regular_cust_id, v_service_bridal, v_loc1_id, v_curr_date, '14:00:00', 'pending');
