@@ -348,7 +348,9 @@ export function getCertifications(): TrainingCertification[] {
   try {
     const raw = localStorage.getItem(CERTS_STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch {
+    // ignore
+  }
 
   return [
     {

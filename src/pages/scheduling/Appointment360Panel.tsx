@@ -69,8 +69,8 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground flex items-center gap-3">
-                <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {apt360?.appointment?.customer?.phone || request?.customerPhone || '(555) 123-4567'}</span>
-                <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {apt360?.appointment?.customer?.email || request?.customerEmail || 'customer@example.com'}</span>
+                <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {apt360?.appointment?.customer?.phone || request?.customerPhone || 'No phone on file'}</span>
+                <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {apt360?.appointment?.customer?.email || request?.customerEmail || 'No email on file'}</span>
               </p>
             </div>
           </div>
@@ -164,13 +164,21 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
                 Next Actions
                 <Button variant="link" size="sm" className="h-auto p-0">Add Task</Button>
               </h3>
-              <div className="border rounded-md p-3 text-sm flex items-start gap-3">
-                <input type="checkbox" className="mt-1" />
-                <div>
-                  <p className="font-medium">Send follow-up thank you email</p>
-                  <p className="text-muted-foreground text-xs">Due tomorrow • Assigned to Jane</p>
+              {apt360?.tasks?.length ? (
+                apt360.tasks.map((task: any) => (
+                  <div key={task.id} className="border rounded-md p-3 text-sm flex items-start gap-3">
+                    <input type="checkbox" className="mt-1" />
+                    <div>
+                      <p className="font-medium">{task.title}</p>
+                      <p className="text-muted-foreground text-xs">{task.due_date ? `Due ${task.due_date}` : 'No due date'} • Assigned to {task.assigned_to || 'Unassigned'}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="border rounded-md p-3 text-sm text-muted-foreground italic text-center bg-muted/10">
+                  No tasks or next actions
                 </div>
-              </div>
+              )}
             </div>
           </TabsContent>
 
@@ -181,16 +189,20 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
               <Button size="sm" variant="outline" className="flex-1"><Phone className="h-4 w-4 mr-2"/> Log Call</Button>
             </div>
             
-            <div className="flex-1 border rounded-md p-4 bg-muted/10 space-y-4 mb-4">
-              <div className="flex justify-center text-xs text-muted-foreground">Yesterday</div>
-              <div className="bg-primary/10 text-foreground p-3 rounded-lg rounded-tl-none max-w-[85%] text-sm">
-                Hi! Just confirming your appointment for tomorrow at 10 AM. We look forward to seeing you!
-              </div>
-              <div className="flex justify-end">
-                <div className="bg-primary text-primary-foreground p-3 rounded-lg rounded-tr-none max-w-[85%] text-sm">
-                  Thank you! I'll be there with my mom and sister.
+            <div className="flex-1 border rounded-md p-4 bg-muted/10 space-y-4 mb-4 overflow-y-auto">
+              {apt360?.communications?.length ? (
+                apt360.communications.map((msg: any) => (
+                  <div key={msg.id} className={`flex ${msg.direction === 'outbound' ? 'justify-end' : ''}`}>
+                    <div className={`${msg.direction === 'outbound' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-primary/10 text-foreground rounded-tl-none'} p-3 rounded-lg max-w-[85%] text-sm`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm italic">
+                  No communications yet
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -221,44 +233,56 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
           </TabsContent>
 
           <TabsContent value="finance" className="space-y-6 mt-0">
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-lg flex justify-between">
-                  Booking Fee
-                  <Badge variant="default" className="bg-green-500">PAID</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 text-sm">
-                <div className="flex justify-between mb-1">
-                  <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium">$50.00</span>
-                </div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-muted-foreground">Method</span>
-                  <span className="font-medium flex items-center gap-1"><Calendar className="h-3 w-3"/> Credit Card (...1234)</span>
-                </div>
-                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Paid On</span>
-                  <span className="font-medium">Aug 1, 2026</span>
-                </div>
-              </CardContent>
-            </Card>
+            {(!apt360?.payments?.length && !apt360?.invoices?.length) ? (
+              <div className="flex items-center justify-center h-32 border rounded-md bg-muted/10 text-muted-foreground text-sm italic">
+                No payment recorded
+              </div>
+            ) : (
+              <>
+                {apt360?.payments?.map((payment: any) => (
+                  <Card key={payment.id}>
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-lg flex justify-between">
+                        {payment.title || 'Payment'}
+                        <Badge variant="default" className="bg-green-500">{payment.status || 'PAID'}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 text-sm">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-muted-foreground">Amount</span>
+                        <span className="font-medium">${payment.amount?.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-muted-foreground">Method</span>
+                        <span className="font-medium flex items-center gap-1"><DollarSign className="h-3 w-3"/> {payment.method || 'Credit Card'} {payment.last4 ? `(...${payment.last4})` : ''}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Paid On</span>
+                        <span className="font-medium">{payment.paid_at ? new Date(payment.paid_at).toLocaleDateString() : 'N/A'}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
 
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-lg flex justify-between">
-                  Open Invoices
-                  <Badge variant="outline" className="text-amber-500 border-amber-500">PENDING</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 text-sm">
-                <div className="flex justify-between mb-1">
-                  <span className="text-muted-foreground">Gown Balance</span>
-                  <span className="font-medium">$1,500.00</span>
-                </div>
-                <Button size="sm" className="w-full mt-3">Request Payment via SMS</Button>
-              </CardContent>
-            </Card>
+                {apt360?.invoices?.map((invoice: any) => (
+                  <Card key={invoice.id}>
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-lg flex justify-between">
+                        {invoice.title || 'Invoice'}
+                        <Badge variant="outline" className="text-amber-500 border-amber-500">{invoice.status || 'PENDING'}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 text-sm">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-muted-foreground">Balance</span>
+                        <span className="font-medium">${invoice.balance?.toFixed(2)}</span>
+                      </div>
+                      <Button size="sm" className="w-full mt-3">Request Payment via SMS</Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
           </TabsContent>
 
         </ScrollArea>

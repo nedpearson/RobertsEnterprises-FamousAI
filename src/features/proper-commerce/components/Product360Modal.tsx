@@ -14,28 +14,29 @@ interface Product360ModalProps {
 }
 
 export default function Product360Modal({ product, movements, onClose, onUpdate }: Product360ModalProps) {
-  if (!product) return null;
-
   const [activeTab, setActiveTab] = useState<'source' | 'stock' | 'ledger' | 'json'>('source');
   const [editingPrice, setEditingPrice] = useState(false);
   const [retailInput, setRetailInput] = useState(
-    (product.variants[0]?.retailPriceCents / 100 || 0).toString()
+    (product?.variants?.[0]?.retailPriceCents / 100 || 0).toString()
   );
   const [costInput, setCostInput] = useState(
-    (product.variants[0]?.costCents / 100 || 0).toString()
+    (product?.variants?.[0]?.costCents / 100 || 0).toString()
   );
 
   // Manual Stock Adjustment state
-  const [selectedVariantId, setSelectedVariantId] = useState(product.variants[0]?.id || '');
+  const [selectedVariantId, setSelectedVariantId] = useState(product?.variants?.[0]?.id || '');
   const [adjustLocation, setAdjustLocation] = useState<'pc-br' | 'pc-cov'>('pc-br');
   const [adjustQty, setAdjustQty] = useState(1);
   const [adjustReason, setAdjustReason] = useState('Manual cycle adjustment');
 
   // Filter movements for this product's variants
   const itemMovements = useMemo(() => {
+    if (!product) return [];
     const variantSkus = product.variants.map((v) => v.sku);
     return movements.filter((m) => variantSkus.includes(m.sku));
   }, [movements, product]);
+
+  if (!product) return null;
 
   const primaryVariant = product.variants[0];
   const currentCost = primaryVariant?.costCents || 0;

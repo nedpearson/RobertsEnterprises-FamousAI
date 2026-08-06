@@ -10,6 +10,18 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Environment and Secrets
+.env
+.env.*
+!.env.example
+*.sqlite
+*.db
+*.sqlite3
+
+# Temp Files & Artifacts
+test_*.js
+lint_*.txt
 *.local
 
 # Editor directories and files

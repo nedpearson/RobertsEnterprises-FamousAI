@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Brain, Star, Clock, AlertTriangle } from 'lucide-react';
+import { Brain, Star, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import { useAIRecommendations } from '@/lib/services/schedulingService';
 
 interface AIAssignmentDrawerProps {
@@ -37,7 +37,10 @@ export function AIAssignmentDrawer({ request, isOpen, onClose, onAssign }: AIAss
           </div>
           
           {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground animate-pulse">Analyzing schedules and constraints...</div>
+            <div className="p-12 flex flex-col items-center justify-center text-center text-muted-foreground space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+              <p className="animate-pulse">Analyzing schedules and constraints...</p>
+            </div>
           ) : recommendations && recommendations.length > 0 ? (
             recommendations.map((rec: any, index: number) => (
               <Card key={rec.id} className={`border-2 ${index === 0 ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500/20' : 'border-transparent'}`}>
@@ -81,8 +84,9 @@ export function AIAssignmentDrawer({ request, isOpen, onClose, onAssign }: AIAss
               </Card>
             ))
           ) : (
-            <div className="p-8 text-center border rounded-lg bg-background text-muted-foreground">
-              No recommendations available.
+            <div className="p-12 flex flex-col items-center justify-center text-center border rounded-lg bg-background text-muted-foreground space-y-3">
+              <Brain className="h-12 w-12 text-muted-foreground/30" />
+              <p>No AI recommendations available for this request. Ensure employee schedules are published and the request has valid service requirements.</p>
             </div>
           )}
         </div>
