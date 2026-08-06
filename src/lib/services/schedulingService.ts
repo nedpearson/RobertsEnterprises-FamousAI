@@ -44,7 +44,7 @@ export const fetchAppointments = async (businessId: string, locationId?: string 
     let query = supabase.from('appointments').select(`
       *,
       customer:customers(*),
-      employee:employees(*),
+      employee:staff_profiles(*),
       room:rooms(*),
       service:appointment_services(*)
     `).eq('business_id', businessId);
@@ -66,7 +66,7 @@ export const fetchEmployeeSchedules = async (businessId: string, locationId?: st
   try {
     let query = supabase.from('employee_schedules').select(`
       *,
-      employee:employees(*)
+      employee:staff_profiles(*)
     `).eq('business_id', businessId);
     
     if (locationId && locationId !== 'all') {
@@ -97,7 +97,7 @@ export const fetchAppointment360 = async (appointmentId: string) => {
       .select(`
         *,
         customer:customers(*),
-        employee:employees(*),
+        employee:staff_profiles(*),
         room:rooms(*)
       `)
       .eq('id', appointmentId)
@@ -128,7 +128,7 @@ export const fetchAIRecommendations = async (requestId: string) => {
     const { data, error } = await supabase.from('appointment_assignment_recommendations')
       .select(`
         *,
-        employee:employees(*)
+        employee:staff_profiles(*)
       `)
       .eq('request_id', requestId)
       .order('score', { ascending: false });

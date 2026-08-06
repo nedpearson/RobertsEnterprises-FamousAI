@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInAsDemo = async () => {
     setActiveDataPlane('demo');
     // Using a known test password for the demo account
-    const { error } = await supabase.auth.signInWithPassword({ email: 'demo123@gmail.com', password: 'password123' });
+    let { error } = await supabase.auth.signInWithPassword({ email: 'demo123@gmail.com', password: 'password123' });
     
     // Auto-create the demo user if it doesn't exist on this environment yet
     if (error && error.message.includes('Invalid login credentials')) {

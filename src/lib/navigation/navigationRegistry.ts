@@ -49,6 +49,7 @@ export type ViewKey =
   | 'reports'
   | 'ledgers'
   | 'staff'
+  | 'schedules'
   | 'settings'
   | 'payroll'
   | 'timeclock'
@@ -228,6 +229,17 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
     mobilePriority: 14,
     searchKeywords: ['staff', 'team', 'employees', 'stylists', 'directory', 'roles'],
+  },
+  {
+    id: 'schedules',
+    label: 'Staff Schedule',
+    shortLabel: 'Schedule',
+    icon: CalendarHeart,
+    path: '/schedules',
+    section: 'team',
+    allowedRoles: ['Owner', 'Manager'],
+    mobilePriority: 15,
+    searchKeywords: ['schedules', 'shifts', 'calendar', 'availability'],
   },
   {
     id: 'timeclock',

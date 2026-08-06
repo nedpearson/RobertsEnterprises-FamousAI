@@ -4,8 +4,18 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { MOCK_SHIFTS, MOCK_EMPLOYEES } from '@/lib/demo/scheduling-mock-data';
 import { toast } from 'sonner';
+
+const MOCK_EMPLOYEES = [
+  { id: '1', name: 'Alice Smith', color: '#10b981' },
+  { id: '2', name: 'Bob Johnson', color: '#f59e0b' },
+  { id: '3', name: 'Carol Williams', color: '#ef4444' }
+];
+
+const MOCK_SHIFTS = [
+  { id: 's1', resourceId: '1', title: 'Morning Shift', start: new Date(new Date().setHours(8, 0, 0, 0)).toISOString(), end: new Date(new Date().setHours(16, 0, 0, 0)).toISOString() },
+  { id: 's2', resourceId: '2', title: 'Afternoon Shift', start: new Date(new Date().setHours(12, 0, 0, 0)).toISOString(), end: new Date(new Date().setHours(20, 0, 0, 0)).toISOString() }
+];
 
 export default function EmployeeScheduleCalendar() {
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');

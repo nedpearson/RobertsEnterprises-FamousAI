@@ -42,6 +42,7 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   reports: ['Owner', 'Manager'],
   ledgers: ['Owner', 'Manager'],
   staff: ['Owner'],
+  schedules: ['Owner', 'Manager'],
   settings: ['Owner', 'Manager'],
   payroll: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   training: ['Owner', 'Manager', 'Stylist', 'Front Desk'],

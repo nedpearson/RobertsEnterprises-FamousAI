@@ -28,6 +28,7 @@ import LeadsView from '@/components/vowos/LeadsView';
 import InventoryView from '@/components/vowos/InventoryView';
 import TransfersView from '@/components/vowos/TransfersView';
 import { CombinedOperationsCalendar } from '@/pages/scheduling/CombinedOperationsCalendar';
+import EmployeeScheduleCalendar from '@/pages/scheduling/EmployeeScheduleCalendar';
 import InvoicesView from '@/components/vowos/InvoicesView';
 import PurchasesView from '@/components/vowos/PurchasesView';
 import ReportsView from '@/components/vowos/ReportsView';
@@ -272,6 +273,7 @@ export default function AppLayout() {
               {view === 'reports' && <ReportsView />}
               {view === 'ledgers' && <LedgersView />}
               {view === 'staff' && <StaffView />}
+              {view === 'schedules' && <EmployeeScheduleCalendar />}
               {view === 'settings' && <SettingsView />}
               {view === 'payroll' && <PayrollView />}
               {view === 'timeclock' && <TimeClockView />}
