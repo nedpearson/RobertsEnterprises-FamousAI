@@ -80,16 +80,16 @@ BEGIN
     -- 7. Insert Deterministic AI Recommendations for these scenarios
     
     -- VIP gets priority over Regular for the 2:00 PM slot with Sarah
-    INSERT INTO appointment_assignment_recommendations (request_id, employee_id, location_id, proposed_start_at, proposed_end_at, score, score_breakdown_json, disqualification_reasons_json, reasoning)
+    INSERT INTO appointment_assignment_recommendations (request_id, employee_id, location_id, proposed_start_at, proposed_end_at, score, score_breakdown_json, disqualification_reasons_json, model_metadata)
     VALUES
-    (v_req_conflict_vip, v_emp_sarah, v_loc1_id, (v_curr_date + '14:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '15:30:00'::TIME)::TIMESTAMPTZ, 98, '{"availability": 100, "priority": 100, "vip_boost": 25}'::jsonb, '[]'::jsonb, 'Optimal match. High-value VIP customer ($8,500 spend) prioritized for requested slot.'),
-    (v_req_conflict_reg, v_emp_sarah, v_loc1_id, (v_curr_date + '14:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '15:30:00'::TIME)::TIMESTAMPTZ, 75, '{"availability": 100, "priority": 50, "vip_boost": 0}'::jsonb, '[]'::jsonb, 'Available, but another high-priority request is competing for this exact time slot.');
+    (v_req_conflict_vip, v_emp_sarah, v_loc1_id, (v_curr_date + '14:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '15:30:00'::TIME)::TIMESTAMPTZ, 98, '{"availability": 100, "priority": 100, "vip_boost": 25}'::jsonb, '[]'::jsonb, '{"reasoning": "Optimal match. High-value VIP customer ($8,500 spend) prioritized for requested slot."}'::jsonb),
+    (v_req_conflict_reg, v_emp_sarah, v_loc1_id, (v_curr_date + '14:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '15:30:00'::TIME)::TIMESTAMPTZ, 75, '{"availability": 100, "priority": 50, "vip_boost": 0}'::jsonb, '[]'::jsonb, '{"reasoning": "Available, but another high-priority request is competing for this exact time slot."}'::jsonb);
 
     -- Flexible Gap Optimization
     -- Jessica scores higher than Sarah because assigning Jessica perfectly fills her 90-minute gap (10:00 - 11:30)
-    INSERT INTO appointment_assignment_recommendations (request_id, employee_id, location_id, proposed_start_at, proposed_end_at, score, score_breakdown_json, disqualification_reasons_json, reasoning)
+    INSERT INTO appointment_assignment_recommendations (request_id, employee_id, location_id, proposed_start_at, proposed_end_at, score, score_breakdown_json, disqualification_reasons_json, model_metadata)
     VALUES
-    (v_req_flex, v_emp_jessica, v_loc1_id, (v_curr_date + '10:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '11:30:00'::TIME)::TIMESTAMPTZ, 95, '{"availability": 100, "utilization_boost": 30}'::jsonb, '[]'::jsonb, 'Perfect fit. This assignment perfectly optimizes schedule gaps, avoiding fragmented downtime.'),
-    (v_req_flex, v_emp_sarah, v_loc1_id, (v_curr_date + '10:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '11:30:00'::TIME)::TIMESTAMPTZ, 80, '{"availability": 100, "utilization_boost": 0}'::jsonb, '[]'::jsonb, 'Available, but leaves fragmented downtime in schedule compared to other options.');
+    (v_req_flex, v_emp_jessica, v_loc1_id, (v_curr_date + '10:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '11:30:00'::TIME)::TIMESTAMPTZ, 95, '{"availability": 100, "utilization_boost": 30}'::jsonb, '[]'::jsonb, '{"reasoning": "Perfect fit. This assignment perfectly optimizes schedule gaps, avoiding fragmented downtime."}'::jsonb),
+    (v_req_flex, v_emp_sarah, v_loc1_id, (v_curr_date + '10:00:00'::TIME)::TIMESTAMPTZ, (v_curr_date + '11:30:00'::TIME)::TIMESTAMPTZ, 80, '{"availability": 100, "utilization_boost": 0}'::jsonb, '[]'::jsonb, '{"reasoning": "Available, but leaves fragmented downtime in schedule compared to other options."}'::jsonb);
 
 END $$;
