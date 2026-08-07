@@ -28,6 +28,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { Appointment360Panel } from './Appointment360Panel';
+import { Request360Panel } from './Request360Panel';
 import { AIAssignmentDrawer } from './AIAssignmentDrawer';
 import { NewAppointmentModal } from './NewAppointmentModal';
 import { NewRequestModal } from './NewRequestModal';
@@ -38,8 +39,11 @@ import {
   useAppointmentRequests, 
   useAppointments, 
   useEmployeeSchedules,
-  useStaffProfiles 
+  useStaffProfiles,
+  useAssignAppointmentRequest,
+  usePublishSchedules
 } from '@/lib/services/schedulingService';
+import { useCapacityMetrics } from '@/lib/services/capacityService';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -58,6 +62,9 @@ export function UnifiedSchedulingWorkspace() {
 
   const [selectedRequest, setSelectedRequest] = useState<Record<string, any> | null>(null);
   const [assigningRequest, setAssigningRequest] = useState<Record<string, any> | null>(null);
+  
+  const { mutate: assignRequest } = useAssignAppointmentRequest();
+
   const [newAppointmentData, setNewAppointmentData] = useState<{ start_at: string; employee_id: string } | null>(null);
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
   const [isNewRequestModalOpen, setIsNewRequestModalOpen] = useState(false);
@@ -87,6 +94,9 @@ export function UnifiedSchedulingWorkspace() {
   const { data: schedules = [] } = useEmployeeSchedules(businessId, activeLocation);
   const { data: staff = [] } = useStaffProfiles();
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const { data: capacityMetrics } = useCapacityMetrics(businessId, todayStr);
+
   // Mode Switcher handler
   const setMode = (mode: SchedulingMode) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -100,13 +110,15 @@ export function UnifiedSchedulingWorkspace() {
       const apt = appointments.find((a: any) => a.id === appointmentIdFromUrl);
       if (apt) {
         setSelectedRequest({
+          type: 'appointment',
           id: apt.id,
-          customerName: apt.customer ? `${apt.customer.first_name || ''} ${apt.customer.last_name || ''}`.trim() : 'Guest Bride',
-          serviceName: apt.service?.name || 'Bridal Consultation',
+          customerName: apt.customer ? `${apt.customer.first_name || ''} ${apt.customer.last_name || ''}`.trim() : null,
+          serviceName: apt.service?.name || null,
           status: apt.confirmation_status || 'confirmed',
           time: `${new Date(apt.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(apt.end_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-          employeeName: apt.employee ? `${apt.employee.first_name || ''} ${apt.employee.last_name || ''}`.trim() : 'Unassigned',
-          roomName: apt.room?.name || 'Main Suite'
+          employeeName: apt.employee ? `${apt.employee.first_name || ''} ${apt.employee.last_name || ''}`.trim() : null,
+          roomName: apt.room?.name || null,
+          raw: apt
         });
         return;
       }
@@ -114,13 +126,15 @@ export function UnifiedSchedulingWorkspace() {
       const req = requests.find((r: any) => r.id === appointmentIdFromUrl);
       if (req) {
         setSelectedRequest({
+          type: 'request',
           id: req.id,
-          customerName: req.customer ? `${req.customer.first_name || ''} ${req.customer.last_name || ''}`.trim() : 'Booking Request',
-          serviceName: req.service?.name || 'Requested Fitting',
+          customerName: req.customer ? `${req.customer.first_name || ''} ${req.customer.last_name || ''}`.trim() : null,
+          serviceName: req.service?.name || null,
           status: req.status || 'new',
-          time: req.preferred_date_1 || 'Pending Assignment',
-          employeeName: 'Unassigned',
-          roomName: 'TBD'
+          time: req.preferred_date_1 || null,
+          employeeName: null,
+          roomName: null,
+          raw: req
         });
         return;
       }
@@ -212,25 +226,23 @@ export function UnifiedSchedulingWorkspace() {
     const req = requests.find((r: any) => r.id === requestId);
     if (!req) return;
 
-    const { error } = await supabase.from('appointments').insert({
-      business_id: businessId,
-      location_id: req.location_id || activeLocation,
-      customer_id: req.customer_id,
-      service_id: req.service_id,
-      start_at: dropTime.toISOString(),
-      end_at: dropEndTime.toISOString(),
-      confirmation_status: 'confirmed'
+    assignRequest({
+      requestId: req.id,
+      employeeId: info.event.getResources?.[0]?.id || '00000000-0000-0000-0000-000000000000',
+      roomId: req.preferred_room_id || '00000000-0000-0000-0000-000000000000',
+      startAt: dropTime.toISOString(),
+      endAt: dropEndTime.toISOString()
+    }, {
+      onSuccess: () => {
+        toast.success('Appointment created from request!');
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
+      },
+      onError: (err: any) => {
+        toast.error('Failed to schedule request: ' + err.message);
+        info.revert();
+      }
     });
-
-    if (error) {
-      toast.error('Failed to schedule request');
-      info.revert();
-    } else {
-      await supabase.from('appointment_requests').update({ status: 'assigned' }).eq('id', requestId);
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
-      toast.success('Appointment created from request!');
-    }
   };
 
   const handleEventDrop = async (info: any) => {
@@ -268,8 +280,19 @@ export function UnifiedSchedulingWorkspace() {
     }
   };
 
+  const { mutate: publishSchedules } = usePublishSchedules();
+
   const publishWorkforceSchedule = () => {
-    toast.success('All current shifts published to team members!');
+    if (businessId) {
+      publishSchedules({ businessId, locationId: activeLocation }, {
+        onSuccess: () => {
+          toast.success('All current shifts published to team members!');
+        },
+        onError: () => {
+          toast.error('Failed to publish schedules.');
+        }
+      });
+    }
   };
 
   return (
@@ -529,16 +552,20 @@ export function UnifiedSchedulingWorkspace() {
 
           {activeMode === 'capacity' && (
             <div className="p-4 flex flex-col h-full overflow-y-auto">
-              <h3 className="font-semibold text-sm text-stone-900 mb-2">Location Capacity</h3>
-              <p className="text-xs text-stone-500 mb-4">View peak fitting room and consultant utilization.</p>
+              <h3 className="font-semibold text-sm text-stone-900 mb-2">Daily Capacity</h3>
+              <p className="text-xs text-stone-500 mb-4">View peak utilization for today.</p>
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between items-center">
-                  <span className="text-stone-600">Main Fitting Suites:</span>
-                  <span className="font-bold text-stone-900">85% Full</span>
+                  <span className="text-stone-600">Eligible Employees:</span>
+                  <span className="font-bold text-stone-900">{capacityMetrics?.eligibleEmployees || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-stone-600">Senior Stylists:</span>
-                  <span className="font-bold text-stone-900">100% Booked</span>
+                  <span className="text-stone-600">Scheduled Employees:</span>
+                  <span className="font-bold text-stone-900">{capacityMetrics?.scheduledEmployees || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-stone-600">Staffing Gap (Hrs):</span>
+                  <span className="font-bold text-stone-900">{capacityMetrics?.staffingGap?.toFixed(1) || '0.0'}</span>
                 </div>
               </div>
             </div>
@@ -589,18 +616,18 @@ export function UnifiedSchedulingWorkspace() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-xs text-stone-600 space-y-2">
-                      <p><span className="font-semibold text-stone-800">Service:</span> {req.service?.name || 'Fitting'}</p>
-                      <p><span className="font-semibold text-stone-800">Requested:</span> {req.preferred_date_1 || 'TBD'}</p>
+                      <p><span className="font-semibold text-stone-800">Service:</span> {req.service?.name || <span className="text-red-500 font-medium">Missing Information</span>}</p>
+                      <p><span className="font-semibold text-stone-800">Requested:</span> {req.preferred_date_1 || 'Flexible'}</p>
                       <div className="pt-2 flex gap-2">
                         <Button 
                           onClick={() => setAssigningRequest(req)} 
                           size="xs" 
                           className="bg-rose-500 hover:bg-rose-600 text-white"
                         >
-                          Auto Assign
+                          AI Recommend & Assign
                         </Button>
                         <Button 
-                          onClick={() => updateSelectedRequestUrl(req)} 
+                          onClick={() => updateSelectedRequestUrl({ type: 'request', id: req.id })} 
                           variant="outline" 
                           size="xs"
                         >
@@ -664,28 +691,39 @@ export function UnifiedSchedulingWorkspace() {
             </div>
           )}
 
-          {activeMode === 'capacity' && (
+          {activeMode === 'capacity' && capacityMetrics && (
             <div className="space-y-4">
-              <h2 className="text-lg font-bold text-stone-900">Capacity & Utilization Heatmap</h2>
-              <Card className="p-6 text-center border-stone-200">
-                <p className="text-sm text-stone-600 mb-4">Location: {activeLocation.toUpperCase()} · Peak Hours: 11:00 AM - 3:00 PM</p>
-                <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-xs">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                    <div key={day} className="p-4 rounded-xl bg-rose-50 text-rose-900 font-bold border border-rose-100">
-                      {day}
-                      <div className="text-[10px] font-normal text-rose-700 mt-1">90% Cap</div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
+              <h2 className="text-lg font-bold text-stone-900">Capacity Metrics</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="p-4 border-stone-200 shadow-sm flex flex-col items-center justify-center">
+                  <span className="text-sm text-stone-500">Bookable Hours</span>
+                  <span className="text-2xl font-bold text-stone-900">{capacityMetrics.bookableHours.toFixed(1)}</span>
+                </Card>
+                <Card className="p-4 border-stone-200 shadow-sm flex flex-col items-center justify-center">
+                  <span className="text-sm text-stone-500">Confirmed Hours</span>
+                  <span className="text-2xl font-bold text-stone-900">{capacityMetrics.confirmedHours.toFixed(1)}</span>
+                </Card>
+                <Card className="p-4 border-stone-200 shadow-sm flex flex-col items-center justify-center">
+                  <span className="text-sm text-stone-500">Held Hours</span>
+                  <span className="text-2xl font-bold text-stone-900">{capacityMetrics.heldHours.toFixed(1)}</span>
+                </Card>
+                <Card className="p-4 border-stone-200 shadow-sm flex flex-col items-center justify-center">
+                  <span className="text-sm text-stone-500">Staffing Gap</span>
+                  <span className="text-2xl font-bold text-rose-600">{capacityMetrics.staffingGap.toFixed(1)}</span>
+                </Card>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Right Panel: Appointment 360 Detail View */}
+        {/* Right Panel: 360 Detail View */}
         {selectedRequest && (
           <div className="absolute inset-y-0 right-0 z-50 w-full md:w-96 md:border-l border-stone-200 bg-white p-0 md:p-0 overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-200 flex flex-col h-full">
-            <Appointment360Panel appointmentId={selectedRequest.id} request={selectedRequest} onClose={() => updateSelectedRequestUrl(null)} />
+            {selectedRequest.type === 'appointment' ? (
+              <Appointment360Panel appointmentId={selectedRequest.id} request={selectedRequest.raw} onClose={() => updateSelectedRequestUrl(null)} />
+            ) : (
+              <Request360Panel requestId={selectedRequest.id} request={selectedRequest.raw} onClose={() => updateSelectedRequestUrl(null)} />
+            )}
           </div>
         )}
       </div>
@@ -696,6 +734,16 @@ export function UnifiedSchedulingWorkspace() {
           isOpen={!!assigningRequest}
           onClose={() => setAssigningRequest(null)}
           request={assigningRequest}
+          onAssign={(rec) => {
+            assignRequest({
+              requestId: assigningRequest.id,
+              employeeId: rec.employee_id,
+              roomId: assigningRequest.preferred_room_id || '00000000-0000-0000-0000-000000000000',
+              startAt: assigningRequest.preferred_date_1,
+              endAt: new Date(new Date(assigningRequest.preferred_date_1).getTime() + 60 * 60 * 1000).toISOString()
+            });
+            setAssigningRequest(null);
+          }}
         />
       )}
 

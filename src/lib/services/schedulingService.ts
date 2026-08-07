@@ -381,3 +381,21 @@ export const useAddCommunication = () => {
     }
   });
 };
+
+
+export const usePublishSchedules = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ businessId, locationId }: { businessId: string, locationId?: string }) => {
+      let query = supabase.from('employee_schedules').update({ status: 'published' }).eq('business_id', businessId).eq('status', 'draft');
+      if (locationId && locationId !== 'all') {
+        query = query.eq('location_id', locationId);
+      }
+      const { error } = await query;
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee_schedules'] });
+    }
+  });
+};
