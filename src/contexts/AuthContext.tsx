@@ -148,8 +148,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    setActiveDataPlane('production');
     await supabase.auth.signOut();
     setProfile(null);
+    window.location.reload();
   };
 
   const refreshProfile = async () => {

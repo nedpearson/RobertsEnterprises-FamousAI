@@ -81,7 +81,8 @@ CREATE POLICY "action_center_manager_policy" ON action_center_records
             action_center_records.location_id IS NULL OR
             EXISTS (
                 SELECT 1 FROM location_permissions lp
-                WHERE lp.user_id = auth.uid()
+                JOIN business_memberships bm ON lp.membership_id = bm.id
+                WHERE bm.user_id = auth.uid()
                 AND lp.location_id = action_center_records.location_id
             )
         )

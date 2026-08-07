@@ -9,6 +9,8 @@ import { DollarSign, Smile, Frown, Meh } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 
+import { useCompleteAppointment } from '@/lib/services/schedulingService';
+
 interface OutcomeModalProps {
   appointment: any;
   isOpen: boolean;
@@ -19,33 +21,25 @@ export function OutcomeModal({ appointment, isOpen, onClose }: OutcomeModalProps
   const [revenue, setRevenue] = useState('');
   const [sentiment, setSentiment] = useState('positive');
   const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
   
   const queryClient = useQueryClient();
+  const completeMutation = useCompleteAppointment();
 
   const handleComplete = async () => {
     if (!appointment) return;
-    setLoading(true);
     
-    // Update appointment status to completed
-    await supabase.from('appointments').update({
-      confirmation_status: 'completed'
-    }).eq('id', appointment.id);
-    
-    // Add an internal note with the outcome details
-    await supabase.from('internal_notes').insert({
-      business_id: appointment.business_id,
-      entity_type: 'appointment',
-      entity_id: appointment.id,
-      content: `[OUTCOME] Revenue: $${revenue || '0.00'}. Sentiment: ${sentiment}. Notes: ${notes}`,
-      author_id: appointment.employee_id
-    });
-    
-    queryClient.invalidateQueries({ queryKey: ['appointments'] });
-    queryClient.invalidateQueries({ queryKey: ['appointment360', appointment.id] });
-    
-    setLoading(false);
-    onClose();
+    try {
+      const outcomeText = `Revenue: $${revenue || '0.00'}. Sentiment: ${sentiment}`;
+      await completeMutation.mutateAsync({
+        appointmentId: appointment.id,
+        outcome: outcomeText,
+        notes: notes
+      });
+      
+      onClose();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -105,9 +99,9 @@ export function OutcomeModal({ appointment, isOpen, onClose }: OutcomeModalProps
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
-          <Button onClick={handleComplete} disabled={loading}>
-            {loading ? 'Saving...' : 'Complete Appointment'}
+          <Button variant="outline" onClick={onClose} disabled={completeMutation.isPending}>Cancel</Button>
+          <Button onClick={handleComplete} disabled={completeMutation.isPending}>
+            {completeMutation.isPending ? 'Saving...' : 'Complete Appointment'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -25,7 +25,10 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       setError(error);
     } else {
       setSuccess('Welcome to Demo Mode!');
-      setTimeout(handleClose, 900);
+      setTimeout(() => {
+        handleClose();
+        window.location.reload();
+      }, 900);
     }
   };
 
@@ -52,7 +55,10 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         setError(error);
       } else {
         setSuccess('Welcome back!');
-        setTimeout(handleClose, 900);
+        setTimeout(() => {
+          handleClose();
+          window.location.reload();
+        }, 900);
       }
     } else {
       if (!name.trim()) {
@@ -66,7 +72,10 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
         setError(error);
       } else {
         setSuccess('Account created — you are signed in!');
-        setTimeout(handleClose, 1100);
+        setTimeout(() => {
+          handleClose();
+          window.location.reload();
+        }, 1100);
       }
     }
   };
@@ -186,7 +195,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                 <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-4">
                   <h4 className="font-serif text-lg text-stone-800">Demo Access</h4>
                   <p className="mt-1 text-xs text-stone-500">
-                    Want to see FamousAI in action without affecting real business data?
+                    Want to see Roberts Mobile in action without affecting real business data?
                   </p>
                     <button
                       type="button"

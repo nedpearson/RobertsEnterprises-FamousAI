@@ -321,7 +321,7 @@ export default function AppLayout() {
               {view === 'inventory' && <InventoryView />}
               {view === 'transfers' && <TransfersView />}
               {(view === 'schedule' || view === 'appointments' || view === 'operations' || view === 'schedules') && (
-                showMobileView && (role === 'Manager' || role === 'Owner') ? (
+                showMobileView && (role === 'Manager' || role === 'Owner') && !window.location.search.includes('layout=unified') ? (
                   <MobileManagerSchedule onNavigate={setView} />
                 ) : (
                   <UnifiedSchedulingWorkspace />

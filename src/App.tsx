@@ -48,7 +48,7 @@ const App = () => (
                     <Route path="/appointments" element={<Navigate to="/schedule?mode=calendar" replace />} />
                     <Route path="/operations" element={<Navigate to="/schedule?mode=calendar" replace />} />
                     <Route path="/schedules" element={<Navigate to="/schedule?mode=workforce" replace />} />
-                    <Route path="/scheduling/unified" element={<Navigate to="/schedule" replace />} />
+                    <Route path="/scheduling/unified" element={<Navigate to="/schedule?layout=unified" replace />} />
                     <Route path="/scheduling/calendar" element={<Navigate to="/schedule?mode=calendar" replace />} />
                     <Route path="/scheduling/appointments" element={<Navigate to="/schedule?mode=calendar" replace />} />
                     <Route path="/scheduling/assignment-center" element={<Navigate to="/schedule?mode=requests" replace />} />

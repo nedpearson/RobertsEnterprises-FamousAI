@@ -22,16 +22,28 @@ export default defineConfig(({ mode }) => ({
             handler: 'NetworkOnly',
           },
           {
+            urlPattern: ({ url }) => url.pathname.includes('/rest/v1/') && (url.hostname.includes('supabase.co') || url.hostname.includes('127.0.0.1')),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-rest-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 24 * 60 * 60, // 24 hours
+              },
+            },
+          },
+          {
             urlPattern: ({ url }) => url.hostname.includes('supabase.co'),
             handler: 'NetworkOnly',
           }
         ],
+        importScripts: ['/service-worker-push.js'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
       },
       manifest: {
-        name: "Roberts Enterprises FamousAI",
-        short_name: "FamousAI",
+        name: "Roberts Enterprises Mobile",
+        short_name: "Roberts Mobile",
         description: "AI-powered operations, scheduling, sales, customer, inventory, and business management for Roberts Enterprises.",
         start_url: "/",
         scope: "/",

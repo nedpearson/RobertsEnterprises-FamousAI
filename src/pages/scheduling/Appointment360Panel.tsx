@@ -13,7 +13,8 @@ import {
   useAppointment360, 
   useStaffProfiles, 
   useAIRecommendations, 
-  useUpdateAppointmentStatus, 
+  useCheckInAppointment,
+  useStartAppointment,
   useAssignStaff,
   useAddAppointmentNote,
   useAddAppointmentTask,
@@ -32,7 +33,8 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
   const { data: aiRecs = [] } = useAIRecommendations(request?.id || appointmentId);
   
   const assignMutation = useAssignStaff();
-  const statusMutation = useUpdateAppointmentStatus();
+  const checkInMutation = useCheckInAppointment();
+  const startMutation = useStartAppointment();
   const addNoteMutation = useAddAppointmentNote();
   const addTaskMutation = useAddAppointmentTask();
   const addCommMutation = useAddCommunication();
@@ -52,12 +54,12 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
 
   const handleCheckIn = () => {
     if (!appointmentId) return;
-    statusMutation.mutate({ appointmentId, status: 'arrived' });
+    checkInMutation.mutate({ appointmentId });
   };
   
   const handleStart = () => {
     if (!appointmentId) return;
-    statusMutation.mutate({ appointmentId, status: 'in-progress' });
+    startMutation.mutate({ appointmentId });
   };
 
   const handleAddNote = () => {

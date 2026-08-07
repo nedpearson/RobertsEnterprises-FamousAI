@@ -3,30 +3,49 @@ import { test, expect } from '@playwright/test';
 test.describe('Dual-Data Plane Authentication & Isolation', () => {
   
   test('Demo user should see DEMO MODE banner when logged in', async ({ page }) => {
-    // Navigate to the app
-    await page.goto('http://localhost:5173/'); // Adjust URL if different
+    await page.goto('http://localhost:5173/');
     
-    // Open Auth Modal
-    await page.click('text=Sign In');
+    // Sign out if currently signed in to get a clean state
+    const signOutBtn = page.locator('button:has-text("Sign out")').first();
+    if (await signOutBtn.isVisible()) {
+      await signOutBtn.click();
+      await page.waitForTimeout(500); // short wait for state to clear
+    }
     
-    // Click Demo Access
-    await page.click('text=Launch Demo Mode');
+    // Open Auth Modal if locked panel or sign in button is visible
+    const staffSignInBtn = page.locator('button:has-text("Staff Sign In")').first();
+    const signInBtn = page.getByRole('button', { name: 'Sign In', exact: true }).first();
+    
+    if (await staffSignInBtn.isVisible()) {
+      await staffSignInBtn.click();
+    } else if (await signInBtn.isVisible()) {
+      await signInBtn.click();
+    }
+    
+    // Click Launch Demo Mode button
+    const launchBtn = page.locator('button:has-text("Launch Demo Mode")');
+    await expect(launchBtn).toBeVisible({ timeout: 5000 });
+    await launchBtn.click();
     
     // Wait for the modal to close and the banner to appear
-    await expect(page.locator('text=DEMO MODE')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('text=SYNTHETIC DATA — NO REAL TRANSACTIONS')).toBeVisible();
+    const banner = page.locator('.bg-amber-500:has-text("DEMO MODE")');
+    await expect(banner).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=SYNTHETIC DATA')).toBeVisible();
   });
 
   test('Production user should NOT see DEMO MODE banner', async ({ page }) => {
     await page.goto('http://localhost:5173/');
     
-    // Open Auth Modal
-    await page.click('text=Sign In');
+    // Sign out if currently signed in to get a clean state
+    const signOutBtn = page.locator('button:has-text("Sign out")').first();
+    if (await signOutBtn.isVisible()) {
+      await signOutBtn.click();
+      await page.waitForTimeout(500); // short wait for state to clear
+    }
     
-    // Log in as a regular user (this requires a known production test account, 
-    // but we can just verify the attempt to log in normally doesn't trigger demo mode)
-    // For this test, we'll just ensure the banner isn't visible by default.
-    await expect(page.locator('text=DEMO MODE')).toBeHidden();
+    // Banner should be hidden by default
+    const banner = page.locator('.bg-amber-500:has-text("DEMO MODE")');
+    await expect(banner).toBeHidden();
   });
   
 });

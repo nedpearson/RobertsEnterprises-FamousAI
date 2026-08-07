@@ -37,7 +37,7 @@ export const InstallFamousAIButton: React.FC<InstallFamousAIButtonProps> = ({
         className={`${fullWidth ? 'w-full' : ''} ${className}`}
       >
         <Check className="mr-2 h-4 w-4" />
-        FamousAI is Installed
+        RobertsEnterprises Mobile is Installed
       </Button>
     );
   }
@@ -56,7 +56,7 @@ export const InstallFamousAIButton: React.FC<InstallFamousAIButtonProps> = ({
         className={`${fullWidth ? 'w-full' : ''} ${className}`}
       >
         <Download className="mr-2 h-4 w-4" />
-        Install FamousAI
+        Install RobertsEnterprises Mobile
       </Button>
       
       <IOSInstallInstructions 

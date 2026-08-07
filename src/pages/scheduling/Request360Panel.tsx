@@ -5,22 +5,67 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Phone, Mail, Clock, Calendar, User, FileText, CheckCircle, MessageSquare, Play, AlertCircle, Sparkles } from 'lucide-react';
+import { 
+  Phone, 
+  Mail, 
+  Clock, 
+  Calendar, 
+  User, 
+  FileText, 
+  CheckCircle, 
+  MessageSquare, 
+  Play, 
+  AlertCircle, 
+  Sparkles,
+  Lock,
+  UserCheck
+} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   useAIRecommendations,
-  useStaffProfiles
+  useStaffProfiles,
+  useCreateHold,
+  useConfirmHold,
+  useTransitionRequestStatus,
+  useAssignAppointmentRequest
 } from '@/lib/services/schedulingService';
 import { useVowosData } from '@/contexts/VowosDataContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export function Request360Panel({ requestId, request, onClose }: { requestId?: string, request: any, onClose: () => void }) {
   const [activeTab, setActiveTab] = useState('summary');
+  const queryClient = useQueryClient();
+  const reqId = requestId || request?.id;
   
   const { businessId } = useVowosData();
   const { data: staff = [] } = useStaffProfiles();
-  const { data: aiRecs = [] } = useAIRecommendations(requestId || request?.id);
+  const { data: aiRecs = [] } = useAIRecommendations(reqId);
   
-  if (!request && !requestId) {
+  const createHoldMutation = useCreateHold();
+  const confirmHoldMutation = useConfirmHold();
+  const transitionStatusMutation = useTransitionRequestStatus();
+  const assignRequestMutation = useAssignAppointmentRequest();
+
+  // Fetch active holds for this request
+  const { data: activeHolds = [], refetch: refetchHolds } = useQuery({
+    queryKey: ['activeHolds', reqId],
+    queryFn: async () => {
+      if (!reqId) return [];
+      const { data, error } = await supabase
+        .from('appointment_holds')
+        .select('*, employee:staff_profiles(*)')
+        .eq('request_id', reqId)
+        .gt('expires_at', new Date().toISOString());
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!reqId
+  });
+
+  if (!request && !reqId) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground p-8 text-center bg-background">
         Select a request from the queue to view the 360° details.
@@ -28,9 +73,73 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
     );
   }
 
-  const customerName = request?.customerName || request?.customer?.first_name ? `${request?.customer?.first_name} ${request?.customer?.last_name || ''}` : null;
+  const customerName = request?.customerName || (request?.customer ? `${request.customer.first_name || ''} ${request.customer.last_name || ''}`.trim() : null);
   const initials = customerName ? customerName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : '?';
   const status = (request?.status || 'PENDING').toUpperCase();
+
+  const handleCreateHold = async (rec: any) => {
+    if (!reqId || !businessId) return;
+    try {
+      await createHoldMutation.mutateAsync({
+        requestId: reqId,
+        employeeId: rec.employee_id,
+        businessId,
+        locationId: rec.location_id,
+        roomId: rec.room_id || null,
+        startAt: rec.proposed_start_at,
+        endAt: rec.proposed_end_at
+      });
+      toast.success('Tentative hold created successfully for 15 minutes.');
+      refetchHolds();
+      queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
+    } catch (err: any) {
+      toast.error('Failed to create hold: ' + err.message);
+    }
+  };
+
+  const handleConfirmHold = async (holdId: string) => {
+    try {
+      await confirmHoldMutation.mutateAsync({ holdId });
+      toast.success('Hold confirmed successfully! Appointment is scheduled.');
+      refetchHolds();
+      queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    } catch (err: any) {
+      toast.error('Failed to confirm hold: ' + err.message);
+    }
+  };
+
+  const handleDirectConfirm = async (rec: any) => {
+    if (!reqId) return;
+    try {
+      await assignRequestMutation.mutateAsync({
+        requestId: reqId,
+        employeeId: rec.employee_id,
+        roomId: rec.room_id || '00000000-0000-0000-0000-000000000000',
+        startAt: rec.proposed_start_at,
+        endAt: rec.proposed_end_at
+      });
+      toast.success('Appointment assigned and confirmed successfully!');
+      queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    } catch (err: any) {
+      toast.error('Failed to confirm appointment: ' + err.message);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!reqId) return;
+    try {
+      await transitionStatusMutation.mutateAsync({
+        requestId: reqId,
+        newStatus
+      });
+      toast.success(`Request status transitioned to ${newStatus}`);
+      queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
+    } catch (err: any) {
+      toast.error('Failed to transition status: ' + err.message);
+    }
+  };
 
   const renderMissing = (label: string) => (
     <div className="flex items-center gap-1.5 text-muted-foreground/60 text-xs italic">
@@ -52,16 +161,16 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-bold text-foreground">{customerName || renderMissing('Customer Identity')}</h2>
                 <Badge className={
-                  status === 'PENDING' ? 'bg-amber-500/10 text-amber-600 border-amber-200' :
-                  status === 'SCHEDULED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :
+                  status === 'PENDING' || status === 'NEW' ? 'bg-amber-500/10 text-amber-600 border-amber-200' :
+                  status === 'CONFIRMED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :
                   'bg-gray-500/10 text-gray-600 border-gray-200'
                 } variant="outline">
                   {status}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground flex items-center gap-3">
-                <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {request?.customerPhone || renderMissing('Phone')}</span>
-                <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {request?.customerEmail || renderMissing('Email')}</span>
+                <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {request?.customerPhone || request?.customer?.phone || renderMissing('Phone')}</span>
+                <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {request?.customerEmail || request?.customer?.email || renderMissing('Email')}</span>
               </p>
             </div>
           </div>
@@ -69,6 +178,42 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
             &times;
           </Button>
         </div>
+      </div>
+
+      {/* Active Holds Banner */}
+      {activeHolds.length > 0 && (
+        <div className="bg-amber-50 border-b border-amber-200 px-5 py-3 flex items-center justify-between text-xs text-amber-900 shrink-0">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-amber-600 shrink-0" />
+            <span>
+              Hold active for <strong>{activeHolds[0].employee?.name}</strong>. Expires {new Date(activeHolds[0].expires_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
+            </span>
+          </div>
+          <Button 
+            size="xs" 
+            onClick={() => handleConfirmHold(activeHolds[0].id)} 
+            disabled={confirmHoldMutation.isPending}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs"
+          >
+            {confirmHoldMutation.isPending ? 'Confirming...' : 'Confirm Hold'}
+          </Button>
+        </div>
+      )}
+
+      {/* Action Bar */}
+      <div className="bg-background px-5 py-2.5 border-b flex items-center justify-between gap-3 shadow-xs shrink-0">
+        <span className="text-xs font-semibold text-stone-500">Manual Stage:</span>
+        <Select value={request?.status || 'new'} onValueChange={handleStatusChange}>
+          <SelectTrigger className="w-40 h-8 text-xs font-medium border-stone-200">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="new">New Inquiry</SelectItem>
+            <SelectItem value="review">Staffing Review</SelectItem>
+            <SelectItem value="waitlist">Waitlist</SelectItem>
+            <SelectItem value="canceled">Canceled</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
@@ -103,15 +248,15 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Event Date</p>
-                <p className="text-sm font-medium">{request?.eventDate ? new Date(request.eventDate).toLocaleDateString() : renderMissing('Event Date')}</p>
+                <p className="text-sm font-medium">{request?.eventDate || request?.event_date ? new Date(request.eventDate || request.event_date).toLocaleDateString() : renderMissing('Event Date')}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Budget</p>
-                <p className="text-sm font-medium">{request?.budget ? `$${request.budget}` : renderMissing('Budget')}</p>
+                <p className="text-sm font-medium">{request?.budget || request?.budget_cents ? `$${(request.budget || request.budget_cents / 100).toFixed(2)}` : renderMissing('Budget')}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Attendees</p>
-                <p className="text-sm font-medium">{request?.attendees || renderMissing('Attendees Count')}</p>
+                <p className="text-sm font-medium">{request?.attendees || request?.number_of_guests || renderMissing('Attendees Count')}</p>
               </div>
             </div>
           </TabsContent>
@@ -119,39 +264,43 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
           <TabsContent value="customer" className="mt-0 space-y-6">
              <div className="grid grid-cols-2 gap-4">
                <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Assigned Consultant</p>
-                <p className="text-sm font-medium">{request?.customer?.assigned_consultant?.name || renderMissing('Assigned Consultant')}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preferred Contact</p>
-                <p className="text-sm font-medium">{request?.customer?.preferred_contact_method || renderMissing('Preference')}</p>
-              </div>
+                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Assigned Consultant</p>
+                 <p className="text-sm font-medium">{request?.customer?.assigned_consultant?.name || renderMissing('Assigned Consultant')}</p>
+               </div>
+               <div className="space-y-1">
+                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preferred Contact</p>
+                 <p className="text-sm font-medium">{request?.customer?.preferred_contact_method || renderMissing('Preference')}</p>
+               </div>
              </div>
              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Customer Notes</p>
-                {request?.customer?.notes ? (
-                  <p className="text-sm">{request.customer.notes}</p>
-                ) : renderMissing('Customer Notes')}
+                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Customer Notes</p>
+                 {request?.customer?.notes ? (
+                   <p className="text-sm">{request.customer.notes}</p>
+                 ) : renderMissing('Customer Notes')}
              </div>
           </TabsContent>
           
           <TabsContent value="preferences" className="mt-0 space-y-6">
              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground border-b pb-2">Scheduling Preferences</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preferred Dates</p>
-                    <p className="text-sm font-medium">{request?.preferredDates?.join(', ') || renderMissing('Dates')}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preferred Times</p>
-                    <p className="text-sm font-medium">{request?.preferredTimes?.join(', ') || renderMissing('Times')}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preferred Locations</p>
-                    <p className="text-sm font-medium">{request?.preferredLocations?.join(', ') || renderMissing('Locations')}</p>
-                  </div>
-                </div>
+                 <h3 className="text-sm font-semibold text-foreground border-b pb-2">Scheduling Preferences</h3>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preferred Date</p>
+                     <p className="text-sm font-medium">{request?.preferred_date_1 || renderMissing('Preferred Date')}</p>
+                   </div>
+                   <div className="space-y-1">
+                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preferred Time Window</p>
+                     <p className="text-sm font-medium">{request?.preferred_window_1 || renderMissing('Preferred Window')}</p>
+                   </div>
+                   <div className="space-y-1">
+                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Alt Date</p>
+                     <p className="text-sm font-medium">{request?.preferred_date_2 || 'None'}</p>
+                   </div>
+                   <div className="space-y-1">
+                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Alt Window</p>
+                     <p className="text-sm font-medium">{request?.preferred_window_2 || 'None'}</p>
+                   </div>
+                 </div>
              </div>
           </TabsContent>
 
@@ -159,17 +308,9 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Eligible Employees</p>
               <div className="flex flex-wrap gap-2 mt-2">
-                {request?.eligibleEmployees?.length ? request.eligibleEmployees.map((e: any) => (
-                  <Badge variant="secondary" key={e.id}>{e.name}</Badge>
+                {staff.length ? staff.map((e: any) => (
+                  <Badge variant="secondary" key={e.id}>{e.name} ({e.role})</Badge>
                 )) : renderMissing('Eligible Employees')}
-              </div>
-            </div>
-             <div className="space-y-1 mt-6">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Excluded Employees</p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {request?.excludedEmployees?.length ? request.excludedEmployees.map((e: any) => (
-                  <Badge variant="destructive" key={e.id}>{e.name}</Badge>
-                )) : <span className="text-sm text-muted-foreground">None</span>}
               </div>
             </div>
           </TabsContent>
@@ -185,12 +326,12 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8 border bg-white">
                             <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
-                              {rec.employee?.first_name?.[0]}{rec.employee?.last_name?.[0]}
+                              {rec.employee?.first_name?.[0] || 'S'}{rec.employee?.last_name?.[0] || 'P'}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-semibold text-sm">{rec.employee?.first_name} {rec.employee?.last_name}</p>
-                            <p className="text-xs text-muted-foreground">{rec.employee?.role || 'Staff'}</p>
+                            <p className="font-semibold text-sm">{rec.employee?.first_name || 'Staff'} {rec.employee?.last_name || ''}</p>
+                            <p className="text-xs text-muted-foreground">{rec.employee?.role || 'Consultant'}</p>
                           </div>
                         </div>
                         <Badge variant={idx === 0 ? "default" : "secondary"} className={idx === 0 ? "bg-blue-600" : ""}>
@@ -198,8 +339,37 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
                         </Badge>
                       </div>
                       
+                      <p className="text-xs font-semibold text-stone-700 mt-2">
+                        Proposed: {rec.proposed_start_at ? new Date(rec.proposed_start_at).toLocaleString() : 'TBD'}
+                      </p>
+                      
+                      {rec.disqualification_reasons_json && rec.disqualification_reasons_json.length > 0 && (
+                        <div className="text-xs text-rose-600 mt-2 bg-rose-50 p-2 rounded-md">
+                          Disqualifications: {rec.disqualification_reasons_json.join(', ')}
+                        </div>
+                      )}
+
                       <div className="text-xs text-muted-foreground mt-3 bg-muted/30 p-2 rounded-md">
-                        {rec.reasoning || "AI determined this is an optimal match."}
+                        {rec.score_breakdown_json ? JSON.stringify(rec.score_breakdown_json) : "Optimal matching score based on proximity and consultant schedule."}
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-4">
+                        <Button 
+                          size="xs" 
+                          variant="outline" 
+                          onClick={() => handleCreateHold(rec)}
+                          disabled={createHoldMutation.isPending}
+                        >
+                          Create Hold
+                        </Button>
+                        <Button 
+                          size="xs" 
+                          onClick={() => handleDirectConfirm(rec)}
+                          disabled={assignRequestMutation.isPending}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          Direct Confirm
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -242,7 +412,6 @@ export function Request360Panel({ requestId, request, onClose }: { requestId?: s
 
           <TabsContent value="history" className="mt-0 space-y-4">
              <div className="relative border-l border-muted ml-3 space-y-6 pb-4">
-                {/* Timeline mock */}
                 <div className="relative pl-6">
                   <div className="absolute left-[-5px] top-1 h-2.5 w-2.5 rounded-full bg-blue-500 ring-4 ring-background"></div>
                   <p className="text-sm font-medium">Request Created</p>

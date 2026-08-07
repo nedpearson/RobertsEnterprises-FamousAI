@@ -33,6 +33,7 @@ import { AIAssignmentDrawer } from './AIAssignmentDrawer';
 import { NewAppointmentModal } from './NewAppointmentModal';
 import { NewRequestModal } from './NewRequestModal';
 import { EmployeeShiftModal } from './EmployeeShiftModal';
+import { NotificationPermissionToggle } from '@/components/vowos/NotificationPermissionToggle';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { 
   useBusiness, 
@@ -41,6 +42,7 @@ import {
   useEmployeeSchedules,
   useStaffProfiles,
   useAssignAppointmentRequest,
+  useRescheduleAppointment,
   usePublishSchedules
 } from '@/lib/services/schedulingService';
 import { useCapacityMetrics } from '@/lib/services/capacityService';
@@ -64,6 +66,7 @@ export function UnifiedSchedulingWorkspace() {
   const [assigningRequest, setAssigningRequest] = useState<Record<string, any> | null>(null);
   
   const { mutate: assignRequest } = useAssignAppointmentRequest();
+  const rescheduleMutation = useRescheduleAppointment();
 
   const [newAppointmentData, setNewAppointmentData] = useState<{ start_at: string; employee_id: string } | null>(null);
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
@@ -140,6 +143,38 @@ export function UnifiedSchedulingWorkspace() {
       }
     }
   }, [appointmentIdFromUrl, appointments, requests]);
+
+  // Real-time synchronization
+  useEffect(() => {
+    const channel = supabase
+      .channel('unified-scheduling-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointment_holds' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['activeHolds'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointment_requests' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const updateSelectedRequestUrl = (req: Record<string, any> | null) => {
     setSelectedRequest(req);
@@ -248,19 +283,23 @@ export function UnifiedSchedulingWorkspace() {
   const handleEventDrop = async (info: any) => {
     const newStart = info.event.start;
     const newEnd = info.event.end || new Date(newStart.getTime() + 90 * 60 * 1000);
+    const employeeId = info.event.getResources?.[0]?.id || info.event.extendedProps?.raw?.employee_id || '00000000-0000-0000-0000-000000000000';
 
-    const { error } = await supabase.from('appointments').update({
-      start_at: newStart.toISOString(),
-      end_at: newEnd.toISOString()
-    }).eq('id', info.event.id);
-
-    if (error) {
-      info.revert();
-      toast.error('Failed to reschedule appointment');
-    } else {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Appointment rescheduled');
-    }
+    rescheduleMutation.mutate({
+      appointmentId: info.event.id,
+      newStartAt: newStart.toISOString(),
+      newEndAt: newEnd.toISOString(),
+      newEmployeeId: employeeId
+    }, {
+      onSuccess: () => {
+        toast.success('Appointment rescheduled successfully');
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      },
+      onError: (err: any) => {
+        info.revert();
+        toast.error('Failed to reschedule appointment: ' + err.message);
+      }
+    });
   };
 
   const handleDateSelect = (selectInfo: any) => {
@@ -364,6 +403,7 @@ export function UnifiedSchedulingWorkspace() {
 
         {/* Quick Action Controls */}
         <div className="flex items-center gap-2">
+          <NotificationPermissionToggle />
           {activeMode === 'workforce' && (
             <Button
               onClick={publishWorkforceSchedule}
@@ -400,7 +440,7 @@ export function UnifiedSchedulingWorkspace() {
       {/* Main Workspace Body */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left Panel: Mode-Specific Actions & Filter Queue */}
-        <div className="w-80 border-r border-stone-200 bg-white flex flex-col shrink-0 hidden md:flex">
+        <div className="w-80 border-r border-stone-200 bg-white flex flex-col shrink-0">
           {activeMode === 'calendar' && (
             <div className="p-4 flex flex-col h-full overflow-y-auto">
               <h3 className="font-semibold text-sm text-stone-900 mb-3 flex items-center justify-between">
@@ -422,7 +462,8 @@ export function UnifiedSchedulingWorkspace() {
                       key={req.id}
                       data-id={req.id}
                       data-title={`${req.customer?.first_name || 'Guest'} - ${req.service?.name || 'Fitting'}`}
-                      className="draggable-request-card p-3 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-stone-100/80 cursor-grab active:cursor-grabbing transition-all hover:border-rose-300 shadow-2xs"
+                      className="draggable-request-card p-3 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-stone-100/80 cursor-pointer transition-all hover:border-rose-300 shadow-2xs"
+                      onClick={() => updateSelectedRequestUrl({ type: 'request', id: req.id, raw: req })}
                     >
                       <div className="flex justify-between items-start mb-1">
                         <span className="font-semibold text-xs text-stone-900">
@@ -433,13 +474,20 @@ export function UnifiedSchedulingWorkspace() {
                         </Badge>
                       </div>
                       <p className="text-xs text-stone-600 font-medium mb-2">{req.service?.name || 'Bridal Fitting'}</p>
-                      <div className="flex items-center text-[10px] text-stone-400 gap-3">
+                      <div className="flex items-center justify-between text-[10px] text-stone-400">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" /> {req.preferred_date_1 || 'Flexible'}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" /> {activeLocation.toUpperCase()}
-                        </span>
+                        <Button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAssigningRequest(req);
+                          }}
+                          size="xs"
+                          className="h-6 text-[10px] px-2 bg-stone-900 text-white"
+                        >
+                          Assign
+                        </Button>
                       </div>
                     </div>
                   ))
@@ -479,10 +527,10 @@ export function UnifiedSchedulingWorkspace() {
               <div className="space-y-2">
                 {[
                   { label: 'New Inquiries', count: requests.filter((r: any) => r.status === 'new').length, color: 'bg-blue-500' },
-                  { label: 'Staffing Review', count: 2, color: 'bg-purple-500' },
-                  { label: 'AI Ready', count: 1, color: 'bg-amber-500' },
-                  { label: 'Confirmation Pending', count: 3, color: 'bg-rose-500' },
-                  { label: 'Waitlist', count: 0, color: 'bg-stone-400' },
+                  { label: 'Staffing Review', count: requests.filter((r: any) => r.status === 'review' || r.status === 'staffing_review').length, color: 'bg-purple-500' },
+                  { label: 'AI Ready', count: requests.filter((r: any) => r.status === 'ai_ready' || r.status === 'recommended').length, color: 'bg-amber-500' },
+                  { label: 'Confirmation Pending', count: requests.filter((r: any) => r.status === 'tentative_hold' || r.status === 'confirmation_pending').length, color: 'bg-rose-500' },
+                  { label: 'Waitlist', count: requests.filter((r: any) => r.status === 'waitlist').length, color: 'bg-stone-400' },
                 ].map(group => (
                   <div key={group.label} className="flex items-center justify-between p-2.5 rounded-lg border border-stone-100 hover:bg-stone-50 cursor-pointer">
                     <div className="flex items-center gap-2">
@@ -627,7 +675,7 @@ export function UnifiedSchedulingWorkspace() {
                           AI Recommend & Assign
                         </Button>
                         <Button 
-                          onClick={() => updateSelectedRequestUrl({ type: 'request', id: req.id })} 
+                          onClick={() => updateSelectedRequestUrl({ type: 'request', id: req.id, raw: req })} 
                           variant="outline" 
                           size="xs"
                         >
@@ -735,12 +783,15 @@ export function UnifiedSchedulingWorkspace() {
           onClose={() => setAssigningRequest(null)}
           request={assigningRequest}
           onAssign={(rec) => {
+            const startAtStr = assigningRequest.preferred_date_1 || new Date().toISOString().split('T')[0];
+            const startDate = new Date(startAtStr);
+            const validStartDate = isNaN(startDate.getTime()) ? new Date() : startDate;
             assignRequest({
               requestId: assigningRequest.id,
               employeeId: rec.employee_id,
               roomId: assigningRequest.preferred_room_id || '00000000-0000-0000-0000-000000000000',
-              startAt: assigningRequest.preferred_date_1,
-              endAt: new Date(new Date(assigningRequest.preferred_date_1).getTime() + 60 * 60 * 1000).toISOString()
+              startAt: validStartDate.toISOString(),
+              endAt: new Date(validStartDate.getTime() + 60 * 60 * 1000).toISOString()
             });
             setAssigningRequest(null);
           }}
@@ -773,5 +824,36 @@ export function UnifiedSchedulingWorkspace() {
         />
       )}
     </div>
+  );
+}
+
+function AIRequestCard({ request, onAssign }: { request: any; onAssign: (req: any) => void }) {
+  return (
+    <Card className="border-stone-200 hover:border-amber-300 transition-all bg-white shadow-xs">
+      <CardHeader className="p-4 pb-2">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-sm font-bold text-stone-900">
+            {request.customer?.name || `${request.customer?.first_name || ''} ${request.customer?.last_name || ''}`.trim() || 'Guest'}
+          </CardTitle>
+          <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+            {request.status || 'New'}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-0 text-xs text-stone-600 space-y-2">
+        <p><span className="font-semibold text-stone-800">Service:</span> {request.service?.name || 'Bridal Fitting'}</p>
+        <p><span className="font-semibold text-stone-800">Preferred Date:</span> {request.preferred_date_1 || 'Flexible'}</p>
+        <p><span className="font-semibold text-stone-800">Guests:</span> {request.number_of_guests || 1}</p>
+        <div className="pt-3 flex gap-2">
+          <Button 
+            onClick={() => onAssign(request)} 
+            size="xs" 
+            className="bg-amber-500 hover:bg-amber-600 text-white font-medium flex-1"
+          >
+            <Sparkles className="h-3 w-3 mr-1" /> AI Optimize
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

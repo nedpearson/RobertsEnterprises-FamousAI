@@ -32,13 +32,17 @@ export class EmployeeEligibilityEngine {
     }
 
     // 2. Wrong business/location
-    if (employee.business_id !== request.business_id) {
+    const employeeBusinessId = employee.business_id || employee.membership?.business_id || employee.membership_business_id;
+    if (employeeBusinessId && employeeBusinessId !== request.business_id) {
       return { employeeId: employee.id, eligible: false, reasonCode: 'WRONG_LOCATION', explanation: 'Employee is not assigned to this business.' };
     }
     
-    // Allow 'all' or undefined location id handling, assuming if preferred_location_id is set we must match it
-    if (request.preferred_location_id && employee.primary_location_id && employee.primary_location_id !== request.preferred_location_id) {
-      // It's possible they work at multiple locations, checking primary for now or schedules
+    if (request.preferred_location_id) {
+      const locationSchedules = employeeSchedules.filter(s => s.location_id === request.preferred_location_id);
+      const worksAtLocation = locationSchedules.length > 0 || (employee.locations && employee.locations.includes(request.preferred_location_id));
+      if (employeeSchedules.length > 0 && !worksAtLocation) {
+        return { employeeId: employee.id, eligible: false, reasonCode: 'WRONG_LOCATION', explanation: 'Employee is not scheduled at the requested location.' };
+      }
     }
 
     // 3. Not scheduled

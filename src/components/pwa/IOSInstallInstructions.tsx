@@ -22,9 +22,9 @@ export const IOSInstallInstructions: React.FC<IOSInstallInstructionsProps> = ({ 
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
-            <DrawerTitle className="text-center">Install FamousAI on iPhone or iPad</DrawerTitle>
+            <DrawerTitle className="text-center">Install RobertsEnterprises Mobile on iPhone or iPad</DrawerTitle>
             <DrawerDescription className="text-center">
-              Add FamousAI to your device for faster access and an app-like mobile experience.
+              Add RobertsEnterprises Mobile to your device for faster access and an app-like mobile experience.
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4 pb-0 space-y-4">
@@ -54,7 +54,7 @@ export const IOSInstallInstructions: React.FC<IOSInstallInstructionsProps> = ({ 
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-stone-900">3. Confirm and tap Add</p>
-                <p className="text-xs text-stone-500">Keep the name as "FamousAI"</p>
+                <p className="text-xs text-stone-500">Keep the name as "Roberts Enterprises Mobile"</p>
               </div>
             </div>
           </div>
