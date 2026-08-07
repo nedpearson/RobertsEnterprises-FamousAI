@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import BridalIdentity from './BridalIdentity';
 import { PageHeader, inputCls, Modal } from './ui';
-import AIVoiceSettingsView from '@/features/voice/components/AIVoiceSettingsView';
 import {
   MessageChannel,
   MessageKind,
@@ -41,7 +40,6 @@ export default function CommunicationsView() {
   const [sending, setSending] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [runningAuto, setRunningAuto] = useState(false);
-  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [lastInboundCount, setLastInboundCount] = useState<Record<string, number>>({});
   const pollRef = useRef<number | null>(null);
 
@@ -348,65 +346,6 @@ export default function CommunicationsView() {
         </button>
       </div>
 
-      {/* AI Voice Agent & Virtual Concierge Settings */}
-      <div className="mb-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-xl bg-rose-50 p-2 text-rose-600">
-              <Phone className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-stone-800">AI Voice Receptionist (Twilio &amp; GPT-4o)</p>
-              <p className="max-w-md text-xs text-stone-500">
-                Configure your 24/7 conversational AI concierge. It can book appointments, answer FAQs, and route calls.
-              </p>
-            </div>
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-             <span className="flex items-center gap-1.5 text-xs font-bold text-stone-500 bg-stone-100 px-2 py-1 rounded-md border border-stone-200">
-               Paused
-             </span>
-             <button
-              onClick={() => setShowVoiceSettings(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50"
-            >
-              Voice Settings
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Automated Drip Sequences */}
-      <div className="mb-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-xl bg-indigo-50 p-2 text-indigo-600">
-              <Zap className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-stone-800">Automated Drip Sequences</p>
-              <p className="max-w-md text-xs text-stone-500">
-                1-3-7 day Bridal engagement SMS/Email flows and 1-hour Proper &amp; Co Shopify Cart Abandonment sequences.
-              </p>
-            </div>
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-             <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-               <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-               Active
-             </span>
-             <button
-              onClick={() => toast({ title: 'Sequences Running', description: 'Automated drip campaigns are monitoring all active pipelines.' })}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50"
-            >
-              Configure Flow
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Daily digest settings */}
       <div className="mb-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
@@ -688,17 +627,6 @@ export default function CommunicationsView() {
           )}
         </div>
       </div>
-
-      {showVoiceSettings && (
-        <Modal 
-          open={showVoiceSettings} 
-          onClose={() => setShowVoiceSettings(false)}
-          title="AI Voice Agent Settings"
-          maxWidth="max-w-4xl"
-        >
-          <AIVoiceSettingsView />
-        </Modal>
-      )}
     </div>
   );
 }

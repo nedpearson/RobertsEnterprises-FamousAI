@@ -93,15 +93,7 @@ export function DataSettingsTab({
     registerSaveRef(handleSave);
   }, [settings]);
 
-  const triggerBackup = async () => {
-    setBackingUp(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setBackingUp(false);
-    toast({
-      title: 'Database Backup Completed',
-      description: 'Encrypted PostgreSQL backup successfully pushed to AWS S3 storage.',
-    });
-  };
+
 
   const clearStagingData = async () => {
     setCleaningStaging(true);
@@ -226,60 +218,7 @@ export function DataSettingsTab({
         </SettingsCard>
       </div>
 
-      <SettingsCard
-        title="Database Backups & Redundancy"
-        description="Verify recovery snapshot logs, automated schedule windows, and export records."
-        icon={<Database className="h-5 w-5" />}
-      >
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <SettingsField
-              label="Automated backup interval (hours)"
-              description="Chronological frequency VowOS dumps full sql snapshots."
-            >
-              <select
-                value={safeSettings.backupIntervalHours}
-                onChange={(e) => setSettings({ ...safeSettings, backupIntervalHours: parseInt(e.target.value) || 24 })}
-                className={inputCls}
-              >
-                <option value="6">Every 6 Hours</option>
-                <option value="12">Every 12 Hours</option>
-                <option value="24">Daily (Every 24 Hours)</option>
-                <option value="168">Weekly (Every 7 Days)</option>
-              </select>
-            </SettingsField>
 
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 p-3 rounded-lg">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Next automated backup scheduled: July 21, 2026 at 3:00 AM</span>
-            </div>
-          </div>
-
-          <div className="p-4 border border-stone-200 bg-stone-50/50 rounded-xl flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-bold text-stone-800 block uppercase tracking-wider">Manual SQL Export Dump</span>
-              <p className="text-[11px] text-stone-400 mt-1 leading-relaxed">
-                Download a structural SQL data dump of all wedding locations, invoices, purchase orders, alterations logs, and bridal files.
-              </p>
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={triggerBackup}
-                disabled={backingUp}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-stone-900 text-white hover:bg-stone-800 px-4 py-2 text-xs font-semibold transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${backingUp ? 'animate-spin' : ''}`} /> Backup Now
-              </button>
-              <button
-                onClick={() => toast({ title: 'Download initialized', description: 'Snapshot database_dump_2026-07-20.sql download started.' })}
-                className="flex items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 px-4 py-2 text-xs font-semibold text-stone-700 transition-colors"
-              >
-                <Download className="h-3.5 w-3.5" /> Download Export
-              </button>
-            </div>
-          </div>
-        </div>
-      </SettingsCard>
     </div>
   );
 }

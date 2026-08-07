@@ -109,30 +109,6 @@ export function IntegrationsSettingsTab({
     registerSaveRef(handleSave);
   }, [aiSettings, stripe]);
 
-  const verifyWebhook = async () => {
-    setVerifyingStripe(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setVerifyingStripe(false);
-    toast({
-      title: 'Stripe webhook verified',
-      description: 'Programmatic feedback loop verified with 100% health.',
-    });
-  };
-
-  const sendTestSms = async () => {
-    if (!testSmsPhone.trim()) {
-      toast({ title: 'Enter phone number first', variant: 'destructive' });
-      return;
-    }
-    setSendingSms(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setSendingSms(false);
-    toast({
-      title: 'Test message sent',
-      description: `Outbound Twilio confirmation successfully delivered to ${testSmsPhone}.`,
-    });
-    setTestSmsPhone('');
-  };
 
   if (loading) {
     return (
@@ -158,12 +134,6 @@ export function IntegrationsSettingsTab({
                 <span className="block text-xs text-stone-400 mt-0.5">Account ID: acct_1Nxxxxxxxxxxxx</span>
               </div>
             </div>
-            <button
-              onClick={() => toast({ title: 'Disconnection aborted', description: 'Contact corporate owner support to remove live Stripe accounts.' })}
-              className="text-xs font-semibold text-red-600 hover:text-red-700 px-3 py-1.5 border border-red-200 bg-white hover:bg-red-50/50 rounded-lg transition-colors"
-            >
-              Disconnect Stripe
-            </button>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -187,14 +157,6 @@ export function IntegrationsSettingsTab({
             >
               <div className="flex items-center justify-between h-9 px-1">
                 <span className="text-xs font-semibold text-emerald-600">● {stripe.webhookStatus}</span>
-                <button
-                  onClick={verifyWebhook}
-                  disabled={verifyingStripe}
-                  className="flex items-center gap-1 text-xs text-rose-600 hover:text-rose-700 font-semibold"
-                >
-                  <RefreshCw className={`h-3 w-3 ${verifyingStripe ? 'animate-spin' : ''}`} />
-                  Verify Webhook
-                </button>
               </div>
             </SettingsField>
 
@@ -232,45 +194,7 @@ export function IntegrationsSettingsTab({
         </div>
       </SettingsCard>
 
-      <SettingsCard
-        title="Twilio SMS Sender Tests"
-        description="Verify programmatic delivery checks without executing background alerts."
-        icon={<Plug className="h-5 w-5" />}
-      >
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 p-4 bg-stone-50 border border-stone-200 rounded-xl">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-            <div>
-              <span className="text-sm font-semibold text-stone-800">Twilio Connection Verified</span>
-              <span className="block text-xs text-stone-400 mt-0.5">Webhook endpoint routing status: ACTIVE</span>
-            </div>
-          </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 items-end">
-            <div className="flex-1">
-              <SettingsField
-                label="Send test SMS message"
-                description="Input a target phone number to run delivery loops."
-              >
-                <input
-                  type="text"
-                  placeholder="e.g. +1 (555) 555-5555"
-                  value={testSmsPhone}
-                  onChange={(e) => setTestSmsPhone(e.target.value)}
-                  className={inputCls}
-                />
-              </SettingsField>
-            </div>
-            <button
-              onClick={sendTestSms}
-              disabled={sendingSms}
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2 h-9 text-xs font-semibold text-white hover:bg-stone-800 transition-colors disabled:opacity-50"
-            >
-              Send test SMS
-            </button>
-          </div>
-        </div>
-      </SettingsCard>
 
       <SettingsCard
         title="Machine Learning & Copilot Settings"

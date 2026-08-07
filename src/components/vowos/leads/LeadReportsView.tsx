@@ -6,13 +6,6 @@ import { toast } from '@/components/ui/use-toast';
 export default function LeadReportsView() {
   const [reportTab, setReportTab] = useState<'executive' | 'source' | 'campaign' | 'employee' | 'location' | 'funnel'>('executive');
 
-  const handleExport = () => {
-    toast({
-      title: 'Report Export Started',
-      description: `Exporting ${reportTab.toUpperCase()} Lead Intelligence Report as CSV. Formula injection protection active.`,
-    });
-  };
-
   return (
     <div className="space-y-6">
       {/* Sub-Report Navigation */}
@@ -37,10 +30,6 @@ export default function LeadReportsView() {
             </button>
           ))}
         </div>
-
-        <button onClick={handleExport} className={btnSecondary + ' text-xs'}>
-          <Download className="h-4 w-4" /> Export CSV
-        </button>
       </div>
 
       {/* Report Content Panels */}
