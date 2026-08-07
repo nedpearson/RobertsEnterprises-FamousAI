@@ -2,6 +2,7 @@
  * Unified Lead Intelligence & Revenue Service
  * Shared single source of truth for Leads (Execution Center) and Marketing (Strategy & Budget Control Center).
  */
+import { getActiveDataPlane } from '@/lib/supabase';
 
 export interface LeadSourceTouch {
   id: string;
@@ -167,8 +168,8 @@ export interface LeadGenerationAsset {
   leadsGeneratedCount: number;
 }
 
-// ── Mock Initial Lead Dataset ──
-export const MOCK_UNIFIED_LEADS: UnifiedLeadRecord[] = [
+// ── Initial Seed Lead Dataset ──
+export const INITIAL_SEED_LEADS: UnifiedLeadRecord[] = [
   {
     id: 'lead-101',
     brand: 'I Do Bridal Couture',
@@ -320,8 +321,8 @@ export const MOCK_UNIFIED_LEADS: UnifiedLeadRecord[] = [
 /** Single service class for lead operations */
 export class LeadIntelligenceService {
   private static instance: LeadIntelligenceService;
-  private leads: UnifiedLeadRecord[] = [...MOCK_UNIFIED_LEADS];
-  private assets: LeadGenerationAsset[] = [
+  private leads: UnifiedLeadRecord[] = getActiveDataPlane() === 'demo' ? [...INITIAL_SEED_LEADS] : [];
+  private assets: LeadGenerationAsset[] = getActiveDataPlane() === 'demo' ? [
     {
       id: 'asset-1',
       brand: 'I Do Bridal Couture',
@@ -358,7 +359,7 @@ export class LeadIntelligenceService {
       utmCampaign: 'cov-trunk-show-2026',
       leadsGeneratedCount: 89,
     },
-  ];
+  ] : [];
 
   public static getInstance(): LeadIntelligenceService {
     if (!LeadIntelligenceService.instance) {

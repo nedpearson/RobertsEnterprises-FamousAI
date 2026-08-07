@@ -1,4 +1,5 @@
 import { AIRecommendation, ScenarioResult, CompetitorSignal, TrendSignal, GovernanceMode } from '../types';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 const WORKER_BASE_URL = 'http://localhost:8080/api/marketing-ai';
 
@@ -6,8 +7,10 @@ export async function fetchAIBrief(brand: string = 'Proper & Company') {
   try {
     const res = await fetch(`${WORKER_BASE_URL}/brief?brand=${encodeURIComponent(brand)}`);
     if (res.ok) return await res.json();
+    throw new Error('API Response not ok');
   } catch (e) {
-    console.warn('Worker API offline, returning fallback brief.');
+    if (getActiveDataPlane() !== 'demo') throw e;
+    console.warn('Worker API offline, serving simulated local brief.');
   }
 
   return {
@@ -30,8 +33,10 @@ export async function fetchAIRecommendations(brand: string = 'Proper & Company')
       const data = await res.json();
       return data.recommendations;
     }
+    throw new Error('API Response not ok');
   } catch (e) {
-    console.warn('Worker API offline, returning fallback recommendations.');
+    if (getActiveDataPlane() !== 'demo') throw e;
+    console.warn('Worker API offline, serving simulated local recommendations.');
   }
 
   return [
@@ -72,7 +77,9 @@ export async function approveAIRecommendation(id: string) {
   try {
     const res = await fetch(`${WORKER_BASE_URL}/recommendations/${id}/approve`, { method: 'POST' });
     if (res.ok) return await res.json();
+    throw new Error('API Response not ok');
   } catch (e) {
+    if (getActiveDataPlane() !== 'demo') throw e;
     console.warn('Worker offline, simulating approval locally.');
   }
   return { success: true, message: `Recommendation ${id} approved locally.` };
@@ -86,7 +93,9 @@ export async function runDigitalTwinScenario(params: any): Promise<ScenarioResul
       body: JSON.stringify(params)
     });
     if (res.ok) return await res.json();
+    throw new Error('API Response not ok');
   } catch (e) {
+    if (getActiveDataPlane() !== 'demo') throw e;
     console.warn('Worker offline, calculating scenario locally.');
   }
 
@@ -113,8 +122,10 @@ export async function askMarketingCopilot(question: string, brand: string = 'Pro
       body: JSON.stringify({ question, brand })
     });
     if (res.ok) return await res.json();
+    throw new Error('API Response not ok');
   } catch (e) {
-    console.warn('Worker offline, returning local copilot fallback.');
+    if (getActiveDataPlane() !== 'demo') throw e;
+    console.warn('Worker offline, returning simulated local copilot context.');
   }
 
   return {
@@ -134,8 +145,10 @@ export async function fetchCompetitorSignals(brand: string = 'Proper & Company')
       const data = await res.json();
       return data.signals;
     }
+    throw new Error('API Response not ok');
   } catch (e) {
-    console.warn('Worker offline, returning mock competitor signals.');
+    if (getActiveDataPlane() !== 'demo') throw e;
+    console.warn('Worker offline, returning simulated competitor signals.');
   }
 
   return [

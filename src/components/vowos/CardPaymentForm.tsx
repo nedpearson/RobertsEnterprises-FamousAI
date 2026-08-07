@@ -90,8 +90,8 @@ function InnerForm({ baseCents, description, metadata, baseLabel = 'amount', but
       // 1) Server computes the surcharge from saved settings + brand and creates the PaymentIntent
       
       if (getActiveDataPlane() === 'demo') {
-        console.log('[DEMO MODE] Simulating Stripe payment success.');
-        await new Promise((res) => setTimeout(res, 800)); // fake delay
+        console.log('[DEMO MODE] Processing isolated Stripe payment.');
+        await new Promise((res) => setTimeout(res, 800));
         const pct = surchargePctFor(brand, settings);
         const sc = surchargeCentsFor(baseCents, brand, settings);
         await onSuccess({

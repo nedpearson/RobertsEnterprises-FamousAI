@@ -10,8 +10,8 @@ import UnifiedCommunicationTimeline from './UnifiedCommunicationTimeline';
 import UnifiedCommunicationComposer from './UnifiedCommunicationComposer';
 import AppointmentFiles from './AppointmentFiles';
 import type { Appointment } from '@/lib/appointment360';
-import type { Communication } from '@/lib/communications';
-import type { FileRecord } from '@/lib/files';
+import { Communication, sendCommunication } from '@/lib/communications';
+import { FileRecord, uploadFile } from '@/lib/files';
 
 interface Appointment360PanelProps {
   appointment: Appointment | null;
@@ -36,14 +36,42 @@ export default function Appointment360Panel({ appointment, onClose, onUpdate }: 
 
   const handleSendComm = async (channel: 'sms' | 'email' | 'phone', content: string) => {
     setIsSending(true);
-    // TODO: implement send logic
-    setTimeout(() => setIsSending(false), 500);
+    try {
+      if (appointment.customer_id) {
+        const comm = await sendCommunication({
+          direction: 'outbound',
+          channel,
+          body: content,
+          status: 'sent',
+          recipient_identifier: appointment.customer_id,
+        });
+        setCommunications(prev => [...prev, comm as Communication]);
+      }
+    } catch (err) {
+      console.error('Failed to send communication', err);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
-    // TODO: implement upload logic
-    setTimeout(() => setIsUploading(false), 1000);
+    try {
+      const metadata = {
+        appointment_id: appointment.id,
+        customer_id: appointment.customer_id,
+        category: 'general',
+        privacy_level: 'public',
+        retention_status: 'active',
+        business_id: appointment.business_id || 'default'
+      };
+      const uploaded = await uploadFile(file, metadata);
+      setFiles(prev => [...prev, uploaded as FileRecord]);
+    } catch (err) {
+      console.error('Failed to upload file', err);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSave = () => {

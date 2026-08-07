@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getDiscoveredLeads, generateMockOutreach } from '../api/marketingApi';
+import { getDiscoveredLeads, generateSimulatedOutreach } from '../api/marketingApi';
 import { DiscoveredLead, OutreachDraft } from '../types/marketingTypes';
 import { Bot, Sparkles, Send, CheckCircle, ExternalLink, MessageSquareText } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -21,7 +21,7 @@ export default function AIProspectingView({ brandFilter }: AIProspectingViewProp
   const handleGenerateOutreach = async (leadId: string) => {
     setGenerating((prev) => ({ ...prev, [leadId]: true }));
     try {
-      const draft = await generateMockOutreach(leadId);
+      const draft = await generateSimulatedOutreach(leadId);
       setDrafts((prev) => ({ ...prev, [leadId]: draft }));
       toast({ title: 'Draft Generated', description: 'AI has drafted an outreach message.' });
     } catch (e) {

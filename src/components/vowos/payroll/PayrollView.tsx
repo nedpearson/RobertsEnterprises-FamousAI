@@ -14,12 +14,14 @@ import {
   saveBonuses,
   getReimbursements,
   saveReimbursements,
+  getDeductions,
   writeAuditLog,
   CompensationProfile,
   Department,
   LeaveRequest,
   Bonus,
-  Reimbursement
+  Reimbursement,
+  Deduction
 } from '@/lib/services/workforceStore';
 import { authorizeAction } from '@/lib/services/authService';
 import {
@@ -204,16 +206,18 @@ export default function PayrollView() {
   };
 
   // Run Calculations in Wizard
-  const runWizardCalculations = () => {
-    const commissions: Record<string, number> = {
-      'Eleanor Vance': 45000,
-      'nedpearson': 125000
-    };
+  const runWizardCalculations = async () => {
+    // In a full implementation, commissions would be aggregated from closed POS orders
+    const commissions: Record<string, number> = {};
+    
+    // Fetch live deductions from the store
+    const activeDeductions = await getDeductions();
+
     const draftResult = compilePayrollPeriod(
       ACTIVE_PERIOD,
       profiles,
       punches,
-      deductionsStub,
+      activeDeductions,
       reimbursements,
       bonuses,
       commissions
@@ -781,7 +785,4 @@ export default function PayrollView() {
   );
 }
 
-// Stub data for deductions mapping
-const deductionsStub: Deduction[] = [
-  { id: 'd1', employeeId: 'eleanor_vance', employeeName: 'Eleanor Vance', code: 'health_pretax', type: 'pre_tax', amountCents: 15000, fixed: true }
-];
+

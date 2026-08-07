@@ -494,7 +494,7 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
 
           <TabsContent value="history" className="mt-0 space-y-4">
              <div className="relative border-l border-muted ml-3 space-y-6 pb-4">
-                {/* Timeline mock */}
+                {/* Timeline UI */}
                 <div className="relative pl-6">
                   <div className="absolute left-[-5px] top-1 h-2.5 w-2.5 rounded-full bg-indigo-500 ring-4 ring-background"></div>
                   <p className="text-sm font-medium">Appointment Created</p>

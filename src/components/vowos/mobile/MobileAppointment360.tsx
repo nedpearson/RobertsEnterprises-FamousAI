@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 interface MobileAppointment360Props {
   isOpen: boolean;
   onClose: () => void;
-  // Passing mock data for now to match the UI requirements
+  // Passing active appointment context
   appointment?: any;
 }
 
@@ -18,17 +18,25 @@ export default function MobileAppointment360({ isOpen, onClose, appointment }: M
 
   if (!isOpen) return null;
 
+  const customerName = appointment?.customer?.name || 'Unknown Customer';
+  const apptDate = appointment?.start_at ? new Date(appointment.start_at).toLocaleDateString() : 'TBD';
+  const apptTime = appointment?.start_at ? new Date(appointment.start_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'TBD';
+  const duration = appointment?.duration || 90;
+  const apptType = appointment?.type || 'Consultation';
+  const stylist = appointment?.employee?.name || 'Unassigned';
+  const room = appointment?.room?.name || 'Any';
+
   return (
     <div className="fixed inset-0 z-50 bg-[#faf8f5] flex flex-col animate-in slide-in-from-bottom-full duration-300">
       {/* Header */}
       <div className="bg-white px-4 py-4 border-b border-stone-200 sticky top-0 z-10 shadow-sm flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-bold text-stone-900">Emily Chen</h2>
-            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Arrived</Badge>
+            <h2 className="text-xl font-bold text-stone-900">{customerName}</h2>
+            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">{appointment?.status || 'Active'}</Badge>
           </div>
           <p className="text-xs text-stone-500 flex items-center gap-1.5 mt-1.5">
-            <Calendar className="h-3.5 w-3.5" /> Aug 6, 2026 • 9:00 AM
+            <Calendar className="h-3.5 w-3.5" /> {apptDate} • {apptTime}
           </p>
         </div>
         <button 
@@ -122,14 +130,14 @@ export default function MobileAppointment360({ isOpen, onClose, appointment }: M
                     <Clock className="h-4 w-4" />
                     <span className="text-sm">Duration</span>
                   </div>
-                  <span className="text-sm font-bold text-stone-900">90 mins</span>
+                  <span className="text-sm font-bold text-stone-900">{duration} mins</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2 text-stone-500">
                     <FileText className="h-4 w-4" />
                     <span className="text-sm">Type</span>
                   </div>
-                  <span className="text-sm font-bold text-stone-900">Bridal Consultation</span>
+                  <span className="text-sm font-bold text-stone-900">{apptType}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2 text-stone-500">
@@ -137,7 +145,7 @@ export default function MobileAppointment360({ isOpen, onClose, appointment }: M
                     <span className="text-sm">Stylist</span>
                   </div>
                   <button className="flex items-center gap-1 text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
-                    Sarah Jenkins <ChevronRight className="h-3 w-3" />
+                    {stylist} <ChevronRight className="h-3 w-3" />
                   </button>
                 </div>
                 <div className="flex justify-between items-center">
@@ -145,7 +153,7 @@ export default function MobileAppointment360({ isOpen, onClose, appointment }: M
                     <MapPin className="h-4 w-4" />
                     <span className="text-sm">Room</span>
                   </div>
-                  <span className="text-sm font-bold text-stone-900">Suite A</span>
+                  <span className="text-sm font-bold text-stone-900">{room}</span>
                 </div>
               </div>
             </div>

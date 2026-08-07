@@ -427,10 +427,11 @@ export function getMarketingMetricsSummary(brandFilter: string = 'all', location
   };
 }
 
-// AI Prospecting Mocks
+// AI Prospecting Seed Data
 import { DiscoveredLead, OutreachDraft } from '../types/marketingTypes';
+import { getActiveDataPlane } from '@/lib/supabase';
 
-const MOCK_LEADS: DiscoveredLead[] = [
+const INITIAL_SEED_LEADS: DiscoveredLead[] = getActiveDataPlane() === 'demo' ? [
   {
     id: 'lead_1',
     source: 'reddit',
@@ -451,14 +452,17 @@ const MOCK_LEADS: DiscoveredLead[] = [
     url: 'https://tiktok.com',
     brand: 'proper'
   }
-];
+] : [];
 
 export function getDiscoveredLeads(brandFilter: string = 'all'): DiscoveredLead[] {
-  if (brandFilter === 'all') return MOCK_LEADS;
-  return MOCK_LEADS.filter(l => l.brand === brandFilter);
+  if (brandFilter === 'all') return INITIAL_SEED_LEADS;
+  return INITIAL_SEED_LEADS.filter(l => l.brand === brandFilter);
 }
 
-export function generateMockOutreach(leadId: string): Promise<OutreachDraft> {
+export function generateSimulatedOutreach(leadId: string): Promise<OutreachDraft> {
+  if (getActiveDataPlane() !== 'demo') {
+    return Promise.reject(new Error('AI Outreach Generation requires active backend or demo mode.'));
+  }
   return new Promise(resolve => {
     setTimeout(() => {
       resolve({

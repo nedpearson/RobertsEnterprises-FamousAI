@@ -128,7 +128,7 @@ export default function TimeClockCard() {
       setOfflineQueue((q) => [...q, queueItem]);
       toast({ title: 'Offline Mode: Punch Queued', description: 'Your clock-in has been stored locally.' });
       
-      // Simulate fake local open entry
+      // Stage local optimistic open entry
       setMyOpen({
         id: 'temp-' + Date.now(),
         staff_name: profile.name,

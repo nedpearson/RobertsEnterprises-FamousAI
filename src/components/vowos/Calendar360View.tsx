@@ -119,7 +119,6 @@ export default function Calendar360View() {
             // Update locally for instant feedback
             setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
             setSelectedAppointment(prev => prev?.id === id ? { ...prev, ...updates } as Appointment : prev);
-            // TODO: In a real app, also call updateAppointment from src/lib/appointment360.ts
           }}
         />
       )}

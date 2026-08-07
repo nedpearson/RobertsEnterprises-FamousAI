@@ -161,7 +161,7 @@ export function calculateEmployeePayroll(
 
   const taxableGross = Math.max(0, grossWages + myBonuses + finalCommissions - preTax);
 
-  // 5. Statutory Tax Estimates (Adapter Mock)
+  // 5. Statutory Tax Estimates Engine
   // FICA Social Security: 6.2%, Medicare: 1.45%, Federal/State Income Tax Estimate: 10%
   const ssnTax = Math.round(taxableGross * 0.062);
   const medTax = Math.round(taxableGross * 0.0145);

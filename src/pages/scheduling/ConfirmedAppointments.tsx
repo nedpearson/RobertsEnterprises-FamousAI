@@ -4,7 +4,9 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { MOCK_CONFIRMED_APPOINTMENTS } from '@/lib/demo/scheduling-mock-data';
+import { getActiveDataPlane } from '@/lib/supabase';
+
+const INITIAL_SEED_APPOINTMENTS: any[] = getActiveDataPlane() === 'demo' ? [] : [];
 
 export default function ConfirmedAppointments() {
   const calendarRef = useRef<FullCalendar>(null);
@@ -47,7 +49,7 @@ export default function ConfirmedAppointments() {
               allDaySlot={false}
               slotMinTime="08:00:00"
               slotMaxTime="20:00:00"
-              events={MOCK_CONFIRMED_APPOINTMENTS}
+              events={INITIAL_SEED_APPOINTMENTS}
               height="100%"
               eventClick={(info) => {
                 alert(`Appointment Details:\n\n${info.event.title}\nTime: ${info.event.start?.toLocaleTimeString()} - ${info.event.end?.toLocaleTimeString()}`);

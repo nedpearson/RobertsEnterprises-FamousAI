@@ -1,3 +1,4 @@
+import { getActiveDataPlane } from '@/lib/supabase';
 import {
   CatalogProduct,
   CommerceConnection,
@@ -10,7 +11,7 @@ import {
   CatalogImportBatch
 } from '../types/properCommerceTypes';
 
-// Initial Mock Connection State
+// Initial Local Connection State
 let connectionState: CommerceConnection = {
   brand: 'Proper & Company',
   shopDomain: 'properandcompany.myshopify.com',
@@ -36,8 +37,8 @@ let connectionState: CommerceConnection = {
   ],
 };
 
-// Initial Mock Seed Products for Proper & Co
-let mockProducts: CatalogProduct[] = [
+// Initial Seed Products for Proper & Co
+let inMemoryProducts: CatalogProduct[] = getActiveDataPlane() === 'demo' ? [
   {
     id: 'pc-prod-001',
     brand: 'Proper & Company',
@@ -144,9 +145,9 @@ let mockProducts: CatalogProduct[] = [
       },
     ],
   },
-];
+] : [];
 
-const mockMovements: InventoryMovement[] = [
+let inMemoryMovements: InventoryMovement[] = getActiveDataPlane() === 'demo' ? [
   {
     id: 'mov-101',
     variantId: 'var-001-s',
@@ -161,9 +162,9 @@ const mockMovements: InventoryMovement[] = [
     performedBy: 'Ramsey Sims',
     occurredAt: '2026-06-15T11:00:00Z',
   },
-];
+] : [];
 
-const mockOrders: CommerceOrder[] = [
+let inMemoryOrders: CommerceOrder[] = getActiveDataPlane() === 'demo' ? [
   {
     id: 'ord-3001',
     orderNumber: '#PC-1001',
@@ -188,10 +189,10 @@ const mockOrders: CommerceOrder[] = [
       },
     ],
   },
-];
+] : [];
 
-let mockCountSessions: InventoryCountSession[] = [];
-let mockSyncIssues: CommerceSyncIssue[] = [];
+let inMemoryCountSessions: InventoryCountSession[] = [];
+let inMemorySyncIssues: CommerceSyncIssue[] = [];
 
 // ─── Connection API ───
 export async function fetchCommerceConnection(): Promise<CommerceConnection> {
@@ -220,7 +221,7 @@ export async function disconnectShopify(): Promise<boolean> {
 
 // ─── Catalog Products API ───
 export async function fetchCatalogProducts(): Promise<CatalogProduct[]> {
-  return [...mockProducts];
+  return [...inMemoryProducts];
 }
 
 export async function addCatalogProduct(prod: Omit<CatalogProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<CatalogProduct> {
@@ -230,24 +231,24 @@ export async function addCatalogProduct(prod: Omit<CatalogProduct, 'id' | 'creat
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  mockProducts = [newProd, ...mockProducts];
+  inMemoryProducts = [newProd, ...inMemoryProducts];
   return newProd;
 }
 
 export async function updateCatalogProduct(id: string, updates: Partial<CatalogProduct>): Promise<CatalogProduct | null> {
-  const idx = mockProducts.findIndex((p) => p.id === id);
+  const idx = inMemoryProducts.findIndex((p) => p.id === id);
   if (idx === -1) return null;
-  mockProducts[idx] = {
-    ...mockProducts[idx],
+  inMemoryProducts[idx] = {
+    ...inMemoryProducts[idx],
     ...updates,
     updatedAt: new Date().toISOString(),
   };
-  return mockProducts[idx];
+  return inMemoryProducts[idx];
 }
 
 export async function bulkPublishProducts(productIds: string[]): Promise<number> {
   let count = 0;
-  mockProducts = mockProducts.map((p) => {
+  inMemoryProducts = inMemoryProducts.map((p) => {
     if (productIds.includes(p.id)) {
       count++;
       return {
@@ -265,7 +266,7 @@ export async function bulkPublishProducts(productIds: string[]): Promise<number>
 
 export async function bulkUnpublishProducts(productIds: string[]): Promise<number> {
   let count = 0;
-  mockProducts = mockProducts.map((p) => {
+  inMemoryProducts = inMemoryProducts.map((p) => {
     if (productIds.includes(p.id)) {
       count++;
       return { ...p, publishStatus: 'draft', syncStatus: 'unpublished' };
@@ -278,7 +279,7 @@ export async function bulkUnpublishProducts(productIds: string[]): Promise<numbe
 // ─── Inventory Levels & Ledger API ───
 export async function fetchInventoryLevels(locationId?: 'pc-br' | 'pc-cov'): Promise<InventoryLevel[]> {
   const levels: InventoryLevel[] = [];
-  mockProducts.forEach((p) => {
+  inMemoryProducts.forEach((p) => {
     p.variants.forEach((v) => {
       if (!locationId || locationId === 'pc-br') {
         levels.push({
@@ -322,12 +323,12 @@ export async function fetchInventoryLevels(locationId?: 'pc-br' | 'pc-cov'): Pro
 }
 
 export async function fetchInventoryMovements(): Promise<InventoryMovement[]> {
-  return [...mockMovements];
+  return [...inMemoryMovements];
 }
 
 // ─── Inventory Counts API ───
 export async function fetchCountSessions(): Promise<InventoryCountSession[]> {
-  return [...mockCountSessions];
+  return [...inMemoryCountSessions];
 }
 
 export async function createCountSession(
@@ -338,7 +339,7 @@ export async function createCountSession(
 ): Promise<InventoryCountSession> {
   const levels = await fetchInventoryLevels(locationId);
   const lines = levels.map((lvl) => {
-    const prod = mockProducts.find((p) => p.variants.some((v) => v.id === lvl.variantId));
+    const prod = inMemoryProducts.find((p) => p.variants.some((v) => v.id === lvl.variantId));
     const variant = prod?.variants.find((v) => v.id === lvl.variantId);
     return {
       variantId: lvl.variantId,
@@ -369,12 +370,12 @@ export async function createCountSession(
     lines,
   };
 
-  mockCountSessions = [session, ...mockCountSessions];
+  inMemoryCountSessions = [session, ...inMemoryCountSessions];
   return session;
 }
 
 export async function submitCountSession(sessionId: string): Promise<InventoryCountSession | null> {
-  const session = mockCountSessions.find((s) => s.id === sessionId);
+  const session = inMemoryCountSessions.find((s) => s.id === sessionId);
   if (!session) return null;
   session.status = 'awaiting_approval';
   session.submittedAt = new Date().toISOString();
@@ -382,7 +383,7 @@ export async function submitCountSession(sessionId: string): Promise<InventoryCo
 }
 
 export async function approveCountSession(sessionId: string, approvedBy: string): Promise<InventoryCountSession | null> {
-  const session = mockCountSessions.find((s) => s.id === sessionId);
+  const session = inMemoryCountSessions.find((s) => s.id === sessionId);
   if (!session) return null;
 
   session.status = 'approved';
@@ -391,14 +392,14 @@ export async function approveCountSession(sessionId: string, approvedBy: string)
 
   // Apply count variance to product stock & log movements
   session.lines.forEach((line) => {
-    mockProducts.forEach((p) => {
+    inMemoryProducts.forEach((p) => {
       const v = p.variants.find((v) => v.id === line.variantId);
       if (v) {
         const before = session.locationId === 'pc-br' ? v.inventoryBatonRouge : v.inventoryCovington;
         if (session.locationId === 'pc-br') v.inventoryBatonRouge = line.countedQty;
         else v.inventoryCovington = line.countedQty;
 
-        mockMovements.unshift({
+        inMemoryMovements.unshift({
           id: `mov-${Date.now().toString().slice(-4)}`,
           variantId: v.id,
           sku: v.sku,
@@ -428,7 +429,7 @@ export async function recordStockAdjustment(
   reason: string,
   performedBy: string
 ): Promise<boolean> {
-  const prod = mockProducts.find((p) => p.id === productId);
+  const prod = inMemoryProducts.find((p) => p.id === productId);
   if (!prod) return false;
   const variant = prod.variants.find((v) => v.id === variantId);
   if (!variant) return false;
@@ -439,7 +440,7 @@ export async function recordStockAdjustment(
   if (locationId === 'pc-br') variant.inventoryBatonRouge = after;
   else variant.inventoryCovington = after;
 
-  mockMovements.unshift({
+  inMemoryMovements.unshift({
     id: `mov-${Date.now().toString().slice(-4)}`,
     variantId: variant.id,
     sku: variant.sku,
@@ -458,17 +459,17 @@ export async function recordStockAdjustment(
 }
 
 export async function deleteCatalogProduct(id: string): Promise<boolean> {
-  mockProducts = mockProducts.filter((p) => p.id !== id);
+  inMemoryProducts = inMemoryProducts.filter((p) => p.id !== id);
   return true;
 }
 
 // ─── Commerce Orders API ───
 export async function fetchCommerceOrders(): Promise<CommerceOrder[]> {
-  return [...mockOrders];
+  return [...inMemoryOrders];
 }
 
 export async function fulfillCommerceOrder(orderId: string): Promise<CommerceOrder | null> {
-  const order = mockOrders.find((o) => o.id === orderId);
+  const order = inMemoryOrders.find((o) => o.id === orderId);
   if (!order) return null;
   order.fulfillmentStatus = 'fulfilled';
   order.pickupStatus = 'picked_up';
@@ -477,11 +478,11 @@ export async function fulfillCommerceOrder(orderId: string): Promise<CommerceOrd
 
 // ─── Sync Issues API ───
 export async function fetchSyncIssues(): Promise<CommerceSyncIssue[]> {
-  return [...mockSyncIssues];
+  return [...inMemorySyncIssues];
 }
 
 export async function retrySyncIssue(id: string): Promise<boolean> {
-  mockSyncIssues = mockSyncIssues.filter((i) => i.id !== id);
+  inMemorySyncIssues = inMemorySyncIssues.filter((i) => i.id !== id);
   return true;
 }
 
