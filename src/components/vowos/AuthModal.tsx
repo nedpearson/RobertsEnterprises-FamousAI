@@ -3,6 +3,7 @@ import { LogIn, UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth, StaffRole, STAFF_ROLES, ROLE_DESCRIPTIONS } from '@/contexts/AuthContext';
 
 import { Modal, inputCls, btnPrimary } from './ui';
+import { InstallFamousAIButton } from '@/components/pwa/InstallFamousAIButton';
 
 export default function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { signIn, signUp, signInAsDemo } = useAuth();
@@ -187,24 +188,28 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                   <p className="mt-1 text-xs text-stone-500">
                     Want to see FamousAI in action without affecting real business data?
                   </p>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={handleDemoSignIn}
-                    className="mt-4 w-full rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 disabled:opacity-50"
-                  >
-                    Launch Demo Mode
-                  </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={handleDemoSignIn}
+                      className="mt-4 w-full rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 disabled:opacity-50"
+                    >
+                      Launch Demo Mode
+                    </button>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <InstallFamousAIButton fullWidth variant="outline" className="border-stone-300 text-stone-700 hover:bg-stone-50" />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <p className="text-center text-[11px] text-stone-400">
-              Staff access is managed by Roberts Enterprises. Your role controls what you can edit.
-            </p>
-          </form>
-        </>
-      )}
-    </Modal>
+              <p className="text-center text-[11px] text-stone-400">
+                Staff access is managed by Roberts Enterprises. Your role controls what you can edit.
+              </p>
+            </form>
+          </>
+        )}
+      </Modal>
   );
 }

@@ -51,6 +51,7 @@ import MobileOwnerOverview from '@/components/vowos/mobile/MobileOwnerOverview';
 import MobileOwnerSales from '@/components/vowos/mobile/MobileOwnerSales';
 import { useDeviceMode } from '@/contexts/DeviceModeContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { InstallFamousAIButton } from '@/components/pwa/InstallFamousAIButton';
 function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void }) {
   return (
     <div className="flex flex-col items-center rounded-3xl border border-dashed border-stone-300 bg-white/60 px-6 py-20 text-center">
@@ -267,8 +268,8 @@ export default function AppLayout() {
 
           {/* Mobile App Download Prompt */}
           {showMobileView && view === 'dashboard' && (
-            <div className="mb-6 flex items-center justify-between rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center gap-3">
+            <div className="mb-6 flex flex-col items-center justify-between rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:flex-row gap-4">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-900 text-lg font-bold font-serif text-white">
                   R
                 </div>
@@ -277,9 +278,7 @@ export default function AppLayout() {
                   <p className="text-xs text-stone-500">Get the native mobile experience</p>
                 </div>
               </div>
-              <button className="shrink-0 rounded-full bg-stone-100 px-4 py-1.5 text-xs font-bold text-stone-900 hover:bg-stone-200 transition-colors">
-                Install
-              </button>
+              <InstallFamousAIButton size="sm" className="w-full sm:w-auto shrink-0 font-bold" />
             </div>
           )}
 

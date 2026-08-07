@@ -115,6 +115,10 @@ export default function MobileNavigation({ view, onNavigate, onRequestSignIn }: 
               </div>
             </div>
 
+            <div className="mb-6 px-1">
+              <InstallFamousAIButton fullWidth variant="secondary" />
+            </div>
+
             {/* Grouped Sections */}
             <div className="space-y-6 pb-6">
               {NAVIGATION_SECTIONS.map((sec) => {
