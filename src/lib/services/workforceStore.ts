@@ -107,9 +107,6 @@ export interface AuditLogRecord {
   details: string;
   ipAddress?: string;
 }
-
-}
-
 export interface TimeEntry {
   id: string;
   businessId: string;
