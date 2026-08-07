@@ -45,8 +45,12 @@ import MarketingPage from '@/features/marketing/pages/MarketingPage';
 import BridePortalView from '@/features/bride-portal/BridePortalView';
 import ConsultantFittingRoomView from '@/features/fitting-room/ConsultantFittingRoomView';
 
-
-
+import MobileManagerToday from '@/components/vowos/mobile/MobileManagerToday';
+import MobileManagerSchedule from '@/components/vowos/mobile/MobileManagerSchedule';
+import MobileOwnerOverview from '@/components/vowos/mobile/MobileOwnerOverview';
+import MobileOwnerSales from '@/components/vowos/mobile/MobileOwnerSales';
+import { useDeviceMode } from '@/contexts/DeviceModeContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void }) {
   return (
     <div className="flex flex-col items-center rounded-3xl border border-dashed border-stone-300 bg-white/60 px-6 py-20 text-center">
@@ -108,6 +112,10 @@ export default function AppLayout() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [compactSidebar, setCompactSidebar] = useState(() => getStoredCompactSidebar());
 
+  const { isDesktopModeOverride } = useDeviceMode();
+  const isMobileViewport = useIsMobile();
+  const showMobileView = isMobileViewport && !isDesktopModeOverride;
+
   const [headerMessages, setHeaderMessages] = useState<any[]>([]);
 
   useEffect(() => {
@@ -132,106 +140,148 @@ export default function AppLayout() {
 
       <div className={`flex flex-col transition-all duration-200 ${compactSidebar ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <DemoModeBanner />
-        {/* Top bar */}
-        <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#faf8f5]/90 backdrop-blur">
-          <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="rounded-lg p-2 text-stone-500 hover:bg-stone-100 lg:hidden"
-              aria-label="Open menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-rose-500">VowOS</p>
-              <h2 className="text-sm font-semibold text-stone-800">{currentLabel}</h2>
-            </div>
-
-            <div className="ml-auto flex items-center gap-2">
-              {/* Launch Demo Button */}
-              <button
-                data-tour-id="btn-launch-demo"
-                onClick={() => setDemoModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-stone-950 font-semibold px-3 py-1.5 text-xs shadow-sm transition-colors"
-              >
-                <Sparkles className="h-3.5 w-3.5" /> Launch Demo
-              </button>
-
-              {/* Store / location switcher — scopes every view */}
-              <div data-tour-id="header-location-select">
-                <LocationSwitcher />
+        {showMobileView ? (
+          <header className="sticky top-0 z-20 bg-white border-b border-stone-200 shadow-sm px-4 py-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-lg font-bold text-stone-900">{currentLabel}</h1>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Roberts Enterprises · {activeLocation === 'all' ? 'All Locations' : locationById(activeLocation).short}
+                </p>
+                <p className="text-[10px] text-stone-400 font-medium mt-0.5">
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </p>
               </div>
-
-              {/* Global Search / Command Palette button */}
-              <button
-                data-tour-id="header-search-brides"
-                onClick={() => setCommandPaletteOpen(true)}
-                className="hidden items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-400 transition-colors hover:border-stone-300 sm:flex shadow-2xs"
-              >
-                <Search className="h-3.5 w-3.5 text-stone-400" />
-                <span>Search brides, gowns, orders...</span>
-                <kbd className="ml-1 rounded border border-stone-200 bg-stone-50 px-1 py-0.5 text-[9px] font-medium text-stone-500">
-                  Ctrl K
-                </kbd>
-              </button>
-
-              {/* Global Communications Header Button */}
-              <button
-                onClick={() => setView('communications')}
-                className="relative flex items-center justify-center h-9 w-9 rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 transition-colors shadow-2xs"
-                title="Client Communications Inbox"
-              >
-                <MessageSquare className="h-4 w-4" />
-                {unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-xs">
-                    {unreadMessagesCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Live alerts: in-transit transfers, overdue invoices, delayed POs */}
-              <div data-tour-id="header-notifications">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCommandPaletteOpen(true)}
+                  className="p-2 rounded-full bg-stone-100 text-stone-600"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
                 <NotificationsBell onNavigate={setView} />
               </div>
-
-              {/* Auth control */}
-              {!loading && (
-                session && profile ? (
-                  <div className="flex items-center gap-2 rounded-full border border-stone-200 bg-white py-1 pl-1 pr-2 shadow-sm">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-violet-600 text-xs font-semibold text-white">
-                      {initials}
-                    </div>
-                    <div className="hidden leading-tight sm:block">
-                      <p className="max-w-[120px] truncate text-xs font-semibold text-stone-800">{profile.name}</p>
-                      <span className={`inline-flex rounded-full px-1.5 text-[10px] font-semibold uppercase tracking-wider ${ROLE_BADGE_CLASSES[profile.role]}`}>
-                        {profile.role}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => signOut()}
-                      className="ml-1 rounded-full p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
-                      aria-label="Sign out"
-                      title="Sign out"
-                    >
-                      <LogOut className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setAuthOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-stone-700"
-                  >
-                    <LogIn className="h-4 w-4" /> Sign In
-                  </button>
-                )
-              )}
             </div>
-          </div>
-        </header>
+          </header>
+        ) : (
+          <header className="sticky top-0 z-20 border-b border-stone-200/80 bg-[#faf8f5]/90 backdrop-blur">
+            <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="rounded-lg p-2 text-stone-500 hover:bg-stone-100 lg:hidden"
+                aria-label="Open menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-rose-500">VowOS</p>
+                <h2 className="text-sm font-semibold text-stone-800">{currentLabel}</h2>
+              </div>
+
+              <div className="ml-auto flex items-center gap-2">
+                {/* Launch Demo Button */}
+                <button
+                  data-tour-id="btn-launch-demo"
+                  onClick={() => setDemoModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-stone-950 font-semibold px-3 py-1.5 text-xs shadow-sm transition-colors"
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Launch Demo
+                </button>
+
+                {/* Store / location switcher — scopes every view */}
+                <div data-tour-id="header-location-select">
+                  <LocationSwitcher />
+                </div>
+
+                {/* Global Search / Command Palette button */}
+                <button
+                  data-tour-id="header-search-brides"
+                  onClick={() => setCommandPaletteOpen(true)}
+                  className="hidden items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-400 transition-colors hover:border-stone-300 sm:flex shadow-2xs"
+                >
+                  <Search className="h-3.5 w-3.5 text-stone-400" />
+                  <span>Search brides, gowns, orders...</span>
+                  <kbd className="ml-1 rounded border border-stone-200 bg-stone-50 px-1 py-0.5 text-[9px] font-medium text-stone-500">
+                    Ctrl K
+                  </kbd>
+                </button>
+
+                {/* Global Communications Header Button */}
+                <button
+                  onClick={() => setView('communications')}
+                  className="relative flex items-center justify-center h-9 w-9 rounded-lg border border-stone-200 bg-white text-stone-600 hover:text-stone-900 transition-colors shadow-2xs"
+                  title="Client Communications Inbox"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-xs">
+                      {unreadMessagesCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Live alerts: in-transit transfers, overdue invoices, delayed POs */}
+                <div data-tour-id="header-notifications">
+                  <NotificationsBell onNavigate={setView} />
+                </div>
+
+                {/* Auth control */}
+                {!loading && (
+                  session && profile ? (
+                    <div className="flex items-center gap-2 rounded-full border border-stone-200 bg-white py-1 pl-1 pr-2 shadow-sm">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-violet-600 text-xs font-semibold text-white">
+                        {initials}
+                      </div>
+                      <div className="hidden leading-tight sm:block">
+                        <p className="max-w-[120px] truncate text-xs font-semibold text-stone-800">{profile.name}</p>
+                        <span className={`inline-flex rounded-full px-1.5 text-[10px] font-semibold uppercase tracking-wider ${ROLE_BADGE_CLASSES[profile.role]}`}>
+                          {profile.role}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => signOut()}
+                        className="ml-1 rounded-full p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
+                        aria-label="Sign out"
+                        title="Sign out"
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setAuthOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-stone-700"
+                    >
+                      <LogIn className="h-4 w-4" /> Sign In
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          </header>
+        )}
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 pb-24 lg:pb-8">
-          <Breadcrumbs view={view} onNavigate={setView} />
+          {!showMobileView && <Breadcrumbs view={view} onNavigate={setView} />}
+
+          {/* Mobile App Download Prompt */}
+          {showMobileView && view === 'dashboard' && (
+            <div className="mb-6 flex items-center justify-between rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-stone-900 text-lg font-bold font-serif text-white">
+                  R
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-stone-900">Roberts Enterprises App</p>
+                  <p className="text-xs text-stone-500">Get the native mobile experience</p>
+                </div>
+              </div>
+              <button className="shrink-0 rounded-full bg-stone-100 px-4 py-1.5 text-xs font-bold text-stone-900 hover:bg-stone-200 transition-colors">
+                Install
+              </button>
+            </div>
+          )}
 
           {/* Guest preview banner on the dashboard */}
           {!session && !loading && view === 'dashboard' && (
@@ -258,12 +308,15 @@ export default function AppLayout() {
             <RoleLockedPanel label={currentLabel} view={view} role={role!} />
           ) : (
             <VowosErrorBoundary>
-              {view === 'dashboard' && <DashboardView onNavigate={setView} />}
+              {view === 'dashboard' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerToday onNavigate={setView} /> : <DashboardView onNavigate={setView} />)}
+              {view === 'overview' && (showMobileView && role === 'Owner' ? <MobileOwnerOverview onNavigate={setView} /> : <DashboardView onNavigate={setView} />)}
+              {view === 'sales' && (showMobileView && (role === 'Owner' || role === 'Manager') ? <MobileOwnerSales onNavigate={setView} /> : <ReportsView />)}
               {view === 'customers' && <CustomersView />}
               {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
               {view === 'inventory' && <InventoryView />}
               {view === 'transfers' && <TransfersView />}
-              {view === 'appointments' && <CombinedOperationsCalendar />}
+              {view === 'appointments' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerSchedule onNavigate={setView} /> : <CombinedOperationsCalendar />)}
+              {view === 'operations' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerSchedule onNavigate={setView} /> : <CombinedOperationsCalendar />)}
               {view === 'communications' && <CommunicationsView />}
               {view === 'contracts' && <ContractsView />}
               {view === 'alterations' && <AlterationsView />}

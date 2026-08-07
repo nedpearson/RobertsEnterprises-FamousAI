@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { LayoutDashboard, Users, CalendarDays, Shirt, MoreHorizontal, X, ExternalLink, CalendarHeart, Lock } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, Shirt, MoreHorizontal, X, ExternalLink, CalendarHeart, Lock, Monitor, Smartphone, ShieldCheck, SlidersHorizontal, BarChart3, Megaphone } from 'lucide-react';
 import { NAVIGATION_ITEMS, NAVIGATION_SECTIONS, NavigationItem, ViewKey } from '@/lib/navigation/navigationRegistry';
 import { useAuth } from '@/contexts/AuthContext';
 import { canAccessView } from '@/components/vowos/Sidebar';
+import { useDeviceMode } from '@/contexts/DeviceModeContext';
 
 interface MobileNavigationProps {
   view: ViewKey;
@@ -13,15 +14,20 @@ interface MobileNavigationProps {
 export default function MobileNavigation({ view, onNavigate, onRequestSignIn }: MobileNavigationProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const { session, profile } = useAuth();
+  const { isDesktopModeOverride, setDesktopModeOverride } = useDeviceMode();
   const role = profile?.role ?? null;
 
-  // Select top 4 items for bottom bar based on role (Today, My Leads, Appointments, Brides)
-  const bottomBarItems = [
-    NAVIGATION_ITEMS.find((i) => i.id === 'dashboard')!,
-    NAVIGATION_ITEMS.find((i) => i.id === 'marketing')!,
-    NAVIGATION_ITEMS.find((i) => i.id === 'appointments')!,
-    NAVIGATION_ITEMS.find((i) => i.id === 'customers')!,
-  ].filter(Boolean);
+  // Select top 4 items for bottom bar based on role
+  let bottomBarKeys: ViewKey[] = [];
+  if (role === 'Owner') {
+    bottomBarKeys = ['overview', 'operations', 'sales', 'reports'];
+  } else if (role === 'Manager') {
+    bottomBarKeys = ['dashboard', 'appointments', 'actions', 'sales'];
+  } else {
+    bottomBarKeys = ['dashboard', 'marketing', 'appointments', 'customers'];
+  }
+
+  const bottomBarItems = bottomBarKeys.map(k => NAVIGATION_ITEMS.find(i => i.id === k)).filter(Boolean) as NavigationItem[];
 
   return (
     <>
@@ -66,7 +72,7 @@ export default function MobileNavigation({ view, onNavigate, onRequestSignIn }: 
       {moreOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs" onClick={() => setMoreOpen(false)} />
-          <div className="absolute inset-x-0 bottom-14 max-h-[80vh] overflow-y-auto rounded-t-3xl bg-[#1c1a1f] p-5 shadow-2xl animate-in slide-in-from-bottom duration-200">
+          <div className="absolute inset-x-0 bottom-14 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-[#1c1a1f] p-5 shadow-2xl animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
               <div>
                 <p className="font-serif text-lg text-white">VowOS Menu</p>
@@ -80,10 +86,41 @@ export default function MobileNavigation({ view, onNavigate, onRequestSignIn }: 
               </button>
             </div>
 
+            {/* Desktop Mode Toggle */}
+            <div className="mb-6 rounded-2xl bg-white/5 p-4 border border-white/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-white flex items-center gap-2">
+                    {isDesktopModeOverride ? <Monitor className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
+                    {isDesktopModeOverride ? 'Desktop View Active' : 'Mobile Experience Active'}
+                  </p>
+                  <p className="text-xs text-stone-400 mt-1 max-w-[220px]">
+                    {isDesktopModeOverride 
+                      ? 'You are viewing the unoptimized desktop layout on mobile.'
+                      : 'You are using the optimized mobile command center.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDesktopModeOverride(!isDesktopModeOverride)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    isDesktopModeOverride ? 'bg-amber-500' : 'bg-stone-600'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      isDesktopModeOverride ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
             {/* Grouped Sections */}
             <div className="space-y-6 pb-6">
               {NAVIGATION_SECTIONS.map((sec) => {
                 const itemsInSec = NAVIGATION_ITEMS.filter((i) => i.section === sec.id);
+                if (itemsInSec.length === 0) return null;
+                
                 return (
                   <div key={sec.id} className="space-y-2">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 px-2">

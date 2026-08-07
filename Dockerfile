@@ -7,6 +7,7 @@ RUN npx vite build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/dist ./dist
 COPY server.js ./
 ENV PORT=3000

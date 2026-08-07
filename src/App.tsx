@@ -17,6 +17,7 @@ import { CombinedOperationsCalendar } from "./pages/scheduling/CombinedOperation
 import { VowosErrorBoundary } from "@/components/vowos/ErrorBoundary";
 
 import { DemoProvider } from "@/lib/demo/demoContext";
+import { DeviceModeProvider } from "@/contexts/DeviceModeContext";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,8 @@ const App = () => (
           <Toaster />
           <Sonner />
           <AuthProvider>
-            <DemoProvider>
+            <DeviceModeProvider>
+              <DemoProvider>
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -50,6 +52,7 @@ const App = () => (
                 </Routes>
               </BrowserRouter>
             </DemoProvider>
+            </DeviceModeProvider>
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>

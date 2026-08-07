@@ -35,18 +35,22 @@ export type NavigationSectionId =
   | 'external';
 
 export type ViewKey =
-  | 'dashboard' // Maps to Today
+  | 'dashboard' // Maps to Today (Manager)
+  | 'overview' // Maps to Overview (Owner)
   | 'customers' // Brides
   | 'leads'
   | 'inventory'
   | 'transfers'
-  | 'appointments'
+  | 'appointments' // Schedule
+  | 'operations' // Owner Operations
+  | 'actions' // Manager Actions
+  | 'sales' // Manager & Owner Sales
   | 'communications'
   | 'contracts'
   | 'alterations'
   | 'invoices'
   | 'purchases'
-  | 'reports'
+  | 'reports' // Insights
   | 'ledgers'
   | 'staff'
   | 'schedules'
@@ -106,6 +110,50 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
     mobilePriority: 1,
     searchKeywords: ['dashboard', 'today', 'overview', 'kpi', 'alerts', 'command center'],
+  },
+  {
+    id: 'overview',
+    label: 'Overview',
+    shortLabel: 'Overview',
+    icon: LayoutDashboard,
+    path: '/overview',
+    section: 'today',
+    allowedRoles: ['Owner'],
+    mobilePriority: 1,
+    searchKeywords: ['overview', 'dashboard', 'executive'],
+  },
+  {
+    id: 'actions',
+    label: 'Action Queue',
+    shortLabel: 'Actions',
+    icon: ShieldCheck,
+    path: '/actions',
+    section: 'today',
+    allowedRoles: ['Owner', 'Manager'],
+    mobilePriority: 2,
+    searchKeywords: ['actions', 'queue', 'tasks', 'todo'],
+  },
+  {
+    id: 'operations',
+    label: 'Operations',
+    shortLabel: 'Operations',
+    icon: SlidersHorizontal,
+    path: '/operations',
+    section: 'gowns',
+    allowedRoles: ['Owner'],
+    mobilePriority: 2,
+    searchKeywords: ['operations', 'manage'],
+  },
+  {
+    id: 'sales',
+    label: 'Sales',
+    shortLabel: 'Sales',
+    icon: BarChart3,
+    path: '/sales',
+    section: 'finance',
+    allowedRoles: ['Owner', 'Manager'],
+    mobilePriority: 3,
+    searchKeywords: ['sales', 'revenue', 'reports'],
   },
 
   // CLIENTS & SALES
@@ -344,6 +392,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
 /** Map view key to canonical path */
 export const VIEW_TO_PATH: Record<ViewKey, string> = {
   dashboard: '/today',
+  overview: '/overview',
+  actions: '/actions',
+  operations: '/operations',
+  sales: '/sales',
   customers: '/brides',
   leads: '/growth/leads',
   inventory: '/inventory',
@@ -369,6 +421,10 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
 export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/today': 'dashboard',
   '/dashboard': 'dashboard', // Legacy alias
+  '/overview': 'overview',
+  '/actions': 'actions',
+  '/operations': 'operations',
+  '/sales': 'sales',
   '/brides': 'customers',
   '/customers': 'customers', // Legacy alias
   '/growth': 'marketing',

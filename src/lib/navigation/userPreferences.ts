@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   EXPANDED_SECTIONS: 'vowos_sidebar_expanded_sections',
   FAVORITES: 'vowos_user_favorites',
   RECENTS: 'vowos_user_recents',
+  DESKTOP_MODE: 'vowos_desktop_mode_override',
 };
 
 export interface RecentDestination {
@@ -12,6 +13,24 @@ export interface RecentDestination {
   label: string;
   path: string;
   timestamp: number;
+}
+
+export function getStoredDesktopMode(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    return localStorage.getItem(STORAGE_KEYS.DESKTOP_MODE) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function setStoredDesktopMode(desktop: boolean): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.DESKTOP_MODE, desktop ? 'true' : 'false');
+  } catch (e) {
+    console.error('Failed to store desktop mode state:', e);
+  }
 }
 
 export function getStoredCompactSidebar(): boolean {
