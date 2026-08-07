@@ -12,7 +12,6 @@ import PayInvoice from "./pages/PayInvoice";
 import SignContract from "./pages/SignContract";
 import BridePortal from "./pages/BridePortal";
 import NotFound from "./pages/NotFound";
-import { CombinedOperationsCalendar } from "./pages/scheduling/CombinedOperationsCalendar";
 
 import { VowosErrorBoundary } from "@/components/vowos/ErrorBoundary";
 
@@ -40,19 +39,21 @@ const App = () => (
                 <BrowserRouter>
                   <Routes>
                     <Route path="/" element={<Index />} />
+                    <Route path="/schedule" element={<Index />} />
                     <Route path="/book" element={<BookAppointment />} />
                     <Route path="/pay/:invoiceId" element={<PayInvoice />} />
                     <Route path="/sign/:contractId" element={<SignContract />} />
                     <Route path="/portal/:brideId" element={<BridePortal />} />
                     
-                    {/* Canonical Scheduling Route */}
-                    <Route path="/scheduling/unified" element={<CombinedOperationsCalendar />} />
-                    
-                    {/* Legacy scheduling routes — redirect to canonical */}
-                    <Route path="/scheduling/calendar" element={<Navigate to="/scheduling/unified" replace />} />
-                    <Route path="/scheduling/assignment-center" element={<Navigate to="/scheduling/unified" replace />} />
-                    <Route path="/scheduling/appointments" element={<Navigate to="/scheduling/unified" replace />} />
-                    <Route path="/booking-request" element={<Navigate to="/scheduling/unified" replace />} />
+                    {/* Canonical & Legacy Scheduling Routes */}
+                    <Route path="/appointments" element={<Navigate to="/schedule?mode=calendar" replace />} />
+                    <Route path="/operations" element={<Navigate to="/schedule?mode=calendar" replace />} />
+                    <Route path="/schedules" element={<Navigate to="/schedule?mode=workforce" replace />} />
+                    <Route path="/scheduling/unified" element={<Navigate to="/schedule" replace />} />
+                    <Route path="/scheduling/calendar" element={<Navigate to="/schedule?mode=calendar" replace />} />
+                    <Route path="/scheduling/appointments" element={<Navigate to="/schedule?mode=calendar" replace />} />
+                    <Route path="/scheduling/assignment-center" element={<Navigate to="/schedule?mode=requests" replace />} />
+                    <Route path="/booking-request" element={<Navigate to="/schedule?mode=requests" replace />} />
 
                     <Route path="*" element={<NotFound />} />
                   </Routes>

@@ -20,11 +20,11 @@ export default function MobileNavigation({ view, onNavigate, onRequestSignIn }: 
   // Select top 4 items for bottom bar based on role
   let bottomBarKeys: ViewKey[] = [];
   if (role === 'Owner') {
-    bottomBarKeys = ['overview', 'operations', 'sales', 'reports'];
+    bottomBarKeys = ['overview', 'schedule', 'sales', 'reports'];
   } else if (role === 'Manager') {
-    bottomBarKeys = ['dashboard', 'appointments', 'actions', 'sales'];
+    bottomBarKeys = ['dashboard', 'schedule', 'actions', 'sales'];
   } else {
-    bottomBarKeys = ['dashboard', 'marketing', 'appointments', 'customers'];
+    bottomBarKeys = ['dashboard', 'schedule', 'customers', 'marketing'];
   }
 
   const bottomBarItems = bottomBarKeys.map(k => NAVIGATION_ITEMS.find(i => i.id === k)).filter(Boolean) as NavigationItem[];

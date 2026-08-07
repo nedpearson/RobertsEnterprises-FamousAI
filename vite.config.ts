@@ -60,9 +60,8 @@ export default defineConfig(({ mode }) => ({
           }
         ],
         shortcuts: [
-          { name: "Today", url: "/", description: "View today's operations" },
-          { name: "Appointments", url: "/", description: "View appointments" },
-          { name: "Schedule", url: "/", description: "View staff schedule" }
+          { name: "Today", url: "/today", description: "View today's operations command center" },
+          { name: "Calendar & Scheduling", url: "/schedule", description: "View calendar, workforce, and booking requests" }
         ]
       }
     })

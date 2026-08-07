@@ -27,8 +27,7 @@ import CustomersView from '@/components/vowos/CustomersView';
 import LeadsView from '@/components/vowos/LeadsView';
 import InventoryView from '@/components/vowos/InventoryView';
 import TransfersView from '@/components/vowos/TransfersView';
-import { CombinedOperationsCalendar } from '@/pages/scheduling/CombinedOperationsCalendar';
-import EmployeeScheduleCalendar from '@/pages/scheduling/EmployeeScheduleCalendar';
+import { UnifiedSchedulingWorkspace } from '@/pages/scheduling/UnifiedSchedulingWorkspace';
 import InvoicesView from '@/components/vowos/InvoicesView';
 import PurchasesView from '@/components/vowos/PurchasesView';
 import ReportsView from '@/components/vowos/ReportsView';
@@ -314,8 +313,13 @@ export default function AppLayout() {
               {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
               {view === 'inventory' && <InventoryView />}
               {view === 'transfers' && <TransfersView />}
-              {view === 'appointments' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerSchedule onNavigate={setView} /> : <CombinedOperationsCalendar />)}
-              {view === 'operations' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerSchedule onNavigate={setView} /> : <CombinedOperationsCalendar />)}
+              {(view === 'schedule' || view === 'appointments' || view === 'operations' || view === 'schedules') && (
+                showMobileView && (role === 'Manager' || role === 'Owner') ? (
+                  <MobileManagerSchedule onNavigate={setView} />
+                ) : (
+                  <UnifiedSchedulingWorkspace />
+                )
+              )}
               {view === 'communications' && <CommunicationsView />}
               {view === 'contracts' && <ContractsView />}
               {view === 'alterations' && <AlterationsView />}
@@ -325,7 +329,6 @@ export default function AppLayout() {
               {view === 'reports' && <ReportsView />}
               {view === 'ledgers' && <LedgersView />}
               {view === 'staff' && <StaffView />}
-              {view === 'schedules' && <EmployeeScheduleCalendar />}
               {view === 'settings' && <SettingsView />}
               {view === 'payroll' && <PayrollView />}
               {view === 'timeclock' && <TimeClockView />}

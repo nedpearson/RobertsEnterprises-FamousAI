@@ -41,8 +41,9 @@ export type ViewKey =
   | 'leads'
   | 'inventory'
   | 'transfers'
-  | 'appointments' // Schedule
-  | 'operations' // Owner Operations
+  | 'schedule' // Calendar & Scheduling (Canonical)
+  | 'appointments' // Legacy alias
+  | 'operations' // Legacy alias
   | 'actions' // Manager Actions
   | 'sales' // Manager & Owner Sales
   | 'communications'
@@ -53,7 +54,7 @@ export type ViewKey =
   | 'reports' // Insights
   | 'ledgers'
   | 'staff'
-  | 'schedules'
+  | 'schedules' // Legacy alias
   | 'settings'
   | 'payroll'
   | 'timeclock'
@@ -130,19 +131,30 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     path: '/actions',
     section: 'today',
     allowedRoles: ['Owner', 'Manager'],
-    mobilePriority: 2,
+    mobilePriority: 3,
     searchKeywords: ['actions', 'queue', 'tasks', 'todo'],
   },
   {
-    id: 'operations',
-    label: 'Operations',
-    shortLabel: 'Operations',
-    icon: SlidersHorizontal,
-    path: '/operations',
-    section: 'gowns',
-    allowedRoles: ['Owner'],
+    id: 'schedule',
+    label: 'Calendar & Scheduling',
+    shortLabel: 'Schedule',
+    icon: CalendarDays,
+    path: '/schedule',
+    section: 'today',
+    allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
     mobilePriority: 2,
-    searchKeywords: ['operations', 'manage'],
+    searchKeywords: [
+      'calendar',
+      'schedule',
+      'appointments',
+      'operations',
+      'workforce',
+      'staff schedule',
+      'booking requests',
+      'employee shifts',
+      'capacity',
+      'AI assignment'
+    ],
   },
   {
     id: 'sales',
@@ -152,7 +164,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     path: '/sales',
     section: 'finance',
     allowedRoles: ['Owner', 'Manager'],
-    mobilePriority: 3,
+    mobilePriority: 4,
     searchKeywords: ['sales', 'revenue', 'reports'],
   },
 
@@ -165,19 +177,8 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     path: '/brides',
     section: 'clients',
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
-    mobilePriority: 2,
+    mobilePriority: 5,
     searchKeywords: ['bride', 'customers', 'clients', 'profiles', 'wedding', 'bride 360'],
-  },
-  {
-    id: 'appointments',
-    label: 'Appointments',
-    shortLabel: 'Schedule',
-    icon: CalendarDays,
-    path: '/appointments',
-    section: 'clients',
-    allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
-    mobilePriority: 3,
-    searchKeywords: ['appointments', 'schedule', 'calendar', 'fittings', 'consultation', 'booking'],
   },
   {
     id: 'contracts',
@@ -277,17 +278,6 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
     mobilePriority: 14,
     searchKeywords: ['staff', 'team', 'employees', 'stylists', 'directory', 'roles'],
-  },
-  {
-    id: 'schedules',
-    label: 'Staff Schedule',
-    shortLabel: 'Schedule',
-    icon: CalendarHeart,
-    path: '/schedules',
-    section: 'team',
-    allowedRoles: ['Owner', 'Manager'],
-    mobilePriority: 15,
-    searchKeywords: ['schedules', 'shifts', 'calendar', 'availability'],
   },
   {
     id: 'timeclock',
@@ -394,13 +384,15 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
   dashboard: '/today',
   overview: '/overview',
   actions: '/actions',
-  operations: '/operations',
+  schedule: '/schedule',
+  operations: '/schedule',
+  appointments: '/schedule',
+  schedules: '/schedule',
   sales: '/sales',
   customers: '/brides',
   leads: '/growth/leads',
   inventory: '/inventory',
   transfers: '/transfers',
-  appointments: '/appointments',
   communications: '/communications',
   contracts: '/contracts',
   alterations: '/alterations',
@@ -423,7 +415,15 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/dashboard': 'dashboard', // Legacy alias
   '/overview': 'overview',
   '/actions': 'actions',
-  '/operations': 'operations',
+  '/schedule': 'schedule',
+  '/operations': 'schedule', // Legacy alias -> schedule
+  '/appointments': 'schedule', // Legacy alias -> schedule
+  '/schedules': 'schedule', // Legacy alias -> schedule
+  '/scheduling/unified': 'schedule',
+  '/scheduling/calendar': 'schedule',
+  '/scheduling/appointments': 'schedule',
+  '/scheduling/assignment-center': 'schedule',
+  '/booking-request': 'schedule',
   '/sales': 'sales',
   '/brides': 'customers',
   '/customers': 'customers', // Legacy alias
@@ -435,7 +435,6 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/leads': 'leads', // Legacy redirect
   '/inventory': 'inventory',
   '/transfers': 'transfers',
-  '/appointments': 'appointments',
   '/communications': 'communications',
   '/onlinestore': 'onlinestore',
   '/contracts': 'contracts',
