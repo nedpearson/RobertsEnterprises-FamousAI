@@ -51,6 +51,7 @@ import MobileManagerSchedule from '@/components/vowos/mobile/MobileManagerSchedu
 import MobileOwnerOverview from '@/components/vowos/mobile/MobileOwnerOverview';
 import OwnerExecutiveOverview from '@/components/vowos/OwnerExecutiveOverview';
 import MobileOwnerSales from '@/components/vowos/mobile/MobileOwnerSales';
+import MobilePayroll from '@/components/vowos/mobile/MobilePayroll';
 import { useDeviceMode } from '@/contexts/DeviceModeContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { InstallAppButton } from '@/components/pwa/InstallAppButton';
@@ -337,7 +338,7 @@ export default function AppLayout() {
               {view === 'ledgers' && <LedgersView />}
               {view === 'staff' && <StaffView />}
               {view === 'settings' && <SettingsView />}
-              {view === 'payroll' && <PayrollView />}
+              {view === 'payroll' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobilePayroll onNavigate={setView} /> : <PayrollView />)}
               {view === 'timeclock' && <TimeClockView />}
               {view === 'training' && <TrainingCenterView onNavigate={setView} />}
               {view === 'onlinestore' && <OnlineStorePage />}

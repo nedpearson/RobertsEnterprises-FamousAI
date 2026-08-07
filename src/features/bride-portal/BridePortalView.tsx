@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, Sparkles, Truck, CheckCircle2, Clock, DollarSign, Calendar, MapPin, ShoppingBag, ShieldCheck, ArrowRight } from 'lucide-react';
 import { formatCents, formatDate } from '@/data/vowosData';
+import { FavoritesGallery } from './components/FavoritesGallery';
 
 export default function BridePortalView() {
   const [activeTab, setActiveTab] = useState<'status' | 'wishlist' | 'invoice'>('status');
@@ -157,46 +158,10 @@ export default function BridePortalView() {
 
         {/* Tab 2: Wishlist Selector */}
         {activeTab === 'wishlist' && (
-          <div className="space-y-6">
-            <div className="bg-rose-50 p-4 rounded-xl border border-rose-200 text-xs text-rose-900 leading-relaxed flex items-center justify-between">
-              <div>
-                <span className="font-bold block text-sm">Pre-Appointment Fitting Rack</span>
-                <span>Select gowns &amp; accessories to have pre-pulled in your fitting suite prior to your visit.</span>
-              </div>
-              <span className="bg-rose-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-xs">
-                <Sparkles className="h-4 w-4" /> {wishlist.length} Items Pre-Pulled
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {catalogGowns.map((g) => {
-                const isSelected = wishlist.includes(g.name);
-                return (
-                  <div key={g.name} className="rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-sm flex flex-col justify-between">
-                    <img src={g.image} alt={g.name} className="h-56 w-full object-cover" />
-                    <div className="p-4 space-y-3">
-                      <div>
-                        <h4 className="font-serif font-bold text-sm text-stone-900">{g.name}</h4>
-                        <p className="text-xs text-stone-500 font-mono">{g.style} · {g.price}</p>
-                      </div>
-
-                      <button
-                        onClick={() => toggleWishlist(g.name)}
-                        className={`w-full rounded-xl py-2 px-3 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                          isSelected
-                            ? 'bg-rose-600 text-white shadow-sm'
-                            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                        }`}
-                      >
-                        <Heart className={`h-4 w-4 ${isSelected ? 'fill-white' : ''}`} />
-                        {isSelected ? 'In Fitting Rack' : 'Add to Fitting Rack'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <FavoritesGallery 
+            wishlist={wishlist} 
+            onToggleWishlist={toggleWishlist} 
+          />
         )}
 
         {/* Tab 3: Online Invoice & Payments */}

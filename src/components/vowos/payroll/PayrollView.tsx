@@ -1,66 +1,78 @@
 import { useState, useEffect } from 'react';
-import { Coins, Calendar, AlertTriangle, UserCheck, FileSpreadsheet, Building, CheckCircle, HelpCircle, Plus, Trash2, Lock, ArrowRight, TrendingUp, CreditCard, History, FileText, DollarSign, Briefcase } from 'lucide-react';
+import { Coins, Calendar, AlertTriangle, UserCheck, CheckCircle, Plus, Trash2, ArrowRight, CreditCard, FileText, DollarSign, Briefcase, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import {
   getDepartments,
-  getJobTitles,
   getCompensationProfiles,
   saveCompensationProfiles,
   getLeaveRequests,
   saveLeaveRequests,
   getBonuses,
-  saveBonuses,
   getReimbursements,
-  saveReimbursements,
   getDeductions,
   writeAuditLog,
+  getTimeEntries,
+  saveTimeEntries,
+  getTimeEntrySegments,
+  saveTimeEntrySegments,
+  getTimeEntryCorrections,
+  saveTimeEntryCorrections,
+  getOfficialPayrollPeriods,
+  saveOfficialPayrollPeriods,
   CompensationProfile,
   Department,
   LeaveRequest,
   Bonus,
   Reimbursement,
-  Deduction
+  Deduction,
+  TimeEntry,
+  TimeEntrySegment,
+  TimeEntryCorrection,
+  OfficialPayrollPeriod
 } from '@/lib/services/workforceStore';
 import { authorizeAction } from '@/lib/services/authService';
-import {
-  PayrollPeriod,
-  EmployeePayrollStatement,
-  PayrollRunResult,
-  compilePayrollPeriod
-} from '@/lib/services/payrollEngine';
+import { PayrollRunResult, compilePayrollPeriod } from '@/lib/services/payrollEngine';
 import { Modal, StatCard, inputCls, btnPrimary, btnSecondary } from '../ui';
-import { RawTimeEntry } from '../TimeClockCard';
-
-const ACTIVE_PERIOD: PayrollPeriod = {
-  id: 'pay-2026-07a',
-  name: 'July 16 - July 31, 2026',
-  startDate: '2026-07-16',
-  endDate: '2026-07-31',
-  payDate: '2026-08-05',
-  status: 'draft'
-};
+import { PayrollScopeBar, PayrollScope } from './PayrollScopeBar';
+import { ExceptionCenter, ExceptionData } from './ExceptionCenter';
+import { PayrollWizard } from './PayrollWizard';
+import { Timecard360 } from './Timecard360';
+import { format } from 'date-fns';
 
 export default function PayrollView() {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'command' | 'wizard' | 'timecards' | 'corrections' | 'exceptions' | 'compensation' | 'leave' | 'ess'>('command');
+  const [activeTab, setActiveTab] = useState<'command' | 'timecards' | 'corrections' | 'exceptions' | 'compensation' | 'leave'>('command');
   
   // Data State
   const [profiles, setProfiles] = useState<CompensationProfile[]>([]);
-  const [punches, setPunches] = useState<RawTimeEntry[]>([]);
+  const [punches, setPunches] = useState<TimeEntry[]>([]);
+  const [segments, setSegments] = useState<TimeEntrySegment[]>([]);
+  const [corrections, setCorrections] = useState<TimeEntryCorrection[]>([]);
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
   const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
+  const [deductions, setDeductions] = useState<Deduction[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [officialPeriods, setOfficialPeriods] = useState<OfficialPayrollPeriod[]>([]);
   
-  // Wizard state
-  const [wizardStep, setWizardStep] = useState(1);
-  const [selectedPayGroup, setSelectedPayGroup] = useState('Semimonthly Floor Staff');
-  const [selectedStore, setSelectedStore] = useState('all');
-  const [payrollDraft, setPayrollDraft] = useState<PayrollRunResult | null>(null);
+  // Scope State
+  const [scope, setScope] = useState<PayrollScope>({
+    startDate: '',
+    endDate: '',
+    businessId: 'roberts-enterprises',
+    locations: ['all'],
+    payGroup: 'all',
+    department: 'all',
+    employeeSearch: ''
+  });
   
-  // Modal states
+  // Modals & Sub-views
+  const [showWizard, setShowWizard] = useState(false);
+  const [draftRun, setDraftRun] = useState<PayrollRunResult | null>(null);
+  const [viewingTimecard, setViewingTimecard] = useState<TimeEntry | null>(null);
+
   const [showCompModal, setShowCompModal] = useState(false);
   const [compEmployee, setCompEmployee] = useState('');
   const [compType, setCompType] = useState<'hourly' | 'salary'>('hourly');
@@ -68,44 +80,18 @@ export default function PayrollView() {
   const [compEffective, setCompEffective] = useState('2026-07-01');
   const [compReason, setCompReason] = useState('Promo adjust');
 
-  // Leave Form
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [leaveStart, setLeaveStart] = useState('2026-07-25');
-  const [leaveEnd, setLeaveEnd] = useState('2026-07-27');
-  const [leaveHours, setLeaveHours] = useState('24');
-  const [leaveReason, setLeaveReason] = useState('Summer break');
-
-  // Personal Statement Preview for ESS
-  const [statementPreview, setStatementPreview] = useState<EmployeePayrollStatement | null>(null);
-
   const loadData = async () => {
     try {
-      const comps = await getCompensationProfiles();
-      setProfiles(comps);
-
-      const depts = await getDepartments();
-      setDepartments(depts);
-
-      const lReqs = await getLeaveRequests();
-      setLeaveRequests(lReqs);
-
-      const bns = await getBonuses();
-      setBonuses(bns);
-
-      const reims = await getReimbursements();
-      setReimbursements(reims);
-
-      // Fetch punches
-      const { data: punchData } = await supabase.from('time_entries').select('*');
-      if (punchData) {
-        setPunches(punchData.map(r => ({
-          id: r.id,
-          staffName: r.staff_name,
-          clockIn: r.clock_in,
-          clockOut: r.clock_out,
-          note: r.note
-        })));
-      }
+      setProfiles(await getCompensationProfiles());
+      setDepartments(await getDepartments());
+      setLeaveRequests(await getLeaveRequests());
+      setBonuses(await getBonuses());
+      setReimbursements(await getReimbursements());
+      setDeductions(await getDeductions());
+      setPunches(await getTimeEntries());
+      setSegments(await getTimeEntrySegments());
+      setCorrections(await getTimeEntryCorrections());
+      setOfficialPeriods(await getOfficialPayrollPeriods());
     } catch (err) {
       console.error(err);
     }
@@ -117,39 +103,134 @@ export default function PayrollView() {
 
   if (!profile) return null;
 
-  // Checks permission matric
   const canManageComp = authorizeAction({ userId: profile.id, userRole: profile.role, permission: 'compensation.edit' }).allowed;
   const canProcessPayroll = authorizeAction({ userId: profile.id, userRole: profile.role, permission: 'payroll.create_run' }).allowed;
 
-  // Extract exceptions
-  const exceptions: { employee: string; type: string; severity: 'high' | 'medium'; desc: string }[] = [];
-  punches.forEach(p => {
-    const hrs = p.clockOut ? (new Date(p.clock_out).getTime() - new Date(p.clock_in).getTime()) / 3_600_000 : 0;
-    if (hrs > 12) {
-      exceptions.push({ employee: p.staffName, type: 'Long Shift Alert', severity: 'high', desc: `Logged ${hrs.toFixed(1)}h continuous work shift.` });
+  // Filter data based on current scope
+  const scopedPunches = punches.filter(p => {
+    if (scope.startDate && p.clockIn.split('T')[0] < scope.startDate) return false;
+    if (scope.endDate && p.clockIn.split('T')[0] > scope.endDate) return false;
+    if (scope.businessId && p.businessId !== scope.businessId) return false;
+    
+    // Check location
+    if (scope.locations.length > 0 && !scope.locations.includes('all')) {
+      const pSegs = segments.filter(s => s.timeEntryId === p.id);
+      if (pSegs.length > 0) {
+        if (!pSegs.some(s => scope.locations.includes(s.locationId))) return false;
+      } else {
+        if (!scope.locations.includes(p.originalLocationId)) return false;
+      }
     }
-    if (!p.clockOut) {
-      exceptions.push({ employee: p.staffName, type: 'Missing Punch', severity: 'high', desc: `Clock-in active since ${new Date(p.clockIn).toLocaleTimeString()} with no clock-out.` });
-    }
-    if (p.note?.includes('"geofenceVerified":false')) {
-      exceptions.push({ employee: p.staffName, type: 'Geofence Breach', severity: 'medium', desc: `Shift punched from coordinates outside store boundaries.` });
-    }
+    
+    // Check department via segment or comp profile
+    // Simplification: if searching by department, we filter...
+    
+    return true;
   });
 
-  // Handle Compensation adjustments
-  const handleUpdateComp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canManageComp) {
-      toast({ title: 'Authorization Blocked', description: 'Your access role lacks edit compensation privileges.', variant: 'destructive' });
+  // Calculate Exceptions dynamically
+  const generateExceptions = (): ExceptionData[] => {
+    const exs: ExceptionData[] = [];
+    scopedPunches.forEach(p => {
+      const start = new Date(p.clockIn).getTime();
+      const end = p.clockOut ? new Date(p.clockOut).getTime() : new Date().getTime();
+      const hrs = (end - start) / 3_600_000;
+      
+      if (!p.clockOut && hrs > 16) {
+        exs.push({ id: `ex-${p.id}-miss`, type: 'missing_punch', title: 'Missing Clock Out', employeeName: p.employeeName, description: 'Shift exceeded 16 hours without clock-out.', timeEntryId: p.id });
+      } else if (hrs > 12) {
+        exs.push({ id: `ex-${p.id}-ot`, type: 'overtime_risk', title: 'Double Time Warning', employeeName: p.employeeName, description: `Logged ${hrs.toFixed(1)}h continuous work shift.`, timeEntryId: p.id });
+      }
+      
+      if (!p.approved && p.clockOut) {
+        exs.push({ id: `ex-${p.id}-unapp`, type: 'unapproved', title: 'Unapproved Timecard', employeeName: p.employeeName, description: 'Timecard pending managerial review.', timeEntryId: p.id });
+      }
+    });
+    return exs;
+  };
+  const exceptions = generateExceptions();
+
+  // Handle Wizard Start
+  const handleStartWizard = () => {
+    if (!scope.startDate || !scope.endDate) {
+      toast({ title: 'Invalid Scope', description: 'Please select a concrete date range to begin payroll run.', variant: 'destructive' });
       return;
     }
+    
+    const draftPeriod: OfficialPayrollPeriod = {
+      id: crypto.randomUUID(),
+      businessId: scope.businessId,
+      name: `${scope.startDate} to ${scope.endDate}`,
+      startDate: scope.startDate,
+      endDate: scope.endDate,
+      payDate: new Date().toISOString().split('T')[0],
+      payFrequency: 'custom',
+      status: 'draft',
+      eligiblePayGroups: scope.payGroup !== 'all' ? [scope.payGroup] : undefined
+    };
+
+    const commissionsMap: Record<string, number> = {};
+    const result = compilePayrollPeriod(
+      draftPeriod,
+      profiles,
+      punches,
+      segments,
+      deductions,
+      reimbursements,
+      bonuses,
+      commissionsMap,
+      departments
+    );
+
+    setDraftRun(result);
+    setShowWizard(true);
+  };
+
+  const handlePostPayroll = async () => {
+    if (draftRun) {
+      const newPeriod: OfficialPayrollPeriod = {
+        id: draftRun.runId,
+        businessId: scope.businessId,
+        name: draftRun.periodName,
+        startDate: scope.startDate,
+        endDate: scope.endDate,
+        payDate: new Date().toISOString().split('T')[0],
+        payFrequency: 'custom',
+        status: 'posted',
+        totalGrossCents: draftRun.totalGross,
+        totalNetCents: draftRun.totalNet,
+        totalEmployerCostCents: draftRun.totalEmployerCost,
+        employeeCount: draftRun.statements.length,
+        createdBy: profile.id,
+        postedAt: new Date().toISOString()
+      };
+      await saveOfficialPayrollPeriods([...officialPeriods, newPeriod]);
+      
+      // Update punches to approved
+      const updatedPunches = punches.map(p => {
+        if (scopedPunches.some(sp => sp.id === p.id)) {
+          return { ...p, approved: true, status: 'completed' as const };
+        }
+        return p;
+      });
+      await saveTimeEntries(updatedPunches);
+      
+      setOfficialPeriods([...officialPeriods, newPeriod]);
+      setPunches(updatedPunches);
+    }
+  };
+
+  const handleUpdateComp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canManageComp) return;
     const rateCents = Math.round(parseFloat(compRate) * 100);
     const newProfile: CompensationProfile = {
       employeeId: compEmployee.toLowerCase().replace(' ', '_'),
       employeeName: compEmployee,
       type: compType,
+      payFrequency: 'semimonthly',
       hourlyRate: compType === 'hourly' ? rateCents : 0,
-      salaryAmount: compType === 'salary' ? rateCents * 2080 : 0, // estimate
+      salaryAmount: compType === 'salary' ? rateCents * 24 : 0, 
       commissionRate: 5,
       drawAmount: 0,
       effectiveDate: compEffective,
@@ -157,535 +238,275 @@ export default function PayrollView() {
     };
 
     const updated = [newProfile, ...profiles.filter(p => p.employeeName !== compEmployee)];
-    const err = await saveCompensationProfiles(updated);
-    if (!err) {
-      toast({ title: 'Compensation updated', description: `Saved compensation profile for ${compEmployee}.` });
-      await writeAuditLog(profile.name, 'Compensation Change', `Updated compensation profile for ${compEmployee}.`);
-      loadData();
-      setShowCompModal(false);
-    }
-  };
-
-  // Submit Leave Request
-  const handleRequestLeave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newRequest: LeaveRequest = {
-      id: crypto.randomUUID(),
-      employeeId: profile.id,
-      employeeName: profile.name,
-      policyId: 'vacation',
-      policyName: 'Paid Vacation',
-      startDate: leaveStart,
-      endDate: leaveEnd,
-      hours: parseFloat(leaveHours),
-      status: 'pending',
-      reason: leaveReason
-    };
-
-    const updated = [newRequest, ...leaveRequests];
-    const err = await saveLeaveRequests(updated);
-    if (!err) {
-      toast({ title: 'Leave request submitted', description: 'Sent to manager for review.' });
-      loadData();
-      setShowLeaveModal(false);
-    }
-  };
-
-  // Approve Leave Request
-  const approveLeave = async (id: string, name: string) => {
-    const auth = authorizeAction({ userId: profile.id, userRole: profile.role, permission: 'leave.approve', entityOwnerId: name });
-    if (!auth.allowed) {
-      toast({ title: 'Approval Blocked', description: auth.reason, variant: 'destructive' });
-      return;
-    }
-
-    const updated = leaveRequests.map(r => r.id === id ? { ...r, status: 'approved' as const, approvedBy: profile.name } : r);
-    await saveLeaveRequests(updated);
-    toast({ title: 'Leave Approved', description: `Request for ${name} approved.` });
+    await saveCompensationProfiles(updated);
+    toast({ title: 'Compensation updated', description: `Saved compensation profile for ${compEmployee}.` });
+    await writeAuditLog(profile.name, 'Compensation Change', `Updated compensation profile for ${compEmployee}.`);
     loadData();
-  };
-
-  // Run Calculations in Wizard
-  const runWizardCalculations = async () => {
-    // In a full implementation, commissions would be aggregated from closed POS orders
-    const commissions: Record<string, number> = {};
-    
-    // Fetch live deductions from the store
-    const activeDeductions = await getDeductions();
-
-    const draftResult = compilePayrollPeriod(
-      ACTIVE_PERIOD,
-      profiles,
-      punches,
-      activeDeductions,
-      reimbursements,
-      bonuses,
-      commissions
-    );
-    setPayrollDraft(draftResult);
-    setWizardStep(4); // Advance to preview
-  };
-
-  const postPayrollRun = async () => {
-    toast({ title: 'Payroll Run Posted', description: 'Locked period. Pay statements issued securely.' });
-    await writeAuditLog(profile.name, 'Payroll Post', `Posted and locked payroll period ${ACTIVE_PERIOD.name}.`);
-    setWizardStep(6);
+    setShowCompModal(false);
   };
 
   return (
-    <div className="space-y-6">
-      <div data-tour-id="tabs-payroll" className="flex flex-wrap border-b border-stone-200 gap-1">
+    <div className="space-y-0 h-full flex flex-col bg-gray-50/30">
+      
+      {/* Global Filter Bar */}
+      <PayrollScopeBar onScopeChange={setScope} departments={departments} />
+      
+      <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Navigation Tabs */}
-        {[
-          { key: 'command', label: 'Command Center', icon: Briefcase },
-          { key: 'wizard', label: 'Payroll Wizard', icon: Coins },
-          { key: 'timecards', label: 'Timecards Log', icon: Calendar },
-          { key: 'corrections', label: 'Corrections Queue', icon: UserCheck },
-          { key: 'exceptions', label: 'Exception Center', icon: AlertTriangle },
-          { key: 'compensation', label: 'Compensation & Rates', icon: DollarSign },
-          { key: 'leave', label: 'Leave Requests', icon: CheckCircle },
-          { key: 'ess', label: 'My Timecard (ESS)', icon: FileText }
-        ].map(t => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key as any)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors ${activeTab === t.key ? 'border-rose-500 text-rose-600' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
-          >
-            <t.icon className="h-4 w-4" />
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* COMMAND CENTER TAB */}
-      {activeTab === 'command' && (
-        <div className="space-y-6">
-          <div data-tour-id="payroll-summary-cards" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Current Period" value="July 16 - 31" sub="Deadline: Aug 5, 2026" icon={<Calendar className="h-5 w-5" />} accent="violet" />
-            <StatCard label="Direct Deposit Queue" value="$14,240.50" sub="3 active statements" icon={<CreditCard className="h-5 w-5" />} accent="emerald" />
-            <StatCard label="Open Exceptions" value={String(exceptions.length)} sub="Drill down to fix punches" icon={<AlertTriangle className="h-5 w-5 animate-bounce" />} accent="amber" />
-            <StatCard label="Provider Integration" value="Gusto API Connected" sub="Ready for filing sync" icon={<CheckCircle className="h-5 w-5" />} accent="rose" />
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-3">
-              <h3 className="font-serif text-lg text-stone-900">Payroll Deadlines & Reminders</h3>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                As a Payroll Administrator, please ensure all timecards are verified, break infractions are resolved, and bonus plans are approved before executing calculations.
-              </p>
-              <div className="flex gap-2.5 pt-3">
-                <button data-tour-id="btn-run-payroll" onClick={() => setActiveTab('wizard')} className={btnPrimary}>
-                  Start Guided Wizard <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-3">
-              <h3 className="font-serif text-lg text-stone-900">Audit Events Log</h3>
-              <ul className="space-y-2 text-xs divide-y divide-stone-100">
-                <li className="pt-2 flex justify-between gap-2 text-stone-500">
-                  <span>Owner updated rates</span>
-                  <span className="font-semibold text-stone-700">Today, 7:19 PM</span>
-                </li>
-                <li className="pt-2 flex justify-between gap-2 text-stone-500">
-                  <span>Time Clock punch geofence verified</span>
-                  <span className="font-semibold text-stone-700">Today, 5:44 PM</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+        <div className="flex flex-wrap border-b border-stone-200 gap-1 mb-6">
+          {[
+            { key: 'command', label: 'Command Center', icon: Briefcase },
+            { key: 'timecards', label: 'Timecards Log', icon: Calendar },
+            { key: 'corrections', label: 'Corrections Queue', icon: UserCheck },
+            { key: 'exceptions', label: 'Exception Center', icon: AlertTriangle },
+            { key: 'compensation', label: 'Compensation & Rates', icon: DollarSign },
+          ].map(t => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key as any)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider border-b-2 transition-colors ${activeTab === t.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-stone-500 hover:text-stone-700'}`}
+            >
+              <t.icon className="h-4 w-4" />
+              {t.label}
+              {t.key === 'exceptions' && exceptions.length > 0 && (
+                <span className="ml-1 bg-amber-500 text-white rounded-full px-1.5 py-0.5 text-[10px]">{exceptions.length}</span>
+              )}
+            </button>
+          ))}
         </div>
-      )}
 
-      {/* PAYROLL WIZARD TAB */}
-      {activeTab === 'wizard' && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm space-y-6">
-          <div className="flex items-center justify-between border-b border-stone-100 pb-4">
-            <div>
-              <h3 className="font-serif text-xl text-stone-900">Guided Payroll Wizard</h3>
-              <p className="text-xs text-stone-500">Processing calculations for {ACTIVE_PERIOD.name}</p>
+        {/* COMMAND CENTER TAB */}
+        {activeTab === 'command' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard label="Scope Timecards" value={String(scopedPunches.length)} sub="In selected date range" icon={<Calendar className="h-5 w-5" />} accent="violet" />
+              <StatCard label="Direct Deposit Auth" value={draftRun ? `$${(draftRun.totalNet/100).toLocaleString()}` : "Pending Run"} sub={draftRun ? "Calculated" : "Requires Payroll Run"} icon={<CreditCard className="h-5 w-5" />} accent="emerald" />
+              <StatCard label="Open Exceptions" value={String(exceptions.length)} sub="Drill down to fix punches" icon={<AlertTriangle className="h-5 w-5 animate-bounce" />} accent="amber" />
+              <StatCard label="Provider Status" value="Healthy" sub="Gusto API Connected" icon={<CheckCircle className="h-5 w-5" />} accent="rose" />
             </div>
-            <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600">
-              Step {wizardStep} of 6
-            </span>
-          </div>
 
-          {/* STEP 1: SELECT SCOPE */}
-          {wizardStep === 1 && (
-            <div className="space-y-4 max-w-md">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-stone-600">Pay Group frequency</label>
-                <select value={selectedPayGroup} onChange={e => setSelectedPayGroup(e.target.value)} className={inputCls}>
-                  <option>Semimonthly Floor Staff</option>
-                  <option>Hourly Tailor/Alterations</option>
-                  <option>Biweekly Management</option>
-                </select>
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-xl text-stone-900">Payroll Execution</h3>
+                </div>
+                <p className="text-sm text-stone-500 leading-relaxed">
+                  You are viewing the scope for <span className="font-semibold text-stone-700">{scope.startDate || 'Beginning of time'} to {scope.endDate || 'Now'}</span>.
+                  Ensure all exceptions are cleared before executing a payroll run.
+                </p>
+                <div className="pt-2">
+                  <button onClick={handleStartWizard} className={`${btnPrimary} py-3 px-6 text-sm font-semibold shadow-md`}>
+                    Run Payroll for this Scope <ArrowRight className="h-4 w-4 ml-2" />
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-stone-600">Store Scope Allocation</label>
-                <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)} className={inputCls}>
-                  <option value="all">All Store Locations</option>
-                  <option value="north">North Boutique</option>
-                  <option value="south">South Boutique</option>
-                </select>
-              </div>
-
-              <button onClick={() => setWizardStep(2)} className={btnPrimary}>
-                Import Time & Earnings
-              </button>
-            </div>
-          )}
-
-          {/* STEP 2: IMPORT TIME */}
-          {wizardStep === 2 && (
-            <div className="space-y-4">
-              <p className="text-xs text-stone-600">
-                Found <span className="font-semibold text-stone-900">{punches.length} shift logs</span> inside the active date range.
-              </p>
-              <div className="overflow-x-auto border border-stone-100 rounded-lg">
-                <table className="min-w-full text-xs text-left">
-                  <thead className="bg-stone-50 text-stone-500 uppercase">
-                    <tr>
-                      <th className="px-4 py-2">Staff</th>
-                      <th className="px-4 py-2">Hours Worked</th>
-                      <th className="px-4 py-2">Source</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100">
-                    {profiles.map(p => (
-                      <tr key={p.employeeId}>
-                        <td className="px-4 py-2.5 font-medium">{p.employeeName}</td>
-                        <td className="px-4 py-2.5">14.5 hrs</td>
-                        <td className="px-4 py-2.5 text-stone-400">VowOS Time Clock</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setWizardStep(1)} className={btnSecondary}>Back</button>
-                <button onClick={() => setWizardStep(3)} className={btnPrimary}>Verify Exceptions</button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: REVIEW EXCEPTIONS */}
-          {wizardStep === 3 && (
-            <div className="space-y-4">
-              {exceptions.length > 0 ? (
-                <div className="rounded-xl bg-amber-50 p-4 border border-amber-200 space-y-2">
-                  <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
-                    <AlertTriangle className="h-4 w-4" /> Attention Required: {exceptions.length} exceptions detected
-                  </div>
-                  <ul className="space-y-1.5 text-xs text-amber-700">
-                    {exceptions.map((ex, i) => (
-                      <li key={i}>· {ex.employee}: {ex.desc}</li>
+              <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-3">
+                <h3 className="font-serif text-lg text-stone-900">Recent Postings</h3>
+                {officialPeriods.length > 0 ? (
+                  <ul className="space-y-3">
+                    {officialPeriods.slice(-3).reverse().map(op => (
+                      <li key={op.id} className="border-b pb-2 last:border-0">
+                        <div className="flex justify-between items-start">
+                          <span className="font-medium text-sm">{op.name}</span>
+                          <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">{op.status}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>${(op.totalGrossCents! / 100).toLocaleString()} Gross</span>
+                          <span>{new Date(op.postedAt!).toLocaleDateString()}</span>
+                        </div>
+                      </li>
                     ))}
                   </ul>
-                </div>
-              ) : (
-                <p className="text-xs text-emerald-600">No shift infractions found.</p>
-              )}
-              <div className="flex gap-2">
-                <button onClick={() => setWizardStep(2)} className={btnSecondary}>Back</button>
-                <button onClick={runWizardCalculations} className={btnPrimary}>Calculate Gross-to-Net</button>
+                ) : (
+                  <p className="text-xs text-gray-400">No official payroll runs have been posted yet.</p>
+                )}
               </div>
             </div>
-          )}
-
-          {/* STEP 4: PREVIEW PRE-TAX & NET PAY STATEMENTS */}
-          {wizardStep === 4 && payrollDraft && (
-            <div className="space-y-4">
-              <div className="overflow-x-auto border border-stone-100 rounded-lg">
-                <table className="min-w-full text-xs text-left">
-                  <thead className="bg-stone-50 text-stone-500 uppercase">
-                    <tr>
-                      <th className="px-4 py-2.5">Employee</th>
-                      <th className="px-4 py-2.5">Gross Wages</th>
-                      <th className="px-4 py-2.5">Bonuses / Comm</th>
-                      <th className="px-4 py-2.5">Pre-Tax Deductions</th>
-                      <th className="px-4 py-2.5">Estimated Tax</th>
-                      <th className="px-4 py-2.5 font-bold">Net Pay</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100">
-                    {payrollDraft.statements.map(st => (
-                      <tr key={st.employeeId} className="hover:bg-stone-50/50">
-                        <td className="px-4 py-2.5 font-medium">{st.employeeName}</td>
-                        <td className="px-4 py-2.5">${(st.grossWages / 100).toFixed(2)}</td>
-                        <td className="px-4 py-2.5">${((st.bonuses + st.commissions) / 100).toFixed(2)}</td>
-                        <td className="px-4 py-2.5">${(st.preTaxDeductions / 100).toFixed(2)}</td>
-                        <td className="px-4 py-2.5">${(st.employeeTaxes / 100).toFixed(2)}</td>
-                        <td className="px-4 py-2.5 font-bold text-stone-900">${(st.netPay / 100).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setWizardStep(3)} className={btnSecondary}>Back</button>
-                <button onClick={() => setWizardStep(5)} className={btnPrimary}>Proceed to Approvals</button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 5: APPROVE & SEPARATION OF DUTIES */}
-          {wizardStep === 5 && (
-            <div className="space-y-4 max-w-md">
-              <div className="rounded-xl bg-rose-50 p-4 border border-rose-100 text-xs text-rose-900 space-y-2">
-                <span className="font-semibold block">Separation of Duties verification:</span>
-                Payroll Approver: {profile.name} (Access Level: {profile.role}). 
-                This action will lock all associated hours and push data to Gusto.
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setWizardStep(4)} className={btnSecondary}>Back</button>
-                <button onClick={postPayrollRun} className={btnPrimary}>Post & Lock Run</button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 6: COMPLETED */}
-          {wizardStep === 6 && (
-            <div className="text-center py-10 space-y-4">
-              <CheckCircle className="mx-auto h-12 w-12 text-emerald-500" />
-              <h4 className="font-serif text-lg text-stone-900">Payroll Posted & Reconciled</h4>
-              <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                Pay period journal posted to VowOS double entry subledger. XML ledger statements generated.
-              </p>
-              <button
-                onClick={() => {
-                  setWizardStep(1);
-                  setPayrollDraft(null);
-                }}
-                className={btnSecondary}
-              >
-                Start New Cycle
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TIMECARDS LOG TAB */}
-      {activeTab === 'timecards' && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
-          <h3 className="font-serif text-lg text-stone-900">Active Shift Logs (Timecards)</h3>
-          <div className="overflow-x-auto border border-stone-100 rounded-lg">
-            <table className="min-w-full text-xs text-left">
-              <thead className="bg-stone-50 text-stone-500 uppercase">
-                <tr>
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">Staff Member</th>
-                  <th className="px-4 py-2">Clock In</th>
-                  <th className="px-4 py-2">Clock Out</th>
-                  <th className="px-4 py-2">Work Note</th>
-                  <th className="px-4 py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {punches.map(p => (
-                  <tr key={p.id} className="hover:bg-stone-50/50">
-                    <td className="px-4 py-2.5">{new Date(p.clockIn).toLocaleDateString()}</td>
-                    <td className="px-4 py-2.5 font-medium">{p.staffName}</td>
-                    <td className="px-4 py-2.5">{new Date(p.clockIn).toLocaleTimeString()}</td>
-                    <td className="px-4 py-2.5">{p.clockOut ? new Date(p.clockOut).toLocaleTimeString() : 'On the clock'}</td>
-                    <td className="px-4 py-2.5 max-w-xs truncate text-stone-500">{p.note || '—'}</td>
-                    <td className="px-4 py-2.5">
-                      <button
-                        onClick={async () => {
-                          if (confirm('Delete this punch record?')) {
-                            await supabase.from('time_entries').delete().eq('id', p.id);
-                            loadData();
-                          }
-                        }}
-                        className="text-stone-400 hover:text-red-500"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* LEAVE REQUESTS TAB */}
-      {activeTab === 'leave' && (
-        <div className="space-y-6">
+        {/* TIMECARDS TAB */}
+        {activeTab === 'timecards' && (
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 className="font-serif text-lg text-stone-900">Timecards Log</h3>
+            <div className="overflow-x-auto border border-stone-100 rounded-lg">
+              <table className="min-w-full text-xs text-left">
+                <thead className="bg-stone-50 text-stone-500 uppercase">
+                  <tr>
+                    <th className="px-4 py-2">Date</th>
+                    <th className="px-4 py-2">Employee</th>
+                    <th className="px-4 py-2">Location</th>
+                    <th className="px-4 py-2">Status</th>
+                    <th className="px-4 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {scopedPunches.map(p => (
+                    <tr key={p.id} className="hover:bg-stone-50 cursor-pointer" onClick={() => setViewingTimecard(p)}>
+                      <td className="px-4 py-3">{new Date(p.clockIn).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 font-medium">{p.employeeName}</td>
+                      <td className="px-4 py-3">{p.originalLocationId}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${p.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {p.approved ? 'Approved' : p.clockOut ? 'Pending Review' : 'Clocked In'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button className="text-blue-600 flex items-center gap-1 hover:underline">
+                          <Eye className="w-3 h-3" /> View 360
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {scopedPunches.length === 0 && (
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">No timecards in this scope.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* EXCEPTIONS TAB */}
+        {activeTab === 'exceptions' && (
+          <div className="max-w-4xl">
+            <ExceptionCenter 
+              exceptions={exceptions} 
+              onResolve={(ex) => {
+                const p = punches.find(p => p.id === ex.timeEntryId);
+                if (p) setViewingTimecard(p);
+              }} 
+            />
+          </div>
+        )}
+        
+        {/* CORRECTIONS QUEUE TAB */}
+        {activeTab === 'corrections' && (
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 className="font-serif text-lg text-stone-900">Corrections Queue</h3>
+            {corrections.filter(c => c.status === 'pending').length > 0 ? (
+              <div className="space-y-2">
+                {corrections.filter(c => c.status === 'pending').map(c => (
+                  <div key={c.id} className="p-4 border rounded shadow-sm bg-yellow-50 flex justify-between items-center">
+                    <div>
+                      <div className="font-semibold text-sm">{c.type.replace('_', ' ').toUpperCase()}</div>
+                      <div className="text-gray-600 text-sm mt-1">{c.reason}</div>
+                    </div>
+                    <button className={btnPrimary} onClick={() => {
+                       const p = punches.find(p => p.id === c.timeEntryId);
+                       if (p) setViewingTimecard(p);
+                    }}>Review</button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-stone-500 text-sm">
+                Queue clean. No pending punch corrections.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* COMPENSATION TAB */}
+        {activeTab === 'compensation' && (
           <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="font-serif text-lg text-stone-900">Leave Requests & PTO Accruals</h3>
-              <button onClick={() => setShowLeaveModal(true)} className={btnPrimary}>
-                <Plus className="h-4 w-4" /> Request Vacation / Sick Leave
-              </button>
+              <h3 className="font-serif text-lg text-stone-900">Compensation Profiles</h3>
+              {canManageComp && (
+                <button onClick={() => setShowCompModal(true)} className={btnPrimary}>
+                  <Plus className="h-4 w-4" /> Edit Profile Rate
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto border border-stone-100 rounded-lg">
               <table className="min-w-full text-xs text-left">
                 <thead className="bg-stone-50 text-stone-500 uppercase">
                   <tr>
-                    <th className="px-4 py-2">Employee</th>
-                    <th className="px-4 py-2">Dates</th>
-                    <th className="px-4 py-2">Total Hours</th>
-                    <th className="px-4 py-2">Status</th>
-                    <th className="px-4 py-2">Approver</th>
+                    <th className="px-4 py-2">Staff Name</th>
+                    <th className="px-4 py-2">Hourly Rate</th>
+                    <th className="px-4 py-2">Annualized Salary</th>
+                    <th className="px-4 py-2">Frequency</th>
+                    <th className="px-4 py-2">Effective Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {leaveRequests.map(r => (
-                    <tr key={r.id}>
-                      <td className="px-4 py-2.5 font-medium">{r.employeeName}</td>
-                      <td className="px-4 py-2.5">{r.startDate} to {r.endDate}</td>
-                      <td className="px-4 py-2.5">{r.hours} hrs</td>
-                      <td className="px-4 py-2.5">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                          {r.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        {r.status === 'pending' ? (
-                          <button onClick={() => approveLeave(r.id, r.employeeName)} className="text-xs font-semibold text-rose-500 hover:text-rose-600">
-                            Approve
-                          </button>
-                        ) : (
-                          <span className="text-stone-400">{r.approvedBy || 'Auto'}</span>
-                        )}
-                      </td>
+                  {profiles.map(p => (
+                    <tr key={p.employeeId}>
+                      <td className="px-4 py-2.5 font-medium">{p.employeeName}</td>
+                      <td className="px-4 py-2.5">{p.hourlyRate > 0 ? `$${(p.hourlyRate / 100).toFixed(2)}/hr` : '—'}</td>
+                      <td className="px-4 py-2.5">{p.salaryAmount > 0 ? `$${(p.salaryAmount / 100).toLocaleString()}/yr` : '—'}</td>
+                      <td className="px-4 py-2.5">{p.payFrequency || '—'}</td>
+                      <td className="px-4 py-2.5">{p.effectiveDate}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* OVERLAYS */}
+      {showWizard && (
+        <PayrollWizard
+          draftRun={draftRun}
+          exceptions={exceptions}
+          onClose={() => setShowWizard(false)}
+          onPost={() => {
+            handlePostPayroll();
+            setShowWizard(false);
+            setActiveTab('command');
+          }}
+          onResolveExceptions={() => {
+            setShowWizard(false);
+            setActiveTab('exceptions');
+          }}
+        />
       )}
 
-      {/* COMPENSATION AND RATES TAB */}
-      {activeTab === 'compensation' && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-            <h3 className="font-serif text-lg text-stone-900">Compensation Profiles & Rates</h3>
-            {canManageComp && (
-              <button onClick={() => setShowCompModal(true)} className={btnPrimary}>
-                <Plus className="h-4 w-4" /> Edit Profile Rate
-              </button>
-            )}
-          </div>
-
-          <div className="overflow-x-auto border border-stone-100 rounded-lg">
-            <table className="min-w-full text-xs text-left">
-              <thead className="bg-stone-50 text-stone-500 uppercase">
-                <tr>
-                  <th className="px-4 py-2">Staff Name</th>
-                  <th className="px-4 py-2">Hourly Rate</th>
-                  <th className="px-4 py-2">Annualized Salary</th>
-                  <th className="px-4 py-2">Effective Date</th>
-                  <th className="px-4 py-2">Reason for modification</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {profiles.map(p => (
-                  <tr key={p.employeeId}>
-                    <td className="px-4 py-2.5 font-medium">{p.employeeName}</td>
-                    <td className="px-4 py-2.5">{p.hourlyRate > 0 ? `$${(p.hourlyRate / 100).toFixed(2)}/hr` : '—'}</td>
-                    <td className="px-4 py-2.5">{p.salaryAmount > 0 ? `$${(p.salaryAmount / 100).toLocaleString()}/yr` : '—'}</td>
-                    <td className="px-4 py-2.5">{p.effectiveDate}</td>
-                    <td className="px-4 py-2.5 text-stone-500">{p.reason || 'Initial setting'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* CORRECTIONS QUEUE TAB */}
-      {activeTab === 'corrections' && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
-          <h3 className="font-serif text-lg text-stone-900">Employee Corrections Queue</h3>
-          <p className="text-xs text-stone-500">Correct adjustments requested by floor staff.</p>
-          <div className="text-center py-8 text-stone-400 text-xs">
-            Queue clean. No pending punch corrections.
-          </div>
-        </div>
-      )}
-
-      {/* EXCEPTION CENTER TAB */}
-      {activeTab === 'exceptions' && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
-          <h3 className="font-serif text-lg text-stone-900">Attendance Exception Center</h3>
-          {exceptions.length > 0 ? (
-            <ul className="space-y-3">
-              {exceptions.map((ex, i) => (
-                <li key={i} className="p-3.5 rounded-xl border border-stone-200/80 bg-stone-50/50 flex items-start gap-3 justify-between">
-                  <div className="space-y-1">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase ${ex.severity === 'high' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>
-                      {ex.type}
-                    </span>
-                    <p className="text-xs font-semibold text-stone-900">{ex.employee}</p>
-                    <p className="text-xs text-stone-500">{ex.desc}</p>
-                  </div>
-                  <button className="text-xs font-semibold text-rose-500 hover:underline">Resolve</button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-emerald-600">All shifts verified. No warnings detected.</p>
-          )}
-        </div>
-      )}
-
-      {/* EMPLOYEE SELF SERVICE TAB */}
-      {activeTab === 'ess' && (
-        <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
-              <h3 className="font-serif text-lg text-stone-900">My Shift & Timecard Logs</h3>
-              <p className="text-xs text-stone-500">Your recent punch history.</p>
-              <div className="overflow-x-auto border border-stone-100 rounded-lg">
-                <table className="min-w-full text-xs text-left">
-                  <thead className="bg-stone-50 text-stone-500 uppercase">
-                    <tr>
-                      <th className="px-4 py-2">Date</th>
-                      <th className="px-4 py-2">Clock In</th>
-                      <th className="px-4 py-2">Clock Out</th>
-                      <th className="px-4 py-2">Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100">
-                    {punches.filter(p => p.staffName === profile.name).map(p => (
-                      <tr key={p.id}>
-                        <td className="px-4 py-2">{new Date(p.clockIn).toLocaleDateString()}</td>
-                        <td className="px-4 py-2">{new Date(p.clockIn).toLocaleTimeString()}</td>
-                        <td className="px-4 py-2">{p.clockOut ? new Date(p.clockOut).toLocaleTimeString() : 'Active'}</td>
-                        <td className="px-4 py-2 text-stone-400">{p.note ? 'Logged' : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
-              <h3 className="font-serif text-lg text-stone-900">Vacation/Leave Balances</h3>
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between border-b border-stone-100 pb-2">
-                  <span className="font-medium">Paid Vacation</span>
-                  <span className="font-bold text-stone-800">42.5 hrs</span>
-                </div>
-                <div className="flex justify-between border-b border-stone-100 pb-2">
-                  <span className="font-medium">Paid Sick Leave</span>
-                  <span className="font-bold text-stone-800">18.0 hrs</span>
-                </div>
-                <button onClick={() => setShowLeaveModal(true)} className={`${btnPrimary} w-full text-center justify-center py-2 text-xs`}>
-                  Submit Leave Request
-                </button>
-              </div>
-            </div>
-          </div>
+      {viewingTimecard && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <Timecard360
+            entry={viewingTimecard}
+            segments={segments.filter(s => s.timeEntryId === viewingTimecard.id)}
+            corrections={corrections.filter(c => c.timeEntryId === viewingTimecard.id)}
+            onClose={() => setViewingTimecard(null)}
+            onSubmitCorrection={async (partial) => {
+              const req: TimeEntryCorrection = {
+                id: crypto.randomUUID(),
+                timeEntryId: viewingTimecard.id,
+                requestedBy: profile.id,
+                requestedAt: new Date().toISOString(),
+                type: partial.type!,
+                reason: partial.reason!,
+                status: 'pending'
+              };
+              await saveTimeEntryCorrections([...corrections, req]);
+              setCorrections([...corrections, req]);
+              toast({ title: 'Correction Submitted' });
+            }}
+            onApproveCorrection={async (cid) => {
+              const updated = corrections.map(c => c.id === cid ? { ...c, status: 'approved' as const, resolvedBy: profile.id, resolvedAt: new Date().toISOString() } : c);
+              await saveTimeEntryCorrections(updated);
+              
+              // Approve the timecard automatically when a correction is approved
+              const updatedPunches = punches.map(p => p.id === viewingTimecard.id ? { ...p, approved: true } : p);
+              await saveTimeEntries(updatedPunches);
+              
+              setCorrections(updated);
+              setPunches(updatedPunches);
+              setViewingTimecard(updatedPunches.find(p => p.id === viewingTimecard.id) || null);
+            }}
+            onVoid={async (id) => {
+              const updatedPunches = punches.map(p => p.id === id ? { ...p, status: 'voided' as const } : p);
+              await saveTimeEntries(updatedPunches);
+              setPunches(updatedPunches);
+              setViewingTimecard(null);
+              toast({ title: 'Timecard Voided' });
+            }}
+          />
         </div>
       )}
 
@@ -696,8 +517,7 @@ export default function PayrollView() {
             <label className="text-xs font-semibold text-stone-600 block">Select Employee</label>
             <select value={compEmployee} onChange={e => setCompEmployee(e.target.value)} className={inputCls} required>
               <option value="">Choose team member…</option>
-              <option value="Eleanor Vance">Eleanor Vance</option>
-              <option value="nedpearson">nedpearson</option>
+              {profiles.map(p => <option key={p.employeeId} value={p.employeeName}>{p.employeeName}</option>)}
             </select>
           </div>
 
@@ -710,38 +530,13 @@ export default function PayrollView() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-stone-600 block">Amount (Hourly Rate or Per Pay Period Salary in USD)</label>
-            <input
-              type="number"
-              step="0.01"
-              required
-              value={compRate}
-              onChange={e => setCompRate(e.target.value)}
-              className={inputCls}
-            />
+            <label className="text-xs font-semibold text-stone-600 block">Amount (Hourly Rate or Annual Salary in USD)</label>
+            <input type="number" step="0.01" required value={compRate} onChange={e => setCompRate(e.target.value)} className={inputCls} />
           </div>
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-stone-600 block">Effective Date</label>
-            <input
-              type="date"
-              required
-              value={compEffective}
-              onChange={e => setCompEffective(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-stone-600 block">Reason for Change (Audit Requirement)</label>
-            <input
-              type="text"
-              required
-              value={compReason}
-              onChange={e => setCompReason(e.target.value)}
-              placeholder="e.g. Annual cost-of-living adjust..."
-              className={inputCls}
-            />
+            <input type="date" required value={compEffective} onChange={e => setCompEffective(e.target.value)} className={inputCls} />
           </div>
 
           <div className="flex gap-2 justify-end pt-3 border-t border-stone-100">
@@ -751,38 +546,6 @@ export default function PayrollView() {
         </form>
       </Modal>
 
-      {/* Leave Request Modal */}
-      <Modal open={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Submit Leave Request">
-        <form onSubmit={handleRequestLeave} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-stone-600 block">Start Date</label>
-              <input type="date" required value={leaveStart} onChange={e => setLeaveStart(e.target.value)} className={inputCls} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-stone-600 block">End Date</label>
-              <input type="date" required value={leaveEnd} onChange={e => setLeaveEnd(e.target.value)} className={inputCls} />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-stone-600 block">Total Requested Hours</label>
-            <input type="number" required value={leaveHours} onChange={e => setLeaveHours(e.target.value)} className={inputCls} />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-stone-600 block">Reason</label>
-            <input type="text" required value={leaveReason} onChange={e => setLeaveReason(e.target.value)} className={inputCls} />
-          </div>
-
-          <div className="flex gap-2 justify-end pt-3 border-t border-stone-100">
-            <button type="button" onClick={() => setShowLeaveModal(false)} className={btnSecondary}>Cancel</button>
-            <button type="submit" className={btnPrimary}>Submit Request</button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }
-
-

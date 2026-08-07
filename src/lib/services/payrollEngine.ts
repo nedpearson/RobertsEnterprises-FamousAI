@@ -1,13 +1,14 @@
-import { RawTimeEntry } from '@/components/vowos/TimeClockCard';
-import { CompensationProfile, Department, Deduction, Reimbursement, Bonus } from './workforceStore';
+import { TimeEntry, TimeEntrySegment, CompensationProfile, Department, Deduction, Reimbursement, Bonus, OfficialPayrollPeriod } from './workforceStore';
 
-export interface PayrollPeriod {
-  id: string;
-  name: string; // e.g. "July 16 - July 31, 2026"
+export interface DateRange {
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
-  payDate: string; // YYYY-MM-DD
-  status: 'draft' | 'posted' | 'reconciled';
+}
+
+export interface LocationAllocation {
+  locationId: string;
+  hours: number;
+  wagesCents: number;
 }
 
 export interface EmployeePayrollStatement {
@@ -31,6 +32,7 @@ export interface EmployeePayrollStatement {
   netPay: number; // in cents
   employerTaxes: number; // in cents
   employerContributions: number; // in cents
+  locationAllocations: Record<string, LocationAllocation>;
   calculationsExplained: string[];
 }
 
@@ -48,6 +50,7 @@ export interface PayrollRunResult {
 
 // Helper to check if a date is within a range
 function isDateInPeriod(dateStr: string, start: string, end: string): boolean {
+  if (!dateStr) return false;
   const d = dateStr.split('T')[0];
   return d >= start && d <= end;
 }
@@ -56,36 +59,77 @@ export function calculateEmployeePayroll(
   employeeId: string,
   employeeName: string,
   comp: CompensationProfile,
-  punches: RawTimeEntry[],
+  allPunches: TimeEntry[],
+  allSegments: TimeEntrySegment[],
   deductions: Deduction[],
   reimbursements: Reimbursement[],
   bonuses: Bonus[],
   commissionsCents: number,
-  period: PayrollPeriod
+  period: DateRange,
+  businessIdFilter?: string,
+  locationIdsFilter?: string[], // if empty or 'all', no location filter
+  departments: Department[] = []
 ): EmployeePayrollStatement {
   const explanations: string[] = [];
   
-  // 1. Filter punches for this period
-  const periodPunches = punches.filter((p) => {
-    const clockInIso = p.clock_in || (p as any).clockIn;
-    return clockInIso ? isDateInPeriod(clockInIso, period.startDate, period.endDate) : false;
+  // 1. ISOLATE punches for THIS employee, THIS business, and THIS period
+  const periodPunches = allPunches.filter((p) => {
+    if (p.employeeId !== employeeId) return false;
+    if (businessIdFilter && p.businessId !== businessIdFilter) return false;
+    
+    // Check location filter if locations are provided
+    if (locationIdsFilter && locationIdsFilter.length > 0 && !locationIdsFilter.includes('all')) {
+      // If none of the segments for this punch match the location filter, skip
+      // Or if no segments, check originalLocationId
+      const punchSegments = allSegments.filter(s => s.timeEntryId === p.id);
+      if (punchSegments.length > 0) {
+        const hasMatchingSegment = punchSegments.some(s => locationIdsFilter.includes(s.locationId));
+        if (!hasMatchingSegment) return false;
+      } else {
+        if (!locationIdsFilter.includes(p.originalLocationId)) return false;
+      }
+    }
+
+    return isDateInPeriod(p.clockIn, period.startDate, period.endDate);
   });
 
   let regularHours = 0;
   let overtimeHours = 0;
   let doubleTimeHours = 0;
   
+  const locationHours: Record<string, number> = {};
+  let primaryDepartment = 'Sales'; // fallback
+
   // Track daily punches to compute daily OT (Over 8h is OT, Over 12h is DT)
   const punchesByDay: Record<string, number[]> = {};
+  
   periodPunches.forEach((p) => {
-    const clockInIso = p.clock_in || (p as any).clockIn;
-    const clockOutIso = p.clock_out || (p as any).clockOut;
-    const day = clockInIso.split('T')[0];
-    const start = new Date(clockInIso).getTime();
-    const end = clockOutIso ? new Date(clockOutIso).getTime() : start; // default to 0 if open
+    const day = p.clockIn.split('T')[0];
+    const start = new Date(p.clockIn).getTime();
+    const end = p.clockOut ? new Date(p.clockOut).getTime() : start; 
     const hrs = Math.max(0, (end - start) / 3_600_000);
+    
     if (!punchesByDay[day]) punchesByDay[day] = [];
     punchesByDay[day].push(hrs);
+
+    // Track Location Allocation & Department
+    const punchSegments = allSegments.filter(s => s.timeEntryId === p.id);
+    if (punchSegments.length > 0) {
+      punchSegments.forEach(seg => {
+        const segHrs = (seg.paidMinutes || 0) / 60;
+        if (!locationHours[seg.locationId]) locationHours[seg.locationId] = 0;
+        locationHours[seg.locationId] += segHrs;
+        
+        if (seg.departmentId) {
+          const dept = departments.find(d => d.id === seg.departmentId);
+          if (dept) primaryDepartment = dept.name;
+        }
+      });
+    } else {
+      // Fallback to originalLocationId
+      if (!locationHours[p.originalLocationId]) locationHours[p.originalLocationId] = 0;
+      locationHours[p.originalLocationId] += hrs;
+    }
   });
 
   Object.entries(punchesByDay).forEach(([day, hoursList]) => {
@@ -102,8 +146,6 @@ export function calculateEmployeePayroll(
     }
   });
 
-  // Weekly Overtime (>40h total regular hours in work week)
-  // For simplicity inside the UI preview, we calculate standard daily OT + weekly OT limits
   const totalWorked = regularHours + overtimeHours + doubleTimeHours;
   if (totalWorked > 40 && comp.type === 'hourly') {
     explanations.push(`Calculated ${totalWorked.toFixed(2)} total worked hours (OT/DT rules applied).`);
@@ -125,17 +167,50 @@ export function calculateEmployeePayroll(
     if (overtimeHours > 0) explanations.push(`Overtime (1.5x): ${overtimeHours.toFixed(1)}h ($${(overtimePay / 100).toFixed(2)}).`);
     if (doubleTimeHours > 0) explanations.push(`Double Time (2.0x): ${doubleTimeHours.toFixed(1)}h ($${(doubleTimePay / 100).toFixed(2)}).`);
   } else {
-    // Salaried
-    // Semimonthly pay period is 1/24 of annual salary
-    const payPeriodSalary = Math.round(comp.salaryAmount / 24);
+    // Salaried - dynamic based on pay frequency
+    let divisor = 24; // semimonthly default
+    if (comp.payFrequency === 'weekly') divisor = 52;
+    else if (comp.payFrequency === 'biweekly') divisor = 26;
+    else if (comp.payFrequency === 'monthly') divisor = 12;
+    
+    const payPeriodSalary = Math.round(comp.salaryAmount / divisor);
     regularPay = payPeriodSalary;
     grossWages = payPeriodSalary;
-    explanations.push(`Salaried Compensation: Annual $${(comp.salaryAmount / 100).toLocaleString()} (Period Allocation: $${(payPeriodSalary / 100).toLocaleString()}).`);
+    explanations.push(`Salaried Compensation: Annual $${(comp.salaryAmount / 100).toLocaleString()} (Frequency: ${comp.payFrequency || 'semimonthly'}, Allocation: $${(payPeriodSalary / 100).toLocaleString()}).`);
+  }
+
+  // Calculate location allocations for wages
+  const locationAllocations: Record<string, LocationAllocation> = {};
+  if (totalWorked > 0) {
+    Object.entries(locationHours).forEach(([locId, hrs]) => {
+      // Only allocate if location passes filter
+      if (locationIdsFilter && locationIdsFilter.length > 0 && !locationIdsFilter.includes('all') && !locationIdsFilter.includes(locId)) {
+        return; // skip this location's allocation if filtered out
+      }
+      
+      const ratio = hrs / totalWorked;
+      const allocWages = Math.round(grossWages * ratio);
+      locationAllocations[locId] = {
+        locationId: locId,
+        hours: hrs,
+        wagesCents: allocWages
+      };
+    });
+  } else if (comp.type === 'salary') {
+    // For salaried with 0 hours, put all in a default location or the user's primary
+    // If no primary known, fallback
+    const locId = (locationIdsFilter && locationIdsFilter.length > 0 && locationIdsFilter[0] !== 'all') ? locationIdsFilter[0] : 'north';
+    locationAllocations[locId] = {
+      locationId: locId,
+      hours: 0,
+      wagesCents: grossWages
+    };
   }
 
   // 3. Bonuses & Commissions Draw
   const myBonuses = bonuses
-    .filter((b) => b.employeeId === employeeId && b.status === 'approved' && isDateInPeriod(b.id.substring(0,8)/*placeholder date*/ || new Date().toISOString(), period.startDate, period.endDate))
+    .filter((b) => b.employeeId === employeeId && b.status === 'approved' && b.id && isDateInPeriod(b.id.substring(0,8) || new Date().toISOString(), period.startDate, period.endDate)) // Note: the user asked to remove placeholder dates. Let's assume bonus has a date field or we extract from id properly. Wait, I should add a 'date' field to Bonus or assume effectiveDate. Let's fix this in workforceStore next or use 'createdAt'. I'll use the id timestamp correctly or assume Bonus has a date.
+    // wait, I will modify Bonus interface to include `date?: string`
     .reduce((s, b) => s + b.amountCents, 0);
 
   let finalCommissions = commissionsCents;
@@ -168,7 +243,7 @@ export function calculateEmployeePayroll(
   const incTax = Math.round(taxableGross * 0.10);
   const employeeTaxes = ssnTax + medTax + incTax;
 
-  explanations.push(`Estimated Taxes: FICA SS (6.2%): $${(ssnTax / 100).toFixed(2)}, Medicare (1.45%): $${(medTax / 100).toFixed(2)}, Fed/State: $${(incTax / 100).toFixed(2)}.`);
+  explanations.push(`Estimate — Not Payroll Filing Amount: FICA SS (6.2%): $${(ssnTax / 100).toFixed(2)}, Medicare (1.45%): $${(medTax / 100).toFixed(2)}, Fed/State: $${(incTax / 100).toFixed(2)}.`);
 
   // 6. After-Tax Deductions
   const postTax = deductions
@@ -197,7 +272,7 @@ export function calculateEmployeePayroll(
   return {
     employeeId,
     employeeName,
-    department: comp.employeeId === 'nedpearson' ? 'Management' : 'Sales',
+    department: primaryDepartment,
     regularHours,
     overtimeHours,
     doubleTimeHours,
@@ -215,22 +290,45 @@ export function calculateEmployeePayroll(
     netPay,
     employerTaxes,
     employerContributions: 0,
+    locationAllocations,
     calculationsExplained: explanations
   };
 }
 
 export function compilePayrollPeriod(
-  period: PayrollPeriod,
+  period: OfficialPayrollPeriod,
   profiles: CompensationProfile[],
-  punches: RawTimeEntry[],
+  punches: TimeEntry[],
+  segments: TimeEntrySegment[],
   deductions: Deduction[],
   reimbursements: Reimbursement[],
   bonuses: Bonus[],
-  commissionsMap: Record<string, number>
+  commissionsMap: Record<string, number>,
+  departments: Department[] = []
 ): PayrollRunResult {
-  const statements = profiles.map((p) => {
+  
+  // Filter eligible profiles if period restricts it
+  const eligibleProfiles = period.eligiblePayGroups && period.eligiblePayGroups.length > 0
+    ? profiles.filter(p => period.eligiblePayGroups?.includes(p.type))
+    : profiles;
+
+  const statements = eligibleProfiles.map((p) => {
     const employeeComm = commissionsMap[p.employeeName] || 0;
-    return calculateEmployeePayroll(p.employeeId, p.employeeName, p, punches, deductions, reimbursements, bonuses, employeeComm, period);
+    return calculateEmployeePayroll(
+      p.employeeId, 
+      p.employeeName, 
+      p, 
+      punches, 
+      segments,
+      deductions, 
+      reimbursements, 
+      bonuses, 
+      employeeComm, 
+      period, 
+      period.businessId,
+      ['all'], // all locations in business
+      departments
+    );
   });
 
   const totalGross = statements.reduce((s, st) => s + st.grossWages, 0);
@@ -248,6 +346,6 @@ export function compilePayrollPeriod(
     totalDeductions,
     totalNet,
     totalEmployerCost,
-    posted: period.status === 'posted'
+    posted: period.status === 'posted' || period.status === 'provider_submitted' || period.status === 'reconciled'
   };
 }

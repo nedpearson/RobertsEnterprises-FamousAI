@@ -29,9 +29,11 @@ import { PageHeader, StatusBadge, btnSecondary } from './ui';
 import SalesGoalsTab from './SalesGoalsTab';
 import SalesByRangeTab from './SalesByRangeTab';
 import HoursReportTab from './HoursReportTab';
+import ConsolidatedPayrollReport from './payroll/reports/ConsolidatedPayrollReport';
+import LocationPayrollReport from './payroll/reports/LocationPayrollReport';
 
 
-type TabKey = 'revenue' | 'goals' | 'sales-range' | 'hours' | 'locations' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups';
+type TabKey = 'revenue' | 'goals' | 'sales-range' | 'hours' | 'locations' | 'open-orders' | 'deliveries' | 'bookings' | 'follow-ups' | 'payroll-executive' | 'payroll-locations';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'revenue', label: 'Revenue & Growth' },
@@ -43,6 +45,8 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'deliveries', label: 'Expected Deliveries' },
   { key: 'bookings', label: 'Bookings' },
   { key: 'follow-ups', label: 'Follow-Ups' },
+  { key: 'payroll-executive', label: 'Payroll Executive' },
+  { key: 'payroll-locations', label: 'Payroll by Location' },
 ];
 
 /** Tabs that render their own export controls, so the header button hides. */
@@ -424,7 +428,9 @@ export default function ReportsView() {
 
       {tab === 'hours' && <HoursReportTab />}
 
+      {tab === 'payroll-executive' && <ConsolidatedPayrollReport />}
 
+      {tab === 'payroll-locations' && <LocationPayrollReport />}
 
       {tab === 'locations' && (
         <div className="space-y-6">

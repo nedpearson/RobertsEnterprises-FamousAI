@@ -33,6 +33,7 @@ import { AIAssignmentDrawer } from './AIAssignmentDrawer';
 import { NewAppointmentModal } from './NewAppointmentModal';
 import { NewRequestModal } from './NewRequestModal';
 import { EmployeeShiftModal } from './EmployeeShiftModal';
+import { DraggableAppointmentCard } from './components/DraggableAppointmentCard';
 import { NotificationPermissionToggle } from '@/components/vowos/NotificationPermissionToggle';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { 
@@ -458,38 +459,12 @@ export function UnifiedSchedulingWorkspace() {
                   </div>
                 ) : (
                   requests.map((req: any) => (
-                    <div
+                    <DraggableAppointmentCard
                       key={req.id}
-                      data-id={req.id}
-                      data-title={`${req.customer?.first_name || 'Guest'} - ${req.service?.name || 'Fitting'}`}
-                      className="draggable-request-card p-3 rounded-xl border border-stone-200 bg-stone-50/50 hover:bg-stone-100/80 cursor-pointer transition-all hover:border-rose-300 shadow-2xs"
-                      onClick={() => updateSelectedRequestUrl({ type: 'request', id: req.id, raw: req })}
-                    >
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-semibold text-xs text-stone-900">
-                          {req.customer?.first_name} {req.customer?.last_name}
-                        </span>
-                        <Badge variant="outline" className="text-[10px] bg-rose-50 text-rose-700 border-rose-200">
-                          Pending
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-stone-600 font-medium mb-2">{req.service?.name || 'Bridal Fitting'}</p>
-                      <div className="flex items-center justify-between text-[10px] text-stone-400">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {req.preferred_date_1 || 'Flexible'}
-                        </span>
-                        <Button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAssigningRequest(req);
-                          }}
-                          size="xs"
-                          className="h-6 text-[10px] px-2 bg-stone-900 text-white"
-                        >
-                          Assign
-                        </Button>
-                      </div>
-                    </div>
+                      request={req}
+                      onSelect={(r) => updateSelectedRequestUrl({ type: 'request', id: r.id, raw: r })}
+                      onAssign={(r) => setAssigningRequest(r)}
+                    />
                   ))
                 )}
               </div>

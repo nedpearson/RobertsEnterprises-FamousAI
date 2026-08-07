@@ -3,7 +3,8 @@ import { Search, Receipt, Loader2, Plus, Link2 } from 'lucide-react';
 import { Invoice, formatCents, formatDate } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, inputCls, btnPrimary } from './ui';
-import { NewInvoiceModal, RecordPaymentModal } from './InvoiceModals';
+import { NewInvoiceModal } from './InvoiceModals';
+import TerminalCheckoutModal from '@/features/pos/TerminalCheckoutModal';
 import PaymentLinkModal from './PaymentLinkModal';
 
 import BridalIdentity from './BridalIdentity';
@@ -199,7 +200,7 @@ export default function InvoicesView() {
       </div>
 
       <NewInvoiceModal open={showNewInvoice} onClose={() => setShowNewInvoice(false)} />
-      <RecordPaymentModal invoice={payingInvoice} onClose={() => setPayingInvoiceId(null)} />
+      <TerminalCheckoutModal invoice={payingInvoice} onClose={() => setPayingInvoiceId(null)} />
       {linkInvoiceId && (
         <PaymentLinkModal
           invoice={list.find((i) => i.id === linkInvoiceId) ?? null}

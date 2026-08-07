@@ -21,6 +21,7 @@ export interface CompensationProfile {
   employeeId: string;
   employeeName: string;
   type: 'hourly' | 'salary' | 'hourly_plus_commission' | 'salary_plus_commission';
+  payFrequency?: 'weekly' | 'biweekly' | 'semimonthly' | 'monthly';
   hourlyRate: number; // in cents
   salaryAmount: number; // in cents
   commissionRate: number; // in percentage, e.g. 10 for 10%
@@ -107,6 +108,71 @@ export interface AuditLogRecord {
   ipAddress?: string;
 }
 
+}
+
+export interface TimeEntry {
+  id: string;
+  businessId: string;
+  employeeId: string;
+  employeeName: string;
+  clockIn: string; // YYYY-MM-DDTHH:mm:ssZ
+  clockOut?: string; 
+  originalLocationId: string;
+  status: 'active' | 'completed' | 'voided' | 'corrected';
+  source: 'web' | 'mobile' | 'manager' | 'api';
+  approved: boolean;
+  approvedBy?: string;
+  notes?: string;
+}
+
+export interface TimeEntrySegment {
+  id: string;
+  timeEntryId: string;
+  businessId: string;
+  employeeId: string;
+  locationId: string;
+  departmentId: string;
+  startAt: string;
+  endAt?: string;
+  paidMinutes: number;
+  unpaidMinutes: number;
+}
+
+export interface TimeEntryCorrection {
+  id: string;
+  timeEntryId: string;
+  requestedBy: string; // employee or manager
+  requestedAt: string;
+  type: 'missed_in' | 'missed_out' | 'wrong_time' | 'wrong_location' | 'other';
+  proposedClockIn?: string;
+  proposedClockOut?: string;
+  proposedLocationId?: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  resolvedBy?: string;
+  resolvedAt?: string;
+}
+
+export interface OfficialPayrollPeriod {
+  id: string;
+  businessId: string;
+  name: string; // e.g. "July 16 - July 31, 2026"
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  payDate: string; // YYYY-MM-DD
+  payFrequency: 'weekly' | 'biweekly' | 'semimonthly' | 'monthly' | 'custom';
+  status: 'draft' | 'reviewing' | 'approved' | 'posted' | 'provider_submitted' | 'reconciled' | 'failed' | 'voided';
+  eligiblePayGroups?: string[];
+  totalGrossCents?: number;
+  totalNetCents?: number;
+  totalEmployerCostCents?: number;
+  employeeCount?: number;
+  createdBy?: string;
+  approvedBy?: string;
+  postedAt?: string;
+  providerStatus?: 'simulated' | 'connected' | 'healthy' | 'syncing' | 'failed';
+}
+
 // ─── Default Configurations ───
 
 const DEFAULT_DEPARTMENTS: Department[] = [
@@ -125,7 +191,7 @@ const DEFAULT_JOB_TITLES: JobTitle[] = [
 ];
 
 const DEFAULT_COMPENSATION_PROFILES: CompensationProfile[] = [
-  { employeeId: 'nedpearson', employeeName: 'nedpearson', type: 'salary', hourlyRate: 0, salaryAmount: 12000000, commissionRate: 5, drawAmount: 0, effectiveDate: '2026-01-01', reason: 'Initial setup' }
+  { employeeId: 'nedpearson', employeeName: 'nedpearson', type: 'salary', payFrequency: 'semimonthly', hourlyRate: 0, salaryAmount: 12000000, commissionRate: 5, drawAmount: 0, effectiveDate: '2026-01-01', reason: 'Initial setup' }
 ];
 
 const DEFAULT_LEAVE_POLICIES: LeavePolicy[] = [
@@ -225,4 +291,36 @@ export async function writeAuditLog(actorName: string, action: string, details: 
   } catch (err) {
     console.error('Error writing audit log:', err);
   }
+}
+
+export async function getTimeEntries(): Promise<TimeEntry[]> {
+  return fetchJsonSetting<TimeEntry[]>('workforce_time_entries', []);
+}
+
+export async function saveTimeEntries(list: TimeEntry[]): Promise<string | null> {
+  return saveJsonSetting<TimeEntry[]>('workforce_time_entries', list);
+}
+
+export async function getTimeEntrySegments(): Promise<TimeEntrySegment[]> {
+  return fetchJsonSetting<TimeEntrySegment[]>('workforce_time_segments', []);
+}
+
+export async function saveTimeEntrySegments(list: TimeEntrySegment[]): Promise<string | null> {
+  return saveJsonSetting<TimeEntrySegment[]>('workforce_time_segments', list);
+}
+
+export async function getTimeEntryCorrections(): Promise<TimeEntryCorrection[]> {
+  return fetchJsonSetting<TimeEntryCorrection[]>('workforce_time_corrections', []);
+}
+
+export async function saveTimeEntryCorrections(list: TimeEntryCorrection[]): Promise<string | null> {
+  return saveJsonSetting<TimeEntryCorrection[]>('workforce_time_corrections', list);
+}
+
+export async function getOfficialPayrollPeriods(): Promise<OfficialPayrollPeriod[]> {
+  return fetchJsonSetting<OfficialPayrollPeriod[]>('workforce_payroll_periods', []);
+}
+
+export async function saveOfficialPayrollPeriods(list: OfficialPayrollPeriod[]): Promise<string | null> {
+  return saveJsonSetting<OfficialPayrollPeriod[]>('workforce_payroll_periods', list);
 }
