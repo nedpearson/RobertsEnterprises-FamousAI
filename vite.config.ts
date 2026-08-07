@@ -44,7 +44,8 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: "Roberts Enterprises Mobile",
         short_name: "Roberts Mobile",
-        description: "AI-powered operations, scheduling, sales, customer, inventory, and business management for Roberts Enterprises.",
+        description: "Mobile operations, scheduling, appointments, customers, sales, inventory, and business management for Roberts Enterprises.",
+        id: "/",
         start_url: "/",
         scope: "/",
         display: "standalone",
@@ -52,11 +53,62 @@ export default defineConfig(({ mode }) => ({
         orientation: "any",
         theme_color: "#1c1917",
         background_color: "#fafaf9",
+        prefer_related_applications: false,
         categories: ["business", "productivity", "finance"],
         icons: [
           {
+            src: "/icons/favicon-16x16.png",
+            sizes: "16x16",
+            type: "image/png"
+          },
+          {
+            src: "/icons/favicon-32x32.png",
+            sizes: "32x32",
+            type: "image/png"
+          },
+          {
+            src: "/icons/pwa-48x48.png",
+            sizes: "48x48",
+            type: "image/png"
+          },
+          {
+            src: "/icons/pwa-72x72.png",
+            sizes: "72x72",
+            type: "image/png"
+          },
+          {
+            src: "/icons/pwa-96x96.png",
+            sizes: "96x96",
+            type: "image/png"
+          },
+          {
+            src: "/icons/pwa-128x128.png",
+            sizes: "128x128",
+            type: "image/png"
+          },
+          {
+            src: "/icons/pwa-144x144.png",
+            sizes: "144x144",
+            type: "image/png"
+          },
+          {
+            src: "/icons/pwa-152x152.png",
+            sizes: "152x152",
+            type: "image/png"
+          },
+          {
+            src: "/icons/apple-touch-icon.png",
+            sizes: "180x180",
+            type: "image/png"
+          },
+          {
             src: "/icons/pwa-192x192.png",
             sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: "/icons/pwa-384x384.png",
+            sizes: "384x384",
             type: "image/png"
           },
           {
@@ -65,7 +117,13 @@ export default defineConfig(({ mode }) => ({
             type: "image/png"
           },
           {
-            src: "/icons/pwa-512x512.png",
+            src: "/icons/pwa-192x192-maskable.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable"
+          },
+          {
+            src: "/icons/pwa-512x512-maskable.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable"
@@ -73,7 +131,10 @@ export default defineConfig(({ mode }) => ({
         ],
         shortcuts: [
           { name: "Today", url: "/today", description: "View today's operations command center" },
-          { name: "Calendar & Scheduling", url: "/schedule", description: "View calendar, workforce, and booking requests" }
+          { name: "Calendar & Scheduling", url: "/schedule", description: "View calendar, workforce, and booking requests" },
+          { name: "Action Center", url: "/actions", description: "View important notifications and tasks" },
+          { name: "Customers", url: "/brides", description: "Manage client profiles and bridal details" },
+          { name: "Sales", url: "/sales", description: "Track transactions, payments, and revenue" }
         ]
       }
     })

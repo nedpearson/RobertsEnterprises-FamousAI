@@ -1,5 +1,33 @@
 // service-worker-push.js
-// Handles web push notifications and user interaction events in the background
+// Handles web push notifications, cache cleanup of old FamousAI assets, and client takeover
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((cacheName) => {
+            // Clean up obsolete FamousAI or old cached assets
+            return (
+              cacheName.includes('famousai') || 
+              cacheName.includes('pwa-') ||
+              cacheName.includes('supabase-rest-cache')
+            );
+          })
+          .map((cacheName) => {
+            console.log('Clearing obsolete PWA cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+      );
+    }).then(() => {
+      return self.clients.claim();
+    })
+  );
+});
 
 self.addEventListener('push', (event) => {
   let data = {};
@@ -34,7 +62,7 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // If a window is already open, navigate it or focus it
+      // Focus existing window if it matches the target URL
       for (let client of windowClients) {
         if (client.url.includes(targetUrl) && 'focus' in client) {
           return client.focus();

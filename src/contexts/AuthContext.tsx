@@ -149,6 +149,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     setActiveDataPlane('production');
+    
+    // Clear user-scoped local state and sensitive client caches on logout
+    // keeping public preferences and offline assets intact.
+    const keysToKeep = [
+      'theme', 
+      'vite-ui-theme', 
+      'compact-sidebar', 
+      'roberts_enterprises_mobile_install_dismissed_v2'
+    ];
+    const itemsToKeep: Record<string, string> = {};
+    for (const key of keysToKeep) {
+      const val = localStorage.getItem(key);
+      if (val !== null) itemsToKeep[key] = val;
+    }
+    localStorage.clear();
+    for (const [key, val] of Object.entries(itemsToKeep)) {
+      localStorage.setItem(key, val);
+    }
+
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        for (const cacheName of cacheNames) {
+          if (cacheName.includes('supabase-rest-cache')) {
+            await caches.delete(cacheName);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to clear sensitive caches:', err);
+      }
+    }
+
     await supabase.auth.signOut();
     setProfile(null);
     window.location.reload();
