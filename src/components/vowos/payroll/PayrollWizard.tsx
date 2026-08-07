@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { PayrollRunResult, OfficialPayrollPeriod } from '@/lib/services/payrollEngine';
 import { ExceptionData } from './ExceptionCenter';
 import { CheckCircle2, ChevronRight, FileText, AlertTriangle } from 'lucide-react';
-import { ConsolidatedPayrollReport } from './reports/ConsolidatedPayrollReport';
-import { LocationPayrollReport } from './reports/LocationPayrollReport';
+import ConsolidatedPayrollReport from './reports/ConsolidatedPayrollReport';
+import LocationPayrollReport from './reports/LocationPayrollReport';
 
 interface PayrollWizardProps {
   draftRun: PayrollRunResult | null;
