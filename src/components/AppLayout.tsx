@@ -12,6 +12,7 @@ import Breadcrumbs from '@/components/vowos/Breadcrumbs';
 import CommandPaletteModal from '@/components/vowos/CommandPaletteModal';
 import MobileNavigation from '@/components/vowos/MobileNavigation';
 import { NAVIGATION_ITEMS } from '@/lib/navigation/navigationRegistry';
+import { useApplicationRoute } from '@/lib/navigation/useApplicationRoute';
 import { getStoredCompactSidebar } from '@/lib/navigation/userPreferences';
 import { fetchMessages } from '@/lib/messaging';
 
@@ -21,6 +22,7 @@ import { TourControlBar } from '@/components/demo/TourControlBar';
 import { DemoLauncherModal } from '@/components/demo/DemoLauncherModal';
 import TrainingCenterView from '@/features/training/components/TrainingCenterView';
 import { VirtualCursorOverlay } from '@/features/training/components/VirtualCursorOverlay';
+import ActionCenter from '@/pages/actions/ActionCenter';
 
 import DashboardView from '@/components/vowos/DashboardView';
 import CustomersView from '@/components/vowos/CustomersView';
@@ -93,7 +95,10 @@ function RoleLockedPanel({ label, view, role }: { label: string; view: ViewKey; 
 }
 
 export default function AppLayout() {
-  const [view, setView] = useState<ViewKey>('dashboard');
+  const { currentView, navigateToView } = useApplicationRoute();
+  const view = currentView === 'not-found' ? 'dashboard' : currentView;
+  const setView = (v: ViewKey) => navigateToView(v);
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const [authOpen, setAuthOpen] = useState(false);
@@ -309,6 +314,7 @@ export default function AppLayout() {
             <VowosErrorBoundary>
               {view === 'dashboard' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerToday onNavigate={setView} /> : <DashboardView onNavigate={setView} />)}
               {view === 'overview' && (showMobileView ? <MobileOwnerOverview onNavigate={setView} /> : <OwnerExecutiveOverview onNavigate={setView} />)}
+              {view === 'actions' && <ActionCenter />}
               {view === 'sales' && (showMobileView && (role === 'Owner' || role === 'Manager') ? <MobileOwnerSales onNavigate={setView} /> : <ReportsView />)}
               {view === 'customers' && <CustomersView />}
               {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}

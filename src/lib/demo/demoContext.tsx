@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { DEMO_PERSONAS, DEMO_STORES, DemoPersona, DemoStore } from './demoData';
+import { resetDemoActions } from './demoActions';
 import { DEMO_SCENARIOS, ScenarioDefinition } from './scenariosLibrary';
 import { tourEngine, TourState, CursorPosition, TrainingMode } from './tourEngine';
 import { getActiveDataPlane } from '@/lib/supabase';
@@ -117,9 +118,11 @@ export const DemoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     tourEngine.setPlaybackRate(rate);
   };
 
-  const resetDemoSession = () => {
+  const resetDemoSession = async () => {
     tourEngine.stopTour();
     setDemoSessionId(`demo-sess-${Date.now()}`);
+    // Seed action center with deterministic actions on reset
+    await resetDemoActions('demo-business-id-001').catch(console.error);
   };
 
   return (

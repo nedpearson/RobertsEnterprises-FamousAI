@@ -38,8 +38,7 @@ const App = () => (
                 <DemoProvider>
                 <BrowserRouter>
                   <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/schedule" element={<Index />} />
+                    <Route path="/*" element={<Index />} />
                     <Route path="/book" element={<BookAppointment />} />
                     <Route path="/pay/:invoiceId" element={<PayInvoice />} />
                     <Route path="/sign/:contractId" element={<SignContract />} />
@@ -54,8 +53,6 @@ const App = () => (
                     <Route path="/scheduling/appointments" element={<Navigate to="/schedule?mode=calendar" replace />} />
                     <Route path="/scheduling/assignment-center" element={<Navigate to="/schedule?mode=requests" replace />} />
                     <Route path="/booking-request" element={<Navigate to="/schedule?mode=requests" replace />} />
-
-                    <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>
               </DemoProvider>

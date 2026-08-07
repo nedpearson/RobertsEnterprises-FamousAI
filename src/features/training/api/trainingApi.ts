@@ -12,7 +12,7 @@ export const OWNER_ONBOARDING_COURSE: TrainingCourse = {
   audienceRoles: ['owner'],
   version: '2026.2',
   required: true,
-  estimatedMinutes: 120,
+  estimatedMinutes: 130,
   lessons: [
     {
       id: 'les-phase-01',
@@ -76,6 +76,31 @@ export const OWNER_ONBOARDING_COURSE: TrainingCourse = {
           required: true,
         },
       ],
+    },
+    {
+      id: 'les-phase-04',
+      courseId: 'course-owner-onboarding',
+      sequence: 4,
+      title: 'Phase 4 — Action Center & Operations',
+      description: 'Master the Action Center to handle urgent exceptions, owner approvals, and AI-prioritized task resolution across all locations.',
+      estimatedMinutes: 10,
+      required: true,
+      category: 'Operations',
+      steps: [
+        {
+          id: 'step-p4-1',
+          courseId: 'course-owner-onboarding',
+          lessonId: 'les-phase-04',
+          sequence: 1,
+          title: 'Difference between Calendar and Action Center',
+          narration: 'Calendar & Scheduling manages time, staffing, and appointments. The Action Center shows exceptions, approvals, and follow-ups requiring attention across the business.',
+          transcript: 'Calendar & Scheduling manages time, staffing, and appointments. The Action Center shows exceptions, approvals, and follow-ups requiring attention across the business.',
+          route: '/actions',
+          targetSelector: '[data-training-id="tab-actions"]',
+          action: 'observe',
+          required: true,
+        }
+      ]
     },
     {
       id: 'les-phase-03',

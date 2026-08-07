@@ -125,7 +125,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
   },
   {
     id: 'actions',
-    label: 'Action Queue',
+    label: 'Action Center',
     shortLabel: 'Actions',
     icon: ShieldCheck,
     path: '/actions',
