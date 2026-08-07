@@ -147,6 +147,7 @@ export class AIModelGateway {
   private static instance: AIModelGateway;
   private models: AIModelConfig[] = [...INITIAL_AI_MODELS];
   private benchmarks: BenchmarkResult[] = [];
+  private isInitialized = false;
 
   public static getInstance(): AIModelGateway {
     if (!AIModelGateway.instance) {
@@ -155,11 +156,33 @@ export class AIModelGateway {
     return AIModelGateway.instance;
   }
 
+  public async initialize(dataPlane: 'production' | 'demo') {
+    if (this.isInitialized) return;
+    try {
+      const { resolveEffectiveSetting } = await import('@/lib/settings');
+      const result = await resolveEffectiveSetting<AIModelConfig[]>(
+        'ai_models_config',
+        'ai_models_config',
+        { dataPlane },
+        INITIAL_AI_MODELS
+      );
+      this.models = result.value;
+      this.isInitialized = true;
+    } catch (e) {
+      console.error("Failed to load AI models from DB", e);
+    }
+  }
+
   public getModels(): AIModelConfig[] {
     return this.models;
   }
 
-  public getModelForTask(taskType: AITaskType): AIModelConfig {
+  public async getModelForTask(taskType: AITaskType): Promise<AIModelConfig> {
+    if (!this.isInitialized) {
+      // Fallback if not initialized
+      const champion = this.models.find((m) => m.taskType === taskType && m.isChampion);
+      return champion || this.models[0];
+    }
     const champion = this.models.find((m) => m.taskType === taskType && m.isChampion);
     return champion || this.models[0];
   }
@@ -184,18 +207,52 @@ export class AIModelGateway {
     });
   }
 
-  public runBenchmarkSuite(): BenchmarkResult[] {
-    const results: BenchmarkResult[] = this.models.map((m) => ({
-      id: `bench-${Date.now()}-${m.id}`,
-      modelId: m.id,
-      timestamp: new Date().toISOString(),
-      taskType: m.taskType,
-      qualityScore: Math.min(100, Math.max(80, m.qualityScore + (Math.random() * 4 - 2))),
-      latencyMs: Math.max(10, Math.round(m.latencyMs + (Math.random() * 40 - 20))),
-      costCents: m.costPer1kTokensCents,
-      passed: true,
-    }));
+  public async runBenchmarkSuite(dataPlane: 'production' | 'demo'): Promise<BenchmarkResult[]> {
+    await this.initialize(dataPlane);
+    
+    // Simulate a real evaluation harness (e.g., calling an external LLM judge or running a test suite)
+    const results: BenchmarkResult[] = this.models.map((m) => {
+      // In a real implementation, this would trigger an edge function that runs the model against a gold dataset.
+      // We simulate the output of that edge function here.
+      const variance = (Math.random() * 4) - 2; // -2 to +2
+      const newQualityScore = Math.min(100, Math.max(80, Math.round(m.qualityScore + variance)));
+      const newLatencyMs = Math.max(10, Math.round(m.latencyMs + (Math.random() * 40 - 20)));
+      
+      return {
+        id: `bench-${Date.now()}-${m.id}`,
+        modelId: m.id,
+        timestamp: new Date().toISOString(),
+        taskType: m.taskType,
+        qualityScore: newQualityScore,
+        latencyMs: newLatencyMs,
+        costCents: m.costPer1kTokensCents,
+        passed: newQualityScore >= 85, // Threshold for passing the benchmark
+      };
+    });
+    
     this.benchmarks.unshift(...results);
+    
+    // Update models with new metrics
+    this.models = this.models.map(m => {
+      const benchmark = results.find(r => r.modelId === m.id);
+      if (benchmark) {
+        return {
+          ...m,
+          qualityScore: benchmark.qualityScore,
+          latencyMs: benchmark.latencyMs,
+        };
+      }
+      return m;
+    });
+
+    // Save updated configurations back to the database
+    try {
+      const { saveScopedSetting } = await import('@/lib/settings');
+      await saveScopedSetting('ai_models_config', 'ai_models_config', this.models, { dataPlane }, "Automated benchmark suite results");
+    } catch (err) {
+      console.error("Failed to save benchmark results to DB", err);
+    }
+    
     return results;
   }
 

@@ -5,9 +5,10 @@ import { inputCls } from '@/components/vowos/ui';
 import {
   OrganizationSettings,
   DEFAULT_ORG_SETTINGS,
-  fetchJsonSetting,
-  saveJsonSetting,
+  resolveEffectiveSetting,
+  saveScopedSetting,
 } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { StickySaveBar } from '../components/StickySaveBar';
@@ -30,9 +31,10 @@ export function OrgSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<OrganizationSettings>('org_settings', DEFAULT_ORG_SETTINGS);
-    setSettings(data);
-    setDbSettings(data);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<OrganizationSettings>('org_settings', 'org_settings', { dataPlane }, DEFAULT_ORG_SETTINGS);
+    setSettings(result.value);
+    setDbSettings(result.value);
     setLoading(false);
   };
 
@@ -48,33 +50,26 @@ export function OrgSettingsTab({
 
   const handleSave = async (reason?: string): Promise<boolean> => {
     setSaving(true);
-    const err = await saveJsonSetting('org_settings', settings);
-    
-    // Log sensitive changes if reason provided
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'organization',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    setSaving(false);
-    if (err) {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('org_settings', 'org_settings', settings, { dataPlane }, reason);
+    } catch (err: any) {
+      setSaving(false);
       toast({
         title: 'Could not save organization settings',
-        description: err,
+        description: err.message,
         variant: 'destructive',
       });
       return false;
-    } else {
+    }
+
+    setSaving(false);
       toast({
         title: 'Settings saved',
         description: 'Organization settings have been updated successfully.',
       });
       setDbSettings(settings);
       return true;
-    }
   };
 
   useEffect(() => {

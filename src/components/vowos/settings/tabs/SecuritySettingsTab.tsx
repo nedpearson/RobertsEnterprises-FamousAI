@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting, DEFAULT_SECURITY_SETTINGS, SecuritySettings } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting, DEFAULT_SECURITY_SETTINGS, SecuritySettings } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface SecuritySettingsExtended extends SecuritySettings {
   allowedIps: string;
@@ -38,8 +39,14 @@ export function SecuritySettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<SecuritySettingsExtended>('security_settings_extended', DEFAULT_SECURITY_EXTENDED);
-    const fallback = { ...DEFAULT_SECURITY_EXTENDED, ...data };
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<SecuritySettingsExtended>(
+      'security_settings_extended',
+      'security_settings_extended',
+      { dataPlane },
+      DEFAULT_SECURITY_EXTENDED
+    );
+    const fallback = { ...DEFAULT_SECURITY_EXTENDED, ...result.value };
     setSettings(fallback);
     setDbSettings(fallback);
     setLoading(false);
@@ -56,29 +63,23 @@ export function SecuritySettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('security_settings_extended', settings);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'security',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('security_settings_extended', 'security_settings_extended', settings, { dataPlane }, reason);
 
-    if (err) {
-      toast({
-        title: 'Could not save security settings',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
       toast({
         title: 'Security policy updated',
         description: 'Authentication parameters have been saved successfully.',
       });
       setDbSettings(settings);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save security settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

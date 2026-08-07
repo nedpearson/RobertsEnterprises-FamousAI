@@ -1,24 +1,35 @@
 import { useEffect, useState } from 'react';
-import { FileText, Loader2 } from 'lucide-react';
+import { 
+  FileText, 
+  Loader2, 
+  Plus, 
+  MoreVertical,
+  Pencil,
+  Trash2,
+  FileCheck,
+  FileDown,
+  History,
+  Copy,
+  Upload
+} from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
 import { inputCls } from '@/components/vowos/ui';
+import { PageHeader } from '../ui';
+import { supabase, getActiveDataPlane } from '@/lib/supabase';
 import { SettingsCard } from '../components/SettingsCard';
-import { SettingsField } from '../components/SettingsField';
-import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
 
-interface DocumentConfig {
-  quoteHeader: string;
-  invoiceFooter: string;
-  receiptTerms: string;
-  activeLogoUrl: string;
+interface DocumentTemplate {
+  id: string;
+  document_type: string;
+  template_name: string;
+  version: number;
+  is_active: boolean;
+  is_default: boolean;
+  file_path: string | null;
+  file_type: string | null;
+  updated_at: string;
 }
-
-const DEFAULT_DOC_CONFIG: DocumentConfig = {
-  quoteHeader: 'Bridal Gown Quote - Valid for 30 Days',
-  invoiceFooter: 'All deposits are non-refundable. Final balance is due before alterations.',
-  receiptTerms: 'Final Sale. Thank you for shopping with Roberts Enterprises.',
-  activeLogoUrl: 'https://robertsenterprises.com/logo.png',
-};
 
 interface DocumentsSettingsTabProps {
   onDirtyChange: (dirty: boolean) => void;
@@ -32,123 +43,232 @@ export function DocumentsSettingsTab({
   resetTrigger,
 }: DocumentsSettingsTabProps) {
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState<DocumentConfig>(DEFAULT_DOC_CONFIG);
-  const [dbSettings, setDbSettings] = useState<DocumentConfig>(DEFAULT_DOC_CONFIG);
+  const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
 
-  const loadSettings = async () => {
-    setLoading(true);
-    const data = await fetchJsonSetting<DocumentConfig>('document_settings', DEFAULT_DOC_CONFIG);
-    setSettings(data);
-    setDbSettings(data);
-    setLoading(false);
-  };
+  const loadTemplates = async () => {
+    try {
+      setLoading(true);
+      const dataPlane = getActiveDataPlane();
+      
+      const { data, error } = await supabase
+        .from('document_templates')
+        .select('*')
+        .eq('data_plane', dataPlane)
+        .order('document_type', { ascending: true })
+        .order('version', { ascending: false });
 
-  useEffect(() => {
-    loadSettings();
-  }, [resetTrigger]);
-
-  const isDirty = JSON.stringify(settings) !== JSON.stringify(dbSettings);
-
-  useEffect(() => {
-    onDirtyChange(isDirty);
-  }, [isDirty]);
-
-  const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('document_settings', settings);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'documents',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    if (err) {
+      if (error) throw error;
+      setTemplates(data || []);
+    } catch (err: any) {
+      console.error("Error loading templates:", err);
       toast({
-        title: 'Could not save document templates',
-        description: err,
+        title: 'Could not load templates',
+        description: err.message,
         variant: 'destructive',
       });
-      return false;
-    } else {
-      toast({
-        title: 'Document templates saved',
-        description: 'Receipt and Quote footers have been updated.',
-      });
-      setDbSettings(settings);
-      return true;
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    registerSaveRef(handleSave);
-  }, [settings]);
+    loadTemplates();
+  }, [resetTrigger]);
+
+  const handleUploadTemplate = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      toast({ title: 'Uploading template...' });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}_${file.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('document-templates')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Insert metadata
+      const { error: dbError } = await supabase.from('document_templates').insert({
+        data_plane: getActiveDataPlane(),
+        document_type: 'Custom',
+        template_name: file.name,
+        file_path: filePath,
+        file_type: fileExt,
+        is_active: true,
+        version: 1,
+      });
+
+      if (dbError) throw dbError;
+
+      toast({ title: 'Template uploaded successfully' });
+      loadTemplates();
+    } catch (err: any) {
+      toast({
+        title: 'Upload failed',
+        description: err.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSetDefault = async (id: string, docType: string) => {
+    try {
+      // Unset default for same type
+      await supabase.from('document_templates')
+        .update({ is_default: false })
+        .eq('document_type', docType)
+        .eq('data_plane', getActiveDataPlane());
+        
+      // Set new default
+      await supabase.from('document_templates')
+        .update({ is_default: true })
+        .eq('id', id);
+        
+      toast({ title: 'Default template updated' });
+      loadTemplates();
+    } catch (err: any) {
+      toast({ title: 'Update failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this template?')) return;
+    try {
+      await supabase.from('document_templates').delete().eq('id', id);
+      toast({ title: 'Template deleted' });
+      loadTemplates();
+    } catch (err: any) {
+      toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-10 text-sm text-stone-500">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading document templates…
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading Template Center…
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-medium text-stone-900">Template Center</h2>
+          <p className="text-sm text-stone-500">Manage templates for Quotes, Contracts, Invoices, and more.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" className="gap-2 relative overflow-hidden">
+            <Upload className="h-4 w-4" />
+            Upload PDF/DOCX
+            <input 
+              type="file" 
+              accept=".pdf,.docx" 
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              onChange={handleUploadTemplate}
+            />
+          </Button>
+          <Button className="gap-2 bg-stone-900 text-white hover:bg-stone-800">
+            <Plus className="h-4 w-4" />
+            New Template
+          </Button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-stone-50 text-stone-500 font-medium border-b border-stone-200">
+              <tr>
+                <th className="px-6 py-4">Document Type</th>
+                <th className="px-6 py-4">Template Name</th>
+                <th className="px-6 py-4">Version</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {templates.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-stone-500">
+                    No templates found. Upload one to get started.
+                  </td>
+                </tr>
+              ) : (
+                templates.map((tpl) => (
+                  <tr key={tpl.id} className="hover:bg-stone-50/50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-stone-900">
+                      {tpl.document_type}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <FileCheck className="h-4 w-4 text-stone-400" />
+                        {tpl.template_name}
+                        {tpl.is_default && (
+                          <span className="bg-stone-100 text-stone-600 px-2 py-0.5 rounded text-xs font-medium">Default</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-stone-500">
+                      v{tpl.version}.0
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${tpl.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-600'}`}>
+                        {tpl.is_active ? 'Active' : 'Archived'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        {!tpl.is_default && tpl.is_active && (
+                          <Button variant="ghost" size="sm" onClick={() => handleSetDefault(tpl.id, tpl.document_type)}>
+                            Set Default
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Edit">
+                          <Pencil className="h-4 w-4 text-stone-500" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(tpl.id)} title="Delete">
+                          <Trash2 className="h-4 w-4 text-rose-500" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      {/* Configuration Defaults */}
       <SettingsCard
-        title="Document Design & Typography"
-        description="Establish custom headers, footers, and active logos for printed receipts and PDFs."
+        title="Template Configuration & Typography"
+        description="Establish universal styling parameters that cascade across all generated PDF documents unless overridden by the template."
         icon={<FileText className="h-5 w-5" />}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <SettingsField
-            label="Active Logo URL"
-            description="URL pointing to the boutique logo file."
-            className="sm:col-span-2"
-          >
-            <input
-              type="text"
-              value={settings.activeLogoUrl}
-              onChange={(e) => setSettings({ ...settings, activeLogoUrl: e.target.value })}
-              className={inputCls}
-            />
-          </SettingsField>
-
-          <SettingsField
-            label="Default Quote Title"
-            description="Header printed on customer quotes."
-            className="sm:col-span-2"
-          >
-            <input
-              type="text"
-              value={settings.quoteHeader}
-              onChange={(e) => setSettings({ ...settings, quoteHeader: e.target.value })}
-              className={inputCls}
-            />
-          </SettingsField>
-
-          <SettingsField
-            label="Invoice footer terms"
-            description="Disclosures displayed at bottom of customer invoice printouts."
-            className="sm:col-span-2"
-          >
-            <textarea
-              value={settings.invoiceFooter}
-              onChange={(e) => setSettings({ ...settings, invoiceFooter: e.target.value })}
-              className={`${inputCls} min-h-[80px] py-2`}
-            />
-          </SettingsField>
-
-          <SettingsField
-            label="Receipt terms & agreements"
-            description="Standard closing guidelines displayed at checkouts."
-            className="sm:col-span-2"
-          >
-            <textarea
-              value={settings.receiptTerms}
-              onChange={(e) => setSettings({ ...settings, receiptTerms: e.target.value })}
-              className={`${inputCls} min-h-[80px] py-2`}
-            />
-          </SettingsField>
+          <div className="sm:col-span-2 text-sm text-stone-500 mb-2">
+            These global settings will be applied automatically to any active templates without specific overrides.
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Brand Logo URL</label>
+            <input type="text" placeholder="https://..." className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Primary Font Family</label>
+            <select className={inputCls}>
+              <option>Inter</option>
+              <option>Roboto</option>
+              <option>Playfair Display</option>
+              <option>EB Garamond</option>
+            </select>
+          </div>
         </div>
       </SettingsCard>
     </div>

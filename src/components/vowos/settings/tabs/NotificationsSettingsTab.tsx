@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface NotificationPref {
   inApp: boolean;
@@ -44,7 +45,14 @@ export function NotificationsSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<NotificationSettings>('notification_settings', DEFAULT_NOTIFICATION_SETTINGS);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<NotificationSettings>(
+      'notification_settings',
+      'notification_settings',
+      { dataPlane },
+      DEFAULT_NOTIFICATION_SETTINGS
+    );
+    const data = result.value;
     const fallback = {
       appointments: { ...DEFAULT_NOTIFICATION_SETTINGS.appointments, ...data?.appointments },
       sales: { ...DEFAULT_NOTIFICATION_SETTINGS.sales, ...data?.sales },
@@ -67,29 +75,23 @@ export function NotificationsSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('notification_settings', settings);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'notifications',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('notification_settings', 'notification_settings', settings, { dataPlane }, reason);
 
-    if (err) {
-      toast({
-        title: 'Could not save notification preferences',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
       toast({
         title: 'Notification preferences saved',
         description: 'Default preferences updated successfully.',
       });
       setDbSettings(settings);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save notification preferences',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

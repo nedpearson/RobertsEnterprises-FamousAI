@@ -6,7 +6,8 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth, StaffRole, STAFF_ROLES, ROLE_DESCRIPTIONS, ROLE_BADGE_CLASSES, normalizeRole } from '@/contexts/AuthContext';
 import { PageHeader, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { NAV_ITEMS, VIEW_ACCESS, ViewKey } from './Sidebar';
-import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 import { Switch } from '@/components/ui/switch';
 import { ROLE_PERMISSIONS } from '@/lib/services/authService';
 import Staff360Modal from './Staff360Modal';
@@ -97,12 +98,23 @@ export default function StaffView() {
     }
     
     // Load custom user-specific permission matrix
-    const permissionsMap = await fetchJsonSetting<Record<string, ViewKey[]>>('custom_user_permissions', {});
+    const dataPlane = getActiveDataPlane();
+    const permResult = await resolveEffectiveSetting<Record<string, ViewKey[]>>(
+      'custom_user_permissions',
+      'custom_user_permissions',
+      { dataPlane },
+      {}
+    );
+    const actionsResult = await resolveEffectiveSetting<Record<string, string[]>>(
+      'custom_action_permissions',
+      'custom_action_permissions',
+      { dataPlane },
+      {}
+    );
+    const permissionsMap = permResult.value;
+    const actionsMap = actionsResult.value;
     setUserPermissions(permissionsMap);
     localStorage.setItem('vowos_user_permissions', JSON.stringify(permissionsMap));
-
-    // Load custom action privileges
-    const actionsMap = await fetchJsonSetting<Record<string, string[]>>('custom_action_permissions', {});
     setCustomActionPermissions(actionsMap);
     localStorage.setItem('vowos_action_permissions', JSON.stringify(actionsMap));
     setLoading(false);
@@ -131,7 +143,8 @@ export default function StaffView() {
     const newMap = { ...userPermissions, [staffId]: updatedList };
     setUserPermissions(newMap);
     localStorage.setItem('vowos_user_permissions', JSON.stringify(newMap));
-    await saveJsonSetting('custom_user_permissions', newMap);
+    const dataPlane = getActiveDataPlane();
+    await saveScopedSetting('custom_user_permissions', 'custom_user_permissions', newMap, { dataPlane }, 'Staff permissions updated');
 
     const sectionLabel = NAV_ITEMS.find((n) => n.key === viewKey)?.label ?? viewKey;
     toast({
@@ -146,7 +159,8 @@ export default function StaffView() {
     delete newMap[staffId];
     setUserPermissions(newMap);
     localStorage.setItem('vowos_user_permissions', JSON.stringify(newMap));
-    await saveJsonSetting('custom_user_permissions', newMap);
+    const dataPlane = getActiveDataPlane();
+    await saveScopedSetting('custom_user_permissions', 'custom_user_permissions', newMap, { dataPlane }, 'Staff permissions reset');
     toast({
       title: 'Permissions Reset',
       description: `Reset section access for ${staffName} to default role baseline.`,
@@ -668,7 +682,8 @@ export default function StaffView() {
                               const newMap = { ...customActionPermissions, [selectedStaffForActions.id]: newStaffActions };
                               setCustomActionPermissions(newMap);
                               localStorage.setItem('vowos_action_permissions', JSON.stringify(newMap));
-                              await saveJsonSetting('custom_action_permissions', newMap);
+                              const dataPlane = getActiveDataPlane();
+                              await saveScopedSetting('custom_action_permissions', 'custom_action_permissions', newMap, { dataPlane }, 'Action permission added');
                               toast({ title: 'Privilege Updated', description: `${isGranted ? 'Revoked' : 'Granted'} ${act.key}.` });
                             }}
                             className="data-[state=checked]:bg-emerald-500 scale-90"
@@ -688,7 +703,8 @@ export default function StaffView() {
                   delete newMap[selectedStaffForActions.id];
                   setCustomActionPermissions(newMap);
                   localStorage.setItem('vowos_action_permissions', JSON.stringify(newMap));
-                  await saveJsonSetting('custom_action_permissions', newMap);
+                  const dataPlane = getActiveDataPlane();
+                  await saveScopedSetting('custom_action_permissions', 'custom_action_permissions', newMap, { dataPlane }, 'Action permission removed');
                   toast({ title: 'Privileges Reset', description: `Reset action privileges for ${selectedStaffForActions.name} to role defaults.` });
                 }}
                 className="text-xs text-stone-400 underline hover:text-stone-600"

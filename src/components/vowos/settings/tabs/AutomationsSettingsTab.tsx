@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface AutomationRuleDetail {
   id: string;
@@ -47,9 +48,15 @@ export function AutomationsSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<AutomationRuleDetail[]>('automation_rules_detailed', DEFAULT_DETAILED_AUTOMATIONS);
-    setRules(data);
-    setDbRules(data);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<AutomationRuleDetail[]>(
+      'automation_rules_detailed',
+      'automation_rules_detailed',
+      { dataPlane },
+      DEFAULT_DETAILED_AUTOMATIONS
+    );
+    setRules(result.value);
+    setDbRules(result.value);
     setLoading(false);
   };
 
@@ -64,29 +71,23 @@ export function AutomationsSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('automation_rules_detailed', rules);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'automations',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('automation_rules_detailed', 'automation_rules_detailed', rules, { dataPlane }, reason);
 
-    if (err) {
-      toast({
-        title: 'Could not save automation rules',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
       toast({
         title: 'Automation rules saved',
         description: 'Auto messaging guidelines updated successfully.',
       });
       setDbRules(rules);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save automation rules',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

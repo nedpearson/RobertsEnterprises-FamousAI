@@ -1,26 +1,80 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Activity, RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { SettingsCard } from '../components/SettingsCard';
+import { supabase } from '@/lib/supabase';
+import { resolveEffectiveSetting } from '@/lib/settings';
 
-export function SystemHealthSettingsTab() {
+interface SystemHealthSettingsTabProps {
+  onDirtyChange: (dirty: boolean) => void;
+  registerSaveRef: (saveFn: () => Promise<boolean>) => void;
+  resetTrigger: number;
+}
+
+export function SystemHealthSettingsTab({
+  onDirtyChange,
+  registerSaveRef,
+  resetTrigger,
+}: SystemHealthSettingsTabProps) {
   const [checking, setChecking] = useState(false);
+  const [dbStatus, setDbStatus] = useState<'Pending' | 'Healthy' | 'Error'>('Pending');
+  const [stripeStatus, setStripeStatus] = useState<'Pending' | 'Healthy' | 'Error' | 'Disconnected'>('Pending');
+  const [aiStatus, setAiStatus] = useState<'Pending' | 'Healthy' | 'Error' | 'Disconnected'>('Pending');
+
+  useEffect(() => {
+    // This tab doesn't have unsaved changes
+    onDirtyChange(false);
+    registerSaveRef(async () => true);
+  }, []);
 
   const runDiagnostics = async () => {
     setChecking(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setChecking(false);
-    toast({
-      title: 'Diagnostics check complete',
-      description: 'All backend databases and integration endpoints are fully healthy.',
-    });
+    setDbStatus('Pending');
+    setStripeStatus('Pending');
+    setAiStatus('Pending');
+    
+    try {
+      // 1. Check DB Health
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      setDbStatus('Healthy');
+
+      // 2. Check Integrations
+      const { data: membership } = await supabase.from('business_memberships').select('business_id').eq('user_id', user.id).maybeSingle();
+      if (membership) {
+        const { data: integration } = await supabase.from('integrations')
+          .select('status')
+          .eq('business_id', membership.business_id)
+          .eq('provider', 'stripe')
+          .maybeSingle();
+          
+        setStripeStatus(integration?.status === 'connected' ? 'Healthy' : 'Disconnected');
+      }
+
+      // 3. Check AI Config
+      const aiResult = await resolveEffectiveSetting<any>('ai_settings', 'ai_settings', { dataPlane: 'production' }, { enabled: false });
+      setAiStatus(aiResult?.value?.enabled ? 'Healthy' : 'Disconnected');
+
+      toast({
+        title: 'Diagnostics check complete',
+        description: 'All system services have been polled.',
+      });
+    } catch (e: any) {
+      setDbStatus('Error');
+      toast({
+        title: 'Diagnostics check failed',
+        description: e.message || 'Could not connect to database.',
+        variant: 'destructive',
+      });
+    } finally {
+      setChecking(false);
+    }
   };
 
   const services = [
-    { name: 'Supabase Database', desc: 'Queries, auth tokens, row level security policies.', status: 'Healthy' },
-    { name: 'Stripe Adapter', desc: 'Secure connection check and webhook delivery loops.', status: 'Healthy' },
-    { name: 'Twilio SMS gateway', desc: 'Messaging sid and webhook callback queues.', status: 'Healthy' },
-    { name: 'AI Copilot Provider', desc: 'OpenAI endpoint query verification.', status: 'Healthy' },
+    { name: 'Supabase Database', desc: 'Queries, auth tokens, row level security policies.', status: dbStatus },
+    { name: 'Stripe Adapter', desc: 'Secure connection check and webhook delivery loops.', status: stripeStatus },
+    { name: 'AI Copilot Provider', desc: 'AI routing gateway and model verification.', status: aiStatus },
   ];
 
   return (
@@ -53,7 +107,11 @@ export function SystemHealthSettingsTab() {
                   <h6 className="text-xs font-bold text-stone-800 uppercase tracking-wider">{svc.name}</h6>
                   <p className="text-[11px] text-stone-400 mt-0.5">{svc.desc}</p>
                 </div>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-600">
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  svc.status === 'Healthy' ? 'bg-emerald-50 text-emerald-600' :
+                  svc.status === 'Error' ? 'bg-red-50 text-red-600' :
+                  'bg-stone-100 text-stone-500'
+                }`}>
                   {svc.status}
                 </span>
               </div>

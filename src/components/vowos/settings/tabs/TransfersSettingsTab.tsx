@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting, DEFAULT_TRANSFER_SETTINGS, TransferSettings } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting, DEFAULT_TRANSFER_SETTINGS, TransferSettings } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface TransferPermissions {
   locationId: string;
@@ -40,12 +41,23 @@ export function TransfersSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<TransferSettings>('transfer_settings', DEFAULT_TRANSFER_SETTINGS);
-    const perms = await fetchJsonSetting<TransferPermissions[]>('transfer_permissions', DEFAULT_TRANSFER_PERMS);
-    setSettings(data);
-    setDbSettings(data);
-    setPermissions(perms);
-    setDbPermissions(perms);
+    const dataPlane = getActiveDataPlane();
+    const settingsResult = await resolveEffectiveSetting<TransferSettings>(
+      'transfer_settings',
+      'transfer_settings',
+      { dataPlane },
+      DEFAULT_TRANSFER_SETTINGS
+    );
+    const permsResult = await resolveEffectiveSetting<TransferPermissions[]>(
+      'transfer_permissions',
+      'transfer_permissions',
+      { dataPlane },
+      DEFAULT_TRANSFER_PERMS
+    );
+    setSettings(settingsResult.value);
+    setDbSettings(settingsResult.value);
+    setPermissions(permsResult.value);
+    setDbPermissions(permsResult.value);
     setLoading(false);
   };
 
@@ -62,25 +74,11 @@ export function TransfersSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err1 = await saveJsonSetting('transfer_settings', settings);
-    const err2 = await saveJsonSetting('transfer_permissions', permissions);
-    
-    if (reason && !err1 && !err2) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'transfers',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    if (err1 || err2) {
-      toast({
-        title: 'Could not save transfer settings',
-        description: err1 || err2 || '',
-        variant: 'destructive',
-      });
-      return false;
-    } else {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('transfer_settings', 'transfer_settings', settings, { dataPlane }, reason);
+      await saveScopedSetting('transfer_permissions', 'transfer_permissions', permissions, { dataPlane }, reason);
+      
       toast({
         title: 'Transfer settings saved',
         description: 'Inter-location transfer policies updated successfully.',
@@ -88,6 +86,13 @@ export function TransfersSettingsTab({
       setDbSettings(settings);
       setDbPermissions(permissions);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save transfer settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

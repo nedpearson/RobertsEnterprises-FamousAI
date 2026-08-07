@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting, CommissionSettings } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting, CommissionSettings } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 const DEFAULT_COMMISSION_SETTINGS: CommissionSettings = {
   plans: [
@@ -33,9 +34,15 @@ export function CommissionSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<CommissionSettings>('commission_settings', DEFAULT_COMMISSION_SETTINGS);
-    setSettings(data);
-    setDbSettings(data);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<CommissionSettings>(
+      'commission_settings',
+      'commission_settings',
+      { dataPlane },
+      DEFAULT_COMMISSION_SETTINGS
+    );
+    setSettings(result.value);
+    setDbSettings(result.value);
     setLoading(false);
   };
 
@@ -50,29 +57,23 @@ export function CommissionSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('commission_settings', settings);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'commission',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    if (err) {
-      toast({
-        title: 'Could not save commission settings',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('commission_settings', 'commission_settings', settings, { dataPlane }, reason);
+      
       toast({
         title: 'Commission settings saved',
         description: 'Commission rules have been updated successfully.',
       });
       setDbSettings(settings);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save commission settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

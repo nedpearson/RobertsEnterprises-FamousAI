@@ -6,9 +6,10 @@ import { Switch } from '@/components/ui/switch';
 import {
   LocationSettings,
   DEFAULT_LOCATION_SETTINGS,
-  fetchJsonSetting,
-  saveJsonSetting,
+  resolveEffectiveSetting,
+  saveScopedSetting,
 } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 import { LocationId, LOCATIONS } from '@/data/vowosData';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
@@ -38,9 +39,15 @@ export function LocationSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<Record<LocationId, LocationSettings>>('location_settings', DEFAULT_LOCATION_SETTINGS);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<Record<LocationId, LocationSettings>>(
+      'location_settings',
+      'location_settings',
+      { dataPlane },
+      DEFAULT_LOCATION_SETTINGS
+    );
     // Ensure all location structures exist
-    const merged = { ...DEFAULT_LOCATION_SETTINGS, ...data };
+    const merged = { ...DEFAULT_LOCATION_SETTINGS, ...result.value };
     setLocations(merged);
     setDbLocations(JSON.parse(JSON.stringify(merged)));
     setLoading(false);
@@ -58,23 +65,26 @@ export function LocationSettingsTab({
 
   const handleSave = async (): Promise<boolean> => {
     setSaving(true);
-    const err = await saveJsonSetting('location_settings', locations);
-    setSaving(false);
-    if (err) {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('location_settings', 'location_settings', locations, { dataPlane }, 'Updated location configuration');
+    } catch (err: any) {
+      setSaving(false);
       toast({
         title: 'Could not save location settings',
-        description: err,
+        description: err.message,
         variant: 'destructive',
       });
       return false;
-    } else {
-      toast({
-        title: 'Settings saved',
-        description: 'Location configurations and hours updated.',
-      });
-      setDbLocations(JSON.parse(JSON.stringify(locations)));
-      return true;
     }
+
+    setSaving(false);
+    toast({
+      title: 'Settings saved',
+      description: 'Location configurations and hours updated.',
+    });
+    setDbLocations(JSON.parse(JSON.stringify(locations)));
+    return true;
   };
 
   useEffect(() => {

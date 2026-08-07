@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting, DEFAULT_TWILIO_SETTINGS, TwilioSettings } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting, DEFAULT_TWILIO_SETTINGS, TwilioSettings } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface ChannelConfig {
   emailSender: string;
@@ -63,15 +64,33 @@ export function CommunicationsSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const twilioData = await fetchJsonSetting<TwilioSettings>('twilio_settings', DEFAULT_TWILIO_SETTINGS);
-    const channelData = await fetchJsonSetting<ChannelConfig>('channel_settings', DEFAULT_CHANNEL_CONFIG);
-    const templatesData = await fetchJsonSetting<MessageTemplate[]>('message_templates', DEFAULT_TEMPLATES);
-    setTwilio(twilioData);
-    setDbTwilio(twilioData);
-    setChannel(channelData);
-    setDbChannel(channelData);
-    setTemplates(templatesData);
-    setDbTemplates(templatesData);
+    const dataPlane = getActiveDataPlane();
+    
+    const twilioResult = await resolveEffectiveSetting<TwilioSettings>(
+      'twilio_settings',
+      'twilio_settings',
+      { dataPlane },
+      DEFAULT_TWILIO_SETTINGS
+    );
+    const channelResult = await resolveEffectiveSetting<ChannelConfig>(
+      'channel_settings',
+      'channel_settings',
+      { dataPlane },
+      DEFAULT_CHANNEL_CONFIG
+    );
+    const templatesResult = await resolveEffectiveSetting<MessageTemplate[]>(
+      'message_templates',
+      'message_templates',
+      { dataPlane },
+      DEFAULT_TEMPLATES
+    );
+    
+    setTwilio(twilioResult.value);
+    setDbTwilio(twilioResult.value);
+    setChannel(channelResult.value);
+    setDbChannel(channelResult.value);
+    setTemplates(templatesResult.value);
+    setDbTemplates(templatesResult.value);
     setLoading(false);
   };
 
@@ -89,34 +108,29 @@ export function CommunicationsSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err1 = await saveJsonSetting('twilio_settings', twilio);
-    const err2 = await saveJsonSetting('channel_settings', channel);
-    const err3 = await saveJsonSetting('message_templates', templates);
-    
-    if (reason && !err1 && !err2 && !err3) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'communications',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    try {
+      const dataPlane = getActiveDataPlane();
+      
+      await saveScopedSetting('twilio_settings', 'twilio_settings', twilio, { dataPlane }, reason);
+      await saveScopedSetting('channel_settings', 'channel_settings', channel, { dataPlane }, reason);
+      await saveScopedSetting('message_templates', 'message_templates', templates, { dataPlane }, reason);
 
-    if (err1 || err2 || err3) {
-      toast({
-        title: 'Could not save communications settings',
-        description: err1 || err2 || err3 || '',
-        variant: 'destructive',
-      });
-      return false;
-    } else {
       toast({
         title: 'Communications settings saved',
         description: 'Twilio integration, channel defaults, and message templates updated.',
       });
+      
       setDbTwilio(twilio);
       setDbChannel(channel);
       setDbTemplates(templates);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save communications settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

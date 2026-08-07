@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface ReportingConfig {
   defaultDateRange: string;
@@ -38,8 +39,14 @@ export function ReportingSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<ReportingConfig>('reporting_settings', DEFAULT_REPORTING_CONFIG);
-    const fallback = { ...DEFAULT_REPORTING_CONFIG, ...data };
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<ReportingConfig>(
+      'reporting_settings',
+      'reporting_settings',
+      { dataPlane },
+      DEFAULT_REPORTING_CONFIG
+    );
+    const fallback = { ...DEFAULT_REPORTING_CONFIG, ...result.value };
     setSettings(fallback);
     setDbSettings(fallback);
     setLoading(false);
@@ -56,29 +63,23 @@ export function ReportingSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('reporting_settings', settings);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'reporting',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    if (err) {
-      toast({
-        title: 'Could not save reporting settings',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('reporting_settings', 'reporting_settings', settings, { dataPlane }, reason);
+      
       toast({
         title: 'Reporting settings saved',
         description: 'Fiscal defaults have been updated successfully.',
       });
       setDbSettings(settings);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save reporting settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

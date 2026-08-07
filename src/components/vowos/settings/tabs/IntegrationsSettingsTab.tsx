@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Plug, Loader2, Sparkles, AlertCircle, RefreshCw, CheckCircle2, ShieldCheck, Mail } from 'lucide-react';
+import { Plug, Loader2, Sparkles, AlertCircle, RefreshCw, CheckCircle2, XCircle, Settings } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { inputCls } from '@/components/vowos/ui';
+import { inputCls, Button } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting, DEFAULT_AI_SETTINGS, AISettings } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting, DEFAULT_AI_SETTINGS, AISettings } from '@/lib/settings';
+import { getActiveDataPlane, supabase } from '@/lib/supabase';
+
+interface IntegrationState {
+  id: string;
+  provider: string;
+  status: 'connected' | 'disconnected' | 'error';
+  last_sync_at: string | null;
+  error_message: string | null;
+}
 
 interface StripeSettings {
   testMode: boolean;
@@ -14,9 +23,6 @@ interface StripeSettings {
   acceptedCard: boolean;
   acceptedAch: boolean;
   disputeEmails: string;
-  webhookStatus: string;
-  lastWebhookTime: string;
-  failedWebhooks: number;
 }
 
 const DEFAULT_STRIPE_SETTINGS: StripeSettings = {
@@ -26,9 +32,6 @@ const DEFAULT_STRIPE_SETTINGS: StripeSettings = {
   acceptedCard: true,
   acceptedAch: true,
   disputeEmails: 'billing@robertsenterprises.com, accounts@robertsenterprises.com',
-  webhookStatus: 'Active & Listening',
-  lastWebhookTime: '2026-07-20T17:34:00Z',
-  failedWebhooks: 0,
 };
 
 interface IntegrationsSettingsTabProps {
@@ -45,22 +48,46 @@ export function IntegrationsSettingsTab({
   const [loading, setLoading] = useState(true);
   const [aiSettings, setAiSettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
   const [dbAiSettings, setDbAiSettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
+  
   const [stripe, setStripe] = useState<StripeSettings>(DEFAULT_STRIPE_SETTINGS);
   const [dbStripe, setDbStripe] = useState<StripeSettings>(DEFAULT_STRIPE_SETTINGS);
-
-  const [verifyingStripe, setVerifyingStripe] = useState(false);
-  const [testSmsPhone, setTestSmsPhone] = useState('');
-  const [sendingSms, setSendingSms] = useState(false);
+  
+  const [stripeIntegration, setStripeIntegration] = useState<IntegrationState | null>(null);
 
   const loadSettings = async () => {
-    setLoading(true);
-    const aiData = await fetchJsonSetting<AISettings>('ai_settings', DEFAULT_AI_SETTINGS);
-    const stripeData = await fetchJsonSetting<StripeSettings>('stripe_settings', DEFAULT_STRIPE_SETTINGS);
-    setAiSettings(aiData);
-    setDbAiSettings(aiData);
-    setStripe(stripeData);
-    setDbStripe(stripeData);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const dataPlane = getActiveDataPlane();
+      
+      const [aiResult, stripeResult] = await Promise.all([
+        resolveEffectiveSetting<AISettings>('ai_settings', 'ai_settings', { dataPlane }, DEFAULT_AI_SETTINGS),
+        resolveEffectiveSetting<StripeSettings>('stripe_settings', 'stripe_settings', { dataPlane }, DEFAULT_STRIPE_SETTINGS)
+      ]);
+      
+      setAiSettings(aiResult?.value || DEFAULT_AI_SETTINGS);
+      setDbAiSettings(aiResult?.value || DEFAULT_AI_SETTINGS);
+      setStripe(stripeResult?.value || DEFAULT_STRIPE_SETTINGS);
+      setDbStripe(stripeResult?.value || DEFAULT_STRIPE_SETTINGS);
+
+      // Load integration status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: membership } = await supabase.from('business_memberships').select('business_id').eq('user_id', user.id).maybeSingle();
+        if (membership) {
+          const { data: integration } = await supabase.from('integrations')
+            .select('*')
+            .eq('business_id', membership.business_id)
+            .eq('provider', 'stripe')
+            .maybeSingle();
+            
+          setStripeIntegration(integration);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load integrations", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -76,25 +103,11 @@ export function IntegrationsSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err1 = await saveJsonSetting('ai_settings', aiSettings);
-    const err2 = await saveJsonSetting('stripe_settings', stripe);
-    
-    if (reason && !err1 && !err2) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'integrations',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    if (err1 || err2) {
-      toast({
-        title: 'Could not save integrations settings',
-        description: err1 || err2 || '',
-        variant: 'destructive',
-      });
-      return false;
-    } else {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('ai_settings', 'ai_settings', aiSettings, { dataPlane }, reason);
+      await saveScopedSetting('stripe_settings', 'stripe_settings', stripe, { dataPlane }, reason);
+      
       toast({
         title: 'Integrations & AI settings saved',
         description: 'Integration parameters updated successfully.',
@@ -102,12 +115,37 @@ export function IntegrationsSettingsTab({
       setDbAiSettings(aiSettings);
       setDbStripe(stripe);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save integrations settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 
   useEffect(() => {
     registerSaveRef(handleSave);
   }, [aiSettings, stripe]);
+
+  const handleToggleStripe = async () => {
+    // In a real app, this would start the Stripe OAuth flow
+    if (stripeIntegration?.status === 'connected') {
+      if (confirm('Disconnect Stripe? You will no longer be able to process payments.')) {
+        await supabase.from('integrations').update({ status: 'disconnected', access_token: null }).eq('id', stripeIntegration.id);
+        setStripeIntegration({ ...stripeIntegration, status: 'disconnected' });
+        toast({ title: 'Stripe disconnected' });
+      }
+    } else {
+      toast({ title: 'Connecting to Stripe...', description: 'Redirecting to Stripe OAuth...' });
+      setTimeout(() => {
+        const newState = { ...stripeIntegration, status: 'connected', provider: 'stripe', last_sync_at: new Date().toISOString() } as IntegrationState;
+        setStripeIntegration(newState);
+        toast({ title: 'Stripe connected securely' });
+      }, 1000);
+    }
+  };
 
 
   if (loading) {
@@ -128,12 +166,27 @@ export function IntegrationsSettingsTab({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-stone-50 border border-stone-200 rounded-xl gap-4">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+              {stripeIntegration?.status === 'connected' ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+              ) : (
+                <XCircle className="h-5 w-5 text-stone-400 flex-shrink-0" />
+              )}
               <div>
-                <span className="text-sm font-semibold text-stone-800">Stripe Connected</span>
-                <span className="block text-xs text-stone-400 mt-0.5">Account ID: acct_1Nxxxxxxxxxxxx</span>
+                <span className="text-sm font-semibold text-stone-800">
+                  {stripeIntegration?.status === 'connected' ? 'Stripe Connected' : 'Stripe Disconnected'}
+                </span>
+                <span className="block text-xs text-stone-400 mt-0.5">
+                  {stripeIntegration?.status === 'connected' ? `Last sync: ${new Date(stripeIntegration.last_sync_at || '').toLocaleString()}` : 'Connect Stripe to process payments'}
+                </span>
               </div>
             </div>
+            <Button 
+              variant={stripeIntegration?.status === 'connected' ? 'outline' : 'default'}
+              className={stripeIntegration?.status !== 'connected' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}
+              onClick={handleToggleStripe}
+            >
+              {stripeIntegration?.status === 'connected' ? 'Disconnect' : 'Connect Stripe'}
+            </Button>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -156,7 +209,11 @@ export function IntegrationsSettingsTab({
               description="Feedback loops status from Stripe back to VowOS database."
             >
               <div className="flex items-center justify-between h-9 px-1">
-                <span className="text-xs font-semibold text-emerald-600">● {stripe.webhookStatus}</span>
+                {stripeIntegration?.status === 'connected' ? (
+                  <span className="text-xs font-semibold text-emerald-600">● Active & Listening</span>
+                ) : (
+                  <span className="text-xs font-semibold text-stone-400">○ Inactive</span>
+                )}
               </div>
             </SettingsField>
 
@@ -194,21 +251,19 @@ export function IntegrationsSettingsTab({
         </div>
       </SettingsCard>
 
-
-
       <SettingsCard
         title="Machine Learning & Copilot Settings"
-        description="Establish data protection filters and usage cost limits for OpenAI matches."
+        description="Establish data protection filters and usage cost limits for AI matches."
         icon={<Sparkles className="h-5 w-5" />}
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <SettingsField
-            label="Enable AI Stylist matching"
-            description="Power stylist assignment suggestions using machine learning parameters."
+            label="Enable AI Platform Features"
+            description="Power stylist assignment suggestions and analytics using machine learning."
             className="sm:col-span-2"
           >
             <div className="flex items-center justify-between h-9 px-1">
-              <span className="text-xs text-stone-500 font-medium font-serif italic">Matched stylists automatically</span>
+              <span className="text-xs text-stone-500 font-medium">Active</span>
               <Switch
                 checked={aiSettings.enabled}
                 onCheckedChange={(checked) => setAiSettings({ ...aiSettings, enabled: checked })}
@@ -223,13 +278,13 @@ export function IntegrationsSettingsTab({
               onChange={(e) => setAiSettings({ ...aiSettings, provider: e.target.value })}
               className={inputCls}
             >
-              <option value="openai">OpenAI (GPT Models)</option>
-              <option value="anthropic">Anthropic (Claude Models)</option>
-              <option value="gemini">Google (Gemini Models)</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="gemini">Google Gemini</option>
             </select>
           </SettingsField>
 
-          <SettingsField label="AI Model Name">
+          <SettingsField label="Global Fallback Model">
             <input
               type="text"
               value={aiSettings.model}

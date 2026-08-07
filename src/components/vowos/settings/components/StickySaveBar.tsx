@@ -45,29 +45,30 @@ export function StickySaveBar({
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between border-t border-stone-200 bg-white/95 px-6 py-4 shadow-[0_-8px_30px_rgb(0,0,0,0.06)] backdrop-blur-sm lg:left-64 animate-slide-up">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+      <div className="fixed bottom-0 left-0 right-0 z-40 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-stone-200 bg-white/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgb(0,0,0,0.06)] backdrop-blur-sm lg:left-64 animate-slide-up">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse flex-shrink-0" />
           <span className="text-sm font-medium text-stone-600">You have unsaved changes</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full sm:w-auto items-center gap-3">
           {onReset && (
             <button
               onClick={onReset}
               disabled={saving}
-              className={`${btnSecondary} text-xs py-1.5 px-3 h-9`}
+              className={`${btnSecondary} text-xs py-1.5 px-3 h-9 flex-1 sm:flex-none justify-center`}
               type="button"
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              {resetLabel}
+              <span className="hidden sm:inline">{resetLabel}</span>
+              <span className="sm:hidden">Reset</span>
             </button>
           )}
 
           <button
             onClick={onCancel}
             disabled={saving}
-            className={`${btnSecondary} h-9`}
+            className={`${btnSecondary} h-9 flex-1 sm:flex-none justify-center`}
             type="button"
           >
             <Undo className="h-4 w-4" />
@@ -77,7 +78,7 @@ export function StickySaveBar({
           <button
             onClick={handlePreSave}
             disabled={saving}
-            className={`${btnPrimary} h-9`}
+            className={`${btnPrimary} h-9 flex-1 sm:flex-none justify-center`}
             type="button"
           >
             {saving ? (
@@ -85,7 +86,7 @@ export function StickySaveBar({
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {saving ? 'Saving…' : 'Save Changes'}
+            {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>

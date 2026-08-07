@@ -10,9 +10,10 @@ import {
   DEFAULT_BOOKING_SETTINGS,
   DEFAULT_BOOKING_QUESTIONS,
   DEFAULT_BOOKING_FEE_SETTINGS,
-  fetchJsonSetting,
-  saveJsonSetting,
+  resolveEffectiveSetting,
+  saveScopedSetting,
 } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 
@@ -48,18 +49,20 @@ export function BookingSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const bookingData = await fetchJsonSetting<BookingSettings>('booking_settings', DEFAULT_BOOKING_SETTINGS);
-    setBooking(bookingData);
-    setDbBooking(bookingData);
+    const dataPlane = getActiveDataPlane();
+    
+    const bookingResult = await resolveEffectiveSetting<BookingSettings>('booking_settings', 'booking_settings', { dataPlane }, DEFAULT_BOOKING_SETTINGS);
+    setBooking(bookingResult.value);
+    setDbBooking(bookingResult.value);
 
-    const questionsData = await fetchJsonSetting<BookingQuestion[]>('booking_questions', DEFAULT_BOOKING_QUESTIONS);
-    const sorted = [...questionsData].sort((a, b) => a.displayOrder - b.displayOrder);
+    const questionsResult = await resolveEffectiveSetting<BookingQuestion[]>('booking_questions', 'booking_questions', { dataPlane }, DEFAULT_BOOKING_QUESTIONS);
+    const sorted = [...questionsResult.value].sort((a, b) => a.displayOrder - b.displayOrder);
     setQuestions(sorted);
     setDbQuestions(JSON.parse(JSON.stringify(sorted)));
 
-    const feeData = await fetchJsonSetting<BookingFeeSettings>('booking_fee_settings', DEFAULT_BOOKING_FEE_SETTINGS);
-    setFeeSettings(feeData);
-    setDbFeeSettings(feeData);
+    const feeResult = await resolveEffectiveSetting<BookingFeeSettings>('booking_fee_settings', 'booking_fee_settings', { dataPlane }, DEFAULT_BOOKING_FEE_SETTINGS);
+    setFeeSettings(feeResult.value);
+    setDbFeeSettings(feeResult.value);
 
     setLoading(false);
   };
@@ -79,30 +82,15 @@ export function BookingSettingsTab({
 
   const handleSave = async (reason?: string): Promise<boolean> => {
     setSaving(true);
-    // Standardize display orders
     const orderedQuestions = questions.map((q, idx) => ({ ...q, displayOrder: idx + 1 }));
-    const bErr = await saveJsonSetting('booking_settings', booking);
-    const qErr = await saveJsonSetting('booking_questions', orderedQuestions);
-    const fErr = await saveJsonSetting('booking_fee_settings', feeSettings);
     
-    if (reason && !bErr && !qErr && !fErr) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'booking',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    setSaving(false);
-
-    if (bErr || qErr || fErr) {
-      toast({
-        title: 'Could not save booking settings',
-        description: bErr || qErr || fErr || 'Error occurred.',
-        variant: 'destructive',
-      });
-      return false;
-    } else {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('booking_settings', 'booking_settings', booking, { dataPlane }, reason);
+      await saveScopedSetting('booking_questions', 'booking_questions', orderedQuestions, { dataPlane }, reason);
+      await saveScopedSetting('booking_fee_settings', 'booking_fee_settings', feeSettings, { dataPlane }, reason);
+      
+      setSaving(false);
       toast({
         title: 'Settings saved',
         description: 'Online booking rules, questions, and fee policies updated.',
@@ -112,6 +100,14 @@ export function BookingSettingsTab({
       setQuestions(orderedQuestions);
       setDbFeeSettings(feeSettings);
       return true;
+    } catch (err: any) {
+      setSaving(false);
+      toast({
+        title: 'Could not save booking settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

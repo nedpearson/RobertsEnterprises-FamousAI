@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Cpu, Sparkles, CheckCircle2, RefreshCw, Zap, ShieldCheck, DollarSign, Award, Layers } from 'lucide-react';
-import { aiGateway, AIModelConfig, AITaskType, BenchmarkResult } from '@/features/ai/modelGateway';
+import { useEffect, useState } from 'react';
+import { Cpu, Sparkles, CheckCircle2, RefreshCw, Zap, ShieldCheck, DollarSign, Award, Layers, Loader2 } from 'lucide-react';
+import { AIModelConfig, AITaskType, BenchmarkResult, INITIAL_AI_MODELS } from '@/features/ai/modelGateway';
 import { toast } from '@/components/ui/use-toast';
 import { btnPrimary, btnSecondary } from '@/components/vowos/ui';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 const TASK_LABELS: Record<AITaskType, { label: string; desc: string }> = {
   high_reasoning: { label: 'High Reasoning', desc: 'Campaign diagnosis, strategic growth recommendations, budget explanations' },
@@ -13,32 +15,95 @@ const TASK_LABELS: Record<AITaskType, { label: string; desc: string }> = {
   optimization_engine: { label: 'Optimization Engine', desc: 'Constrained budget allocation & spend pacing' },
 };
 
-export default function AIModelSettingsTab() {
-  const [models, setModels] = useState<AIModelConfig[]>(aiGateway.getModels());
-  const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>(aiGateway.getBenchmarks());
-  const [runningBench, setRunningBench] = useState(false);
+interface AIModelSettingsTabProps {
+  onDirtyChange: (dirty: boolean) => void;
+  registerSaveRef: (saveFn: () => Promise<boolean>) => void;
+  resetTrigger: number;
+}
 
-  const handleRunBenchmark = () => {
-    setRunningBench(true);
-    setTimeout(() => {
-      const res = aiGateway.runBenchmarkSuite();
-      setBenchmarks(res);
-      setRunningBench(false);
-      toast({
-        title: 'Benchmark Suite Complete',
-        description: 'Evaluated 8 task-specific AI models against VowOS accuracy test suite.',
-      });
-    }, 1200);
+export default function AIModelSettingsTab({
+  onDirtyChange,
+  registerSaveRef,
+  resetTrigger,
+}: AIModelSettingsTabProps) {
+  const [loading, setLoading] = useState(true);
+  const [models, setModels] = useState<AIModelConfig[]>(INITIAL_AI_MODELS);
+  const [dbModels, setDbModels] = useState<AIModelConfig[]>(INITIAL_AI_MODELS);
+
+  const loadSettings = async () => {
+    setLoading(true);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<AIModelConfig[]>(
+      'ai_models_config',
+      'ai_models_config',
+      { dataPlane },
+      INITIAL_AI_MODELS
+    );
+    setModels(result.value);
+    setDbModels(result.value);
+    setLoading(false);
   };
+
+  useEffect(() => {
+    loadSettings();
+  }, [resetTrigger]);
+
+  const isDirty = JSON.stringify(models) !== JSON.stringify(dbModels);
+
+  useEffect(() => {
+    onDirtyChange(isDirty);
+  }, [isDirty]);
+
+  const handleSave = async (reason?: string): Promise<boolean> => {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('ai_models_config', 'ai_models_config', models, { dataPlane }, reason);
+      
+      toast({
+        title: 'AI Models saved',
+        description: 'AI model configurations have been updated successfully.',
+      });
+      setDbModels(models);
+      return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save AI models',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    registerSaveRef(handleSave);
+  }, [models]);
 
   const handlePromote = (modelId: string, modelName: string) => {
-    aiGateway.promoteChallenger(modelId);
-    setModels([...aiGateway.getModels()]);
-    toast({
-      title: 'Model Promoted to Active Champion',
-      description: `${modelName} is now the primary active model for its task routing.`,
+    setModels(currentModels => {
+      const challenger = currentModels.find(m => m.id === modelId);
+      if (!challenger) return currentModels;
+      
+      return currentModels.map(m => {
+        if (m.taskType === challenger.taskType) {
+          if (m.id === modelId) {
+            return { ...m, isChampion: true, isChallenger: false, status: 'active' };
+          } else {
+            return { ...m, isChampion: false, isChallenger: true, status: 'shadow' };
+          }
+        }
+        return m;
+      });
     });
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-10 text-sm text-stone-500">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading AI model configs...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -56,10 +121,6 @@ export default function AIModelSettingsTab() {
           </div>
         </div>
 
-        <button onClick={handleRunBenchmark} disabled={runningBench} className={btnPrimary}>
-          {runningBench ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {runningBench ? 'Running Benchmark...' : 'Run Benchmark Suite'}
-        </button>
       </div>
 
       {/* Model Roster by Task Type */}
@@ -137,44 +198,6 @@ export default function AIModelSettingsTab() {
         })}
       </div>
 
-      {/* Benchmark Results History */}
-      {benchmarks.length > 0 && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs">
-          <h4 className="text-sm font-bold text-stone-900 mb-3 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Recent Benchmark Execution Log
-          </h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-stone-50 text-stone-500 uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="px-3 py-2">Model ID</th>
-                  <th className="px-3 py-2">Task</th>
-                  <th className="px-3 py-2">Quality</th>
-                  <th className="px-3 py-2">Latency</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {benchmarks.slice(0, 8).map((b) => (
-                  <tr key={b.id} className="hover:bg-stone-50/50">
-                    <td className="px-3 py-2 font-mono text-stone-700">{b.modelId}</td>
-                    <td className="px-3 py-2 font-medium text-stone-800">{b.taskType}</td>
-                    <td className="px-3 py-2 font-bold text-stone-900">{b.qualityScore.toFixed(1)}/100</td>
-                    <td className="px-3 py-2 text-stone-600">{b.latencyMs} ms</td>
-                    <td className="px-3 py-2">
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                        Passed
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-stone-400">{b.timestamp.slice(11, 19)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

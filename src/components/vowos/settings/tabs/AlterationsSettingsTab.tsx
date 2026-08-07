@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Scissors, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Scissors } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { inputCls } from '@/components/vowos/ui';
+import { inputCls, btnPrimary } from '@/components/vowos/ui';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
-import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
 
 interface AlterationService {
   name: string;
@@ -47,6 +48,7 @@ export function AlterationsSettingsTab({
   resetTrigger,
 }: AlterationsSettingsTabProps) {
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<AlterationSettings>(DEFAULT_ALTERATION_SETTINGS);
   const [dbSettings, setDbSettings] = useState<AlterationSettings>(DEFAULT_ALTERATION_SETTINGS);
   const [newServiceName, setNewServiceName] = useState('');
@@ -54,9 +56,15 @@ export function AlterationsSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<AlterationSettings>('alteration_settings', DEFAULT_ALTERATION_SETTINGS);
-    setSettings(data);
-    setDbSettings(data);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<AlterationSettings>(
+      'alteration_settings',
+      'alteration_settings',
+      { dataPlane },
+      DEFAULT_ALTERATION_SETTINGS
+    );
+    setSettings(result.value);
+    setDbSettings(result.value);
     setLoading(false);
   };
 
@@ -71,29 +79,26 @@ export function AlterationsSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('alteration_settings', settings);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'alterations',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    if (err) {
-      toast({
-        title: 'Could not save alterations settings',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
+    setSaving(true);
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('alteration_settings', 'alteration_settings', settings, { dataPlane }, reason);
+      
+      setSaving(false);
       toast({
         title: 'Alterations & Pickup settings saved',
-        description: 'Settings have been updated successfully.',
+        description: 'Fitting parameters and pricing have been updated successfully.',
       });
       setDbSettings(settings);
       return true;
+    } catch (err: any) {
+      setSaving(false);
+      toast({
+        title: 'Could not save alterations settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

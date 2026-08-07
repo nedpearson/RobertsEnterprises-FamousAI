@@ -4,7 +4,8 @@
 // and surcharge math used by the booking page, invoice pay page, and reports.
 
 import { loadStripe } from '@stripe/stripe-js';
-import { supabase } from '@/lib/supabase';
+import { supabase, getActiveDataPlane } from '@/lib/supabase';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
 
 /** Connected Stripe account for Roberts Enterprises (Connect mode). */
 export const STRIPE_ACCOUNT_ID = 'acct_1Tv5qwHBbeH9ngcA';
@@ -30,26 +31,24 @@ export interface SurchargeSettings {
 export const DEFAULT_SURCHARGE: SurchargeSettings = { enabled: true, creditPct: 3, amexPct: 4 };
 
 export async function fetchSurchargeSettings(): Promise<SurchargeSettings> {
-  const { data } = await supabase
-    .from('app_settings')
-    .select('key, value')
-    .in('key', ['surcharge_enabled', 'surcharge_credit_pct', 'surcharge_amex_pct']);
-  const of = (key: string) => data?.find((r) => r.key === key)?.value;
-  return {
-    enabled: (of('surcharge_enabled') ?? 'on') !== 'off',
-    creditPct: Math.max(0, parseFloat(of('surcharge_credit_pct') ?? '') || DEFAULT_SURCHARGE.creditPct),
-    amexPct: Math.max(0, parseFloat(of('surcharge_amex_pct') ?? '') || DEFAULT_SURCHARGE.amexPct),
-  };
+  const dataPlane = getActiveDataPlane();
+  const result = await resolveEffectiveSetting<SurchargeSettings>(
+    'surcharge_settings',
+    'surcharge_settings',
+    { dataPlane },
+    DEFAULT_SURCHARGE
+  );
+  return result.value;
 }
 
 export async function saveSurchargeSettings(s: SurchargeSettings): Promise<string | null> {
-  const now = new Date().toISOString();
-  const { error } = await supabase.from('app_settings').upsert([
-    { key: 'surcharge_enabled', value: s.enabled ? 'on' : 'off', updated_at: now },
-    { key: 'surcharge_credit_pct', value: String(s.creditPct), updated_at: now },
-    { key: 'surcharge_amex_pct', value: String(s.amexPct), updated_at: now },
-  ]);
-  return error ? error.message : null;
+  try {
+    const dataPlane = getActiveDataPlane();
+    await saveScopedSetting('surcharge_settings', 'surcharge_settings', s, { dataPlane });
+    return null;
+  } catch (err: any) {
+    return err.message;
+  }
 }
 
 /** Is this Stripe card brand an American Express card? */

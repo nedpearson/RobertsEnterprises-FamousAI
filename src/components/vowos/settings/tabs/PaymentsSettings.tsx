@@ -6,9 +6,10 @@ import { Switch } from '@/components/ui/switch';
 import {
   PaymentTaxSettings,
   DEFAULT_PAYMENT_TAX_SETTINGS,
-  fetchJsonSetting,
-  saveJsonSetting,
+  resolveEffectiveSetting,
+  saveScopedSetting,
 } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 import {
   SurchargeSettings,
   DEFAULT_SURCHARGE,
@@ -51,9 +52,15 @@ export function PaymentsSettingsTab({
     setAmexPct(String(surchargeData.amexPct));
     setDbSurcharge(surchargeData);
 
-    const taxData = await fetchJsonSetting<PaymentTaxSettings>('payment_tax_settings', DEFAULT_PAYMENT_TAX_SETTINGS);
-    setPmtSettings(taxData);
-    setDbPmtSettings(taxData);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<PaymentTaxSettings>(
+      'payment_tax_settings',
+      'payment_tax_settings',
+      { dataPlane },
+      DEFAULT_PAYMENT_TAX_SETTINGS
+    );
+    setPmtSettings(result.value);
+    setDbPmtSettings(result.value);
     setLoading(false);
   };
 
@@ -82,14 +89,12 @@ export function PaymentsSettingsTab({
     const surchargeErr = await saveSurchargeSettings(currentSurcharge);
     
     // Save payment / tax settings
-    const taxErr = await saveJsonSetting('payment_tax_settings', pmtSettings);
-
-    if (reason) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'payments',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
+    let taxErr: string | null = null;
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('payment_tax_settings', 'payment_tax_settings', pmtSettings, { dataPlane }, reason);
+    } catch (err: any) {
+      taxErr = err.message;
     }
 
     setSaving(false);

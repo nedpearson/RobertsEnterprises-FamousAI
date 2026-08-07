@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { History, Loader2, Search } from 'lucide-react';
 import { SettingsCard } from '../components/SettingsCard';
-import { fetchJsonSetting } from '@/lib/settings';
+import { supabase } from '@/lib/supabase';
 
 interface AuditLogEntry {
   actor: string;
@@ -11,47 +11,83 @@ interface AuditLogEntry {
   timestamp: string;
 }
 
+interface AuditSettingsTabProps {
+  onDirtyChange: (dirty: boolean) => void;
+  registerSaveRef: (saveFn: () => Promise<boolean>) => void;
+  resetTrigger: number;
+}
+
 const DEFAULT_AUDIT_LOGS: AuditLogEntry[] = [
   { actor: 'nedpearson@gmail.com', action: 'Changed card surcharge Amex fee', tab: 'payments', reason: 'Offset elevated Amex transaction card rates.', timestamp: '2026-07-20T17:15:00Z' },
   { actor: 'nedpearson@gmail.com', action: 'Modified Baton Rouge holiday exceptions', tab: 'locations', reason: 'Extended closed holiday schedule for Christmas.', timestamp: '2026-07-20T17:12:00Z' },
   { actor: 'nedpearson@gmail.com', action: 'Connected Stripe account', tab: 'payments', reason: 'Initialized live Stripe connection.', timestamp: '2026-07-20T17:10:00Z' },
 ];
 
-export function AuditSettingsTab() {
+export function AuditSettingsTab({
+  onDirtyChange,
+  registerSaveRef,
+  resetTrigger,
+}: AuditSettingsTabProps) {
   const [loading, setLoading] = useState(true);
-  const [logs, setLogs] = useState<AuditLogEntry[]>(DEFAULT_AUDIT_LOGS);
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [filter, setFilter] = useState('');
+  const [errorState, setErrorState] = useState<string | null>(null);
+
+  useEffect(() => {
+    onDirtyChange(false);
+    registerSaveRef(async () => true);
+  }, []);
 
   const loadLogs = async () => {
     setLoading(true);
-    // Fetch latest change reason from database if saved
-    const lastChange = await fetchJsonSetting<{ tab: string; reason: string; timestamp: string } | null>('audit_last_change_reason', null);
-    if (lastChange) {
-      const exists = DEFAULT_AUDIT_LOGS.some((l) => l.timestamp === lastChange.timestamp);
-      if (!exists) {
-        setLogs([
-          {
-            actor: 'nedpearson@gmail.com',
-            action: `Modified ${lastChange.tab} settings`,
-            tab: lastChange.tab,
-            reason: lastChange.reason,
-            timestamp: lastChange.timestamp,
-          },
-          ...DEFAULT_AUDIT_LOGS,
-        ]);
+    setErrorState(null);
+    try {
+      const { data, error } = await supabase
+        .from('settings_versions')
+        .select('change_reason, changed_at, changed_by, settings_values(setting_namespace)')
+        .order('changed_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        throw error;
       }
+
+      if (data && data.length > 0) {
+        const realLogs = data.map((d: any) => ({
+          actor: d.changed_by ? `User ${d.changed_by.slice(0,8)}` : 'System',
+          action: `Modified ${d.settings_values?.setting_namespace || 'settings'}`,
+          tab: d.settings_values?.setting_namespace || 'unknown',
+          reason: d.change_reason || 'System update',
+          timestamp: d.changed_at,
+        }));
+        setLogs(realLogs);
+      } else {
+        setLogs([]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load audit logs:', err);
+      setErrorState(err.message || "Failed to load audit logs from the database.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     loadLogs();
-  }, []);
+  }, [resetTrigger]);
 
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-10 text-sm text-stone-500">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading audit history…
+      </div>
+    );
+  }
+
+  if (errorState) {
+    return (
+      <div className="flex items-center gap-2 py-10 text-sm text-red-500 font-medium">
+        Could not load these settings: {errorState}
       </div>
     );
   }

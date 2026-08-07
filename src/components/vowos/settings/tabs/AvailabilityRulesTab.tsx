@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface ApptTypeConfig {
   name: string;
@@ -53,9 +54,15 @@ export function AvailabilityRulesTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<SchedulingSettings>('scheduling_settings', DEFAULT_SCHEDULING_SETTINGS);
-    setSettings(data);
-    setDbSettings(data);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<SchedulingSettings>(
+      'scheduling_settings',
+      'scheduling_settings',
+      { dataPlane },
+      DEFAULT_SCHEDULING_SETTINGS
+    );
+    setSettings(result.value);
+    setDbSettings(result.value);
     setLoading(false);
   };
 
@@ -70,29 +77,23 @@ export function AvailabilityRulesTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('scheduling_settings', settings);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'scheduling',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    if (err) {
-      toast({
-        title: 'Could not save scheduling rules',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('scheduling_settings', 'scheduling_settings', settings, { dataPlane }, reason);
+      
       toast({
         title: 'Availability rules saved',
         description: 'Your scheduling rules have been updated successfully.',
       });
       setDbSettings(settings);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save scheduling rules',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

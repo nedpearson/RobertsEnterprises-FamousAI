@@ -4,7 +4,8 @@ import { toast } from '@/components/ui/use-toast';
 import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
-import { fetchJsonSetting, saveJsonSetting, DEFAULT_PURCHASING_SETTINGS, PurchasingSettings } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting, DEFAULT_PURCHASING_SETTINGS, PurchasingSettings } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface PurchasingSettingsTabProps {
   onDirtyChange: (dirty: boolean) => void;
@@ -25,9 +26,15 @@ export function PurchasingSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<PurchasingSettings>('purchasing_settings', DEFAULT_PURCHASING_SETTINGS);
-    setSettings(data);
-    setDbSettings(data);
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<PurchasingSettings>(
+      'purchasing_settings',
+      'purchasing_settings',
+      { dataPlane },
+      DEFAULT_PURCHASING_SETTINGS
+    );
+    setSettings(result.value);
+    setDbSettings(result.value);
     setLoading(false);
   };
 
@@ -42,29 +49,23 @@ export function PurchasingSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('purchasing_settings', settings);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'purchasing',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('purchasing_settings', 'purchasing_settings', settings, { dataPlane }, reason);
 
-    if (err) {
-      toast({
-        title: 'Could not save purchasing settings',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
       toast({
         title: 'Purchasing settings saved',
         description: 'Vendor profiles have been updated successfully.',
       });
       setDbSettings(settings);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save purchasing settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

@@ -1,4 +1,5 @@
-import { fetchJsonSetting, saveJsonSetting } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 // ─── Interfaces ───
 
@@ -170,108 +171,98 @@ export interface OfficialPayrollPeriod {
   providerStatus?: 'simulated' | 'connected' | 'healthy' | 'syncing' | 'failed';
 }
 
-// ─── Default Configurations ───
-
-const DEFAULT_DEPARTMENTS: Department[] = [
-  { id: 'sales', name: 'Sales', managerName: 'nedpearson', locations: ['north', 'south'], costCenter: 'CC-101', active: true },
-  { id: 'alterations', name: 'Alterations', managerName: 'nedpearson', locations: ['north'], costCenter: 'CC-202', active: true },
-  { id: 'management', name: 'Management', managerName: 'nedpearson', locations: ['north', 'south'], costCenter: 'CC-303', active: true },
-  { id: 'inventory', name: 'Inventory & Receiving', managerName: 'nedpearson', locations: ['north', 'south'], costCenter: 'CC-404', active: true }
-];
-
-const DEFAULT_JOB_TITLES: JobTitle[] = [
-  { id: 'consultant', name: 'Bridal Consultant', active: true },
-  { id: 'stylist', name: 'Stylist / Sales Associate', active: true },
-  { id: 'seamstress', name: 'Seamstress / Tailor', active: true },
-  { id: 'manager', name: 'Store Manager', active: true },
-  { id: 'desk', name: 'Front Desk Coordinator', active: true }
-];
-
-const DEFAULT_COMPENSATION_PROFILES: CompensationProfile[] = [
-  { employeeId: 'nedpearson', employeeName: 'nedpearson', type: 'salary', payFrequency: 'semimonthly', hourlyRate: 0, salaryAmount: 12000000, commissionRate: 5, drawAmount: 0, effectiveDate: '2026-01-01', reason: 'Initial setup' }
-];
-
-const DEFAULT_LEAVE_POLICIES: LeavePolicy[] = [
-  { id: 'vacation', name: 'Paid Vacation', accrualRate: 0.04, maxBalance: 120, carryoverLimit: 40 },
-  { id: 'sick', name: 'Paid Sick Leave', accrualRate: 0.02, maxBalance: 80, carryoverLimit: 24 }
-];
-
 // ─── Persistence Functions ───
 
+async function getWorkforceSetting<T>(key: string, defaultValue: T): Promise<T> {
+  const dataPlane = getActiveDataPlane();
+  const res = await resolveEffectiveSetting<T>(key, key, { dataPlane }, defaultValue);
+  return res.value;
+}
+
+async function saveWorkforceSetting<T>(key: string, value: T): Promise<string | null> {
+  try {
+    const dataPlane = getActiveDataPlane();
+    await saveScopedSetting(key, key, value, { dataPlane }, `Updated ${key}`);
+    return null;
+  } catch (err: any) {
+    return err.message || 'Error saving setting';
+  }
+}
+
 export async function getDepartments(): Promise<Department[]> {
-  return fetchJsonSetting<Department[]>('workforce_departments', DEFAULT_DEPARTMENTS);
+  return getWorkforceSetting<Department[]>('workforce_departments', []);
 }
 
 export async function saveDepartments(list: Department[]): Promise<string | null> {
-  return saveJsonSetting<Department[]>('workforce_departments', list);
+  return saveWorkforceSetting<Department[]>('workforce_departments', list);
 }
 
 export async function getJobTitles(): Promise<JobTitle[]> {
-  return fetchJsonSetting<JobTitle[]>('workforce_job_titles', DEFAULT_JOB_TITLES);
+  return getWorkforceSetting<JobTitle[]>('workforce_job_titles', []);
 }
 
 export async function saveJobTitles(list: JobTitle[]): Promise<string | null> {
-  return saveJsonSetting<JobTitle[]>('workforce_job_titles', list);
+  return saveWorkforceSetting<JobTitle[]>('workforce_job_titles', list);
 }
 
 export async function getCompensationProfiles(): Promise<CompensationProfile[]> {
-  return fetchJsonSetting<CompensationProfile[]>('employee_compensation', DEFAULT_COMPENSATION_PROFILES);
+  return getWorkforceSetting<CompensationProfile[]>('employee_compensation', []);
 }
 
 export async function saveCompensationProfiles(list: CompensationProfile[]): Promise<string | null> {
-  return saveJsonSetting<CompensationProfile[]>('employee_compensation', list);
+  return saveWorkforceSetting<CompensationProfile[]>('employee_compensation', list);
 }
 
 export async function getLeavePolicies(): Promise<LeavePolicy[]> {
-  return fetchJsonSetting<LeavePolicy[]>('leave_policies', DEFAULT_LEAVE_POLICIES);
+  return getWorkforceSetting<LeavePolicy[]>('leave_policies', []);
 }
 
 export async function saveLeavePolicies(list: LeavePolicy[]): Promise<string | null> {
-  return saveJsonSetting<LeavePolicy[]>('leave_policies', list);
+  return saveWorkforceSetting<LeavePolicy[]>('leave_policies', list);
 }
 
 export async function getLeaveRequests(): Promise<LeaveRequest[]> {
-  return fetchJsonSetting<LeaveRequest[]>('leave_requests', []);
+  return getWorkforceSetting<LeaveRequest[]>('leave_requests', []);
 }
 
 export async function saveLeaveRequests(list: LeaveRequest[]): Promise<string | null> {
-  return saveJsonSetting<LeaveRequest[]>('leave_requests', list);
+  return saveWorkforceSetting<LeaveRequest[]>('leave_requests', list);
 }
 
 export async function getLeaveBalances(): Promise<LeaveBalance[]> {
-  return fetchJsonSetting<LeaveBalance[]>('leave_balances', []);
+  return getWorkforceSetting<LeaveBalance[]>('leave_balances', []);
 }
 
 export async function saveLeaveBalances(list: LeaveBalance[]): Promise<string | null> {
-  return saveJsonSetting<LeaveBalance[]>('leave_balances', list);
+  return saveWorkforceSetting<LeaveBalance[]>('leave_balances', list);
 }
 
 export async function getDeductions(): Promise<Deduction[]> {
-  return fetchJsonSetting<Deduction[]>('employee_deductions', []);
+  return getWorkforceSetting<Deduction[]>('employee_deductions', []);
 }
 
 export async function saveDeductions(list: Deduction[]): Promise<string | null> {
-  return saveJsonSetting<Deduction[]>('employee_deductions', list);
+  return saveWorkforceSetting<Deduction[]>('employee_deductions', list);
 }
 
 export async function getReimbursements(): Promise<Reimbursement[]> {
-  return fetchJsonSetting<Reimbursement[]>('employee_reimbursements', []);
+  return getWorkforceSetting<Reimbursement[]>('employee_reimbursements', []);
 }
 
 export async function saveReimbursements(list: Reimbursement[]): Promise<string | null> {
-  return saveJsonSetting<Reimbursement[]>('employee_reimbursements', list);
+  return saveWorkforceSetting<Reimbursement[]>('employee_reimbursements', list);
 }
 
 export async function getBonuses(): Promise<Bonus[]> {
-  return fetchJsonSetting<Bonus[]>('employee_bonuses', []);
+  return getWorkforceSetting<Bonus[]>('employee_bonuses', []);
 }
 
 export async function saveBonuses(list: Bonus[]): Promise<string | null> {
-  return saveJsonSetting<Bonus[]>('employee_bonuses', list);
+  return saveWorkforceSetting<Bonus[]>('employee_bonuses', list);
 }
 
 export async function getAuditLogs(): Promise<AuditLogRecord[]> {
-  return fetchJsonSetting<AuditLogRecord[]>('workforce_audit_logs', []);
+  return getWorkforceSetting<AuditLogRecord[]>('workforce_audit_logs', []);
 }
 
 export async function writeAuditLog(actorName: string, action: string, details: string): Promise<void> {
@@ -284,40 +275,40 @@ export async function writeAuditLog(actorName: string, action: string, details: 
       action,
       details
     };
-    await saveJsonSetting<AuditLogRecord[]>('workforce_audit_logs', [newLog, ...list].slice(0, 1000));
+    await saveWorkforceSetting<AuditLogRecord[]>('workforce_audit_logs', [newLog, ...list].slice(0, 1000));
   } catch (err) {
     console.error('Error writing audit log:', err);
   }
 }
 
 export async function getTimeEntries(): Promise<TimeEntry[]> {
-  return fetchJsonSetting<TimeEntry[]>('workforce_time_entries', []);
+  return getWorkforceSetting<TimeEntry[]>('workforce_time_entries', []);
 }
 
 export async function saveTimeEntries(list: TimeEntry[]): Promise<string | null> {
-  return saveJsonSetting<TimeEntry[]>('workforce_time_entries', list);
+  return saveWorkforceSetting<TimeEntry[]>('workforce_time_entries', list);
 }
 
 export async function getTimeEntrySegments(): Promise<TimeEntrySegment[]> {
-  return fetchJsonSetting<TimeEntrySegment[]>('workforce_time_segments', []);
+  return getWorkforceSetting<TimeEntrySegment[]>('workforce_time_segments', []);
 }
 
 export async function saveTimeEntrySegments(list: TimeEntrySegment[]): Promise<string | null> {
-  return saveJsonSetting<TimeEntrySegment[]>('workforce_time_segments', list);
+  return saveWorkforceSetting<TimeEntrySegment[]>('workforce_time_segments', list);
 }
 
 export async function getTimeEntryCorrections(): Promise<TimeEntryCorrection[]> {
-  return fetchJsonSetting<TimeEntryCorrection[]>('workforce_time_corrections', []);
+  return getWorkforceSetting<TimeEntryCorrection[]>('workforce_time_corrections', []);
 }
 
 export async function saveTimeEntryCorrections(list: TimeEntryCorrection[]): Promise<string | null> {
-  return saveJsonSetting<TimeEntryCorrection[]>('workforce_time_corrections', list);
+  return saveWorkforceSetting<TimeEntryCorrection[]>('workforce_time_corrections', list);
 }
 
 export async function getOfficialPayrollPeriods(): Promise<OfficialPayrollPeriod[]> {
-  return fetchJsonSetting<OfficialPayrollPeriod[]>('workforce_payroll_periods', []);
+  return getWorkforceSetting<OfficialPayrollPeriod[]>('workforce_payroll_periods', []);
 }
 
 export async function saveOfficialPayrollPeriods(list: OfficialPayrollPeriod[]): Promise<string | null> {
-  return saveJsonSetting<OfficialPayrollPeriod[]>('workforce_payroll_periods', list);
+  return saveWorkforceSetting<OfficialPayrollPeriod[]>('workforce_payroll_periods', list);
 }

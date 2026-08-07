@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, getActiveDataPlane } from '@/lib/supabase';
 import { LocationId } from '@/data/vowosData';
 
 // ─── Settings Types ───
@@ -430,51 +430,216 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
 
 // ─── Database Access Helpers ───
 
-export async function fetchJsonSetting<T>(key: string, defaultValue: T): Promise<T> {
-  try {
-    const { data, error } = await supabase
-      .from('app_settings')
-      .select('value')
-      .eq('key', key)
-      .maybeSingle();
-
-    if (error || !data || !data.value) {
-      return defaultValue;
-    }
-    return JSON.parse(data.value) as T;
-  } catch (err) {
-    console.error(`Error parsing setting ${key}:`, err);
-    return defaultValue;
-  }
-}
-
-export async function saveJsonSetting<T>(key: string, value: T): Promise<string | null> {
-  try {
-    const now = new Date().toISOString();
-    const stringifiedValue = JSON.stringify(value);
-    
-    const { error } = await supabase.from('app_settings').upsert([
-      { key, value: stringifiedValue, updated_at: now },
-    ]);
-    
-    return error ? error.message : null;
-  } catch (err: any) {
-    console.error(`Error saving setting ${key}:`, err);
-    return err.message || 'Error saving setting';
-  }
-}
+// Legacy fetch/save json functions removed as part of Phase 4 Migration
 
 export async function fetchBookingFeeCents(locationId?: LocationId): Promise<number> {
+  const dataPlane = getActiveDataPlane();
+  const result = await resolveEffectiveSetting<BookingFeeSettings>(
+    'booking_fee_settings',
+    'booking_fee_settings',
+    { dataPlane, locationId },
+    DEFAULT_BOOKING_FEE_SETTINGS
+  );
+  
+  const settings = result.value;
+  if (!settings.enabled) return 0;
+  if (locationId && settings.locationOverrides && settings.locationOverrides[locationId] !== undefined) {
+    return settings.locationOverrides[locationId];
+  }
+  return settings.amountCents;
+}
+
+// ─── Scoped Configuration Architecture ───
+
+export interface SettingsContext {
+  dataPlane: 'production' | 'demo';
+  businessId?: string;
+  locationId?: string;
+  userId?: string;
+  effectiveDate?: string;
+}
+
+export interface EffectiveSettingResult<T> {
+  value: T;
+  sourceScope: 'platform' | 'business' | 'location' | 'user' | 'default';
+  isDefault: boolean;
+  isOverride: boolean;
+  version: number;
+  updatedAt?: string;
+}
+
+export async function resolveEffectiveSetting<T>(
+  namespace: string,
+  key: string,
+  context: SettingsContext,
+  defaultValue: T
+): Promise<EffectiveSettingResult<T>> {
   try {
-    const settings = await fetchJsonSetting<BookingFeeSettings>('booking_fee_settings', DEFAULT_BOOKING_FEE_SETTINGS);
-    if (!settings.enabled) return 0;
-    if (locationId && settings.locationOverrides && settings.locationOverrides[locationId] !== undefined) {
-      return settings.locationOverrides[locationId];
+    let businessId = context.businessId;
+    let userId = context.userId;
+
+    // Automatically resolve userId if not provided
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
     }
-    return settings.amountCents;
+
+    // Automatically resolve businessId from memberships if not provided
+    if (!businessId && userId) {
+      const { data: membership } = await supabase
+        .from('business_memberships')
+        .select('business_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (membership) {
+        businessId = membership.business_id;
+      } else {
+        // Fallback for demo environments if no membership exists
+        const { data: defaultBusiness } = await supabase.from('businesses').select('id').limit(1).maybeSingle();
+        if (defaultBusiness) businessId = defaultBusiness.id;
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('settings_values')
+      .select('*')
+      .eq('setting_namespace', namespace)
+      .eq('setting_key', key)
+      .eq('data_plane', context.dataPlane)
+      .eq('status', 'active');
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      return {
+        value: defaultValue,
+        sourceScope: 'default',
+        isDefault: true,
+        isOverride: false,
+        version: 0,
+      };
+    }
+
+    // Sort by specificity: user -> location -> business -> platform
+    let userSetting, locationSetting, businessSetting, platformSetting;
+
+    for (const record of data) {
+      if (record.user_id && record.user_id === context.userId) userSetting = record;
+      else if (record.location_id && record.location_id === context.locationId) locationSetting = record;
+      else if (record.business_id && record.business_id === context.businessId && !record.location_id) businessSetting = record;
+      else if (!record.business_id && !record.location_id && !record.user_id) platformSetting = record;
+    }
+
+    const effectiveRecord = userSetting || locationSetting || businessSetting || platformSetting;
+
+    if (!effectiveRecord) {
+      return {
+        value: defaultValue,
+        sourceScope: 'default',
+        isDefault: true,
+        isOverride: false,
+        version: 0,
+      };
+    }
+
+    let sourceScope: 'platform' | 'business' | 'location' | 'user' = 'platform';
+    if (effectiveRecord === userSetting) sourceScope = 'user';
+    else if (effectiveRecord === locationSetting) sourceScope = 'location';
+    else if (effectiveRecord === businessSetting) sourceScope = 'business';
+
+    const isOverride = sourceScope === 'user' || sourceScope === 'location';
+
+    return {
+      value: effectiveRecord.value_json as T,
+      sourceScope,
+      isDefault: false,
+      isOverride,
+      version: effectiveRecord.version || 1,
+      updatedAt: effectiveRecord.updated_at,
+    };
   } catch (err) {
-    console.error('Error fetching booking fee cents:', err);
-    return 7500;
+    console.error(`Error resolving effective setting ${namespace}:${key}`, err);
+    throw new Error(`Failed to load setting ${key}`);
   }
 }
+
+export async function saveScopedSetting<T>(
+  namespace: string,
+  key: string,
+  value: T,
+  context: SettingsContext,
+  reason?: string
+): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+
+  let businessId = context.businessId;
+  if (!businessId && userId) {
+    const { data: membership } = await supabase
+      .from('business_memberships')
+      .select('business_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (membership) {
+      businessId = membership.business_id;
+    } else {
+      const { data: defaultBusiness } = await supabase.from('businesses').select('id').limit(1).maybeSingle();
+      if (defaultBusiness) businessId = defaultBusiness.id;
+    }
+  }
+
+  const matchQuery = {
+    data_plane: context.dataPlane,
+    setting_namespace: namespace,
+    setting_key: key,
+    business_id: businessId || null,
+    location_id: context.locationId || null,
+    user_id: context.userId || null,
+  };
+
+  // 1. Fetch existing to increment version and save history
+  const { data: existing } = await supabase
+    .from('settings_values')
+    .select('id, version, value_json')
+    .match(matchQuery)
+    .maybeSingle();
+
+  const newVersion = existing ? (existing.version || 1) + 1 : 1;
+
+  // 2. Upsert the value
+  const upsertData = {
+    ...matchQuery,
+    value_json: value,
+    version: newVersion,
+    updated_at: new Date().toISOString(),
+    updated_by: userId,
+    ...(existing ? {} : { created_by: userId }),
+  };
+
+  const { data: savedValue, error } = await supabase
+    .from('settings_values')
+    .upsert(upsertData, { onConflict: 'data_plane, business_id, location_id, user_id, setting_namespace, setting_key' })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+
+  // 3. Write version history
+  if (savedValue) {
+    const { error: versionError } = await supabase
+      .from('settings_versions')
+      .insert({
+        setting_value_id: savedValue.id,
+        version: newVersion,
+        previous_value_json: existing ? existing.value_json : null,
+        new_value_json: value,
+        change_reason: reason || null,
+        changed_by: userId,
+      });
+      
+    if (versionError) {
+      console.error('Failed to write settings version history', versionError);
+    }
+  }
+}
+
 

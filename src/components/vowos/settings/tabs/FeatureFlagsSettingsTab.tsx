@@ -5,7 +5,8 @@ import { inputCls } from '@/components/vowos/ui';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
-import { fetchJsonSetting, saveJsonSetting, DEFAULT_FEATURE_FLAGS, FeatureFlag } from '@/lib/settings';
+import { resolveEffectiveSetting, saveScopedSetting, DEFAULT_FEATURE_FLAGS, FeatureFlag } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface FeatureFlagsSettingsTabProps {
   onDirtyChange: (dirty: boolean) => void;
@@ -24,8 +25,14 @@ export function FeatureFlagsSettingsTab({
 
   const loadSettings = async () => {
     setLoading(true);
-    const data = await fetchJsonSetting<FeatureFlag[]>('feature_flags', DEFAULT_FEATURE_FLAGS);
-    const fallback = Array.isArray(data) ? data : DEFAULT_FEATURE_FLAGS;
+    const dataPlane = getActiveDataPlane();
+    const result = await resolveEffectiveSetting<FeatureFlag[]>(
+      'feature_flags',
+      'feature_flags',
+      { dataPlane },
+      DEFAULT_FEATURE_FLAGS
+    );
+    const fallback = Array.isArray(result.value) ? result.value : DEFAULT_FEATURE_FLAGS;
     setFlags(fallback);
     setDbFlags(fallback);
     setLoading(false);
@@ -42,29 +49,23 @@ export function FeatureFlagsSettingsTab({
   }, [isDirty]);
 
   const handleSave = async (reason?: string): Promise<boolean> => {
-    const err = await saveJsonSetting('feature_flags', flags);
-    if (reason && !err) {
-      await saveJsonSetting('audit_last_change_reason', {
-        tab: 'feature-flags',
-        reason,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('feature_flags', 'feature_flags', flags, { dataPlane }, reason);
 
-    if (err) {
-      toast({
-        title: 'Could not save feature flags',
-        description: err,
-        variant: 'destructive',
-      });
-      return false;
-    } else {
       toast({
         title: 'Feature flags updated',
         description: 'Staged releases rules updated successfully.',
       });
       setDbFlags(flags);
       return true;
+    } catch (err: any) {
+      toast({
+        title: 'Could not save feature flags',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
     }
   };
 

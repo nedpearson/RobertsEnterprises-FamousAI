@@ -1,8 +1,19 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageHeader } from '../ui';
-import { SettingsNavigation, SettingsTab } from './SettingsNavigation';
+import { SettingsNavigation, SettingsTab, SETTINGS_GROUPS } from './SettingsNavigation';
 import { StickySaveBar } from './components/StickySaveBar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { OrgSettingsTab } from './tabs/OrganizationSettings';
 import { LocationSettingsTab } from './tabs/LocationSettings';
 import { PaymentsSettingsTab } from './tabs/PaymentsSettings';
@@ -31,11 +42,24 @@ import { inputCls } from '../ui';
 
 export default function SettingsShell() {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('organization');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const initialTab = (searchParams.get('tab') as SettingsTab) || 'organization';
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+  
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Sync activeTab to URL
+  useEffect(() => {
+    if (activeTab !== searchParams.get('tab')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('tab', activeTab);
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [activeTab, searchParams, setSearchParams]);
 
   // Ref to hold the save function of the active tab
   const saveFnRef = useRef<(() => Promise<boolean>) | null>(null);
@@ -44,15 +68,26 @@ export default function SettingsShell() {
     saveFnRef.current = fn;
   };
 
+  const [pendingTab, setPendingTab] = useState<SettingsTab | null>(null);
+
   const handleTabChange = (tab: SettingsTab) => {
     if (isDirty) {
-      if (confirm('You have unsaved changes. Discard changes?')) {
-        setIsDirty(false);
-        setActiveTab(tab);
-      }
+      setPendingTab(tab);
     } else {
       setActiveTab(tab);
     }
+  };
+
+  const confirmTabChange = () => {
+    if (pendingTab) {
+      setIsDirty(false);
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+  };
+
+  const cancelTabChange = () => {
+    setPendingTab(null);
   };
 
   const handleSave = async (reason?: string) => {
@@ -227,11 +262,21 @@ export default function SettingsShell() {
           />
         );
       case 'audit':
-        saveFnRef.current = null;
-        return <AuditSettingsTab />;
+        return (
+          <AuditSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
       case 'system-health':
-        saveFnRef.current = null;
-        return <SystemHealthSettingsTab />;
+        return (
+          <SystemHealthSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
       case 'feature-flags':
         return (
           <FeatureFlagsSettingsTab
@@ -241,8 +286,13 @@ export default function SettingsShell() {
           />
         );
       case 'ai-models':
-        saveFnRef.current = null;
-        return <AIModelSettingsTab />;
+        return (
+          <AIModelSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
       default:
         saveFnRef.current = null;
         return null;
@@ -327,11 +377,47 @@ export default function SettingsShell() {
             />
           </div>
 
-          <div data-tour-id="tabs-settings" className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
+          {/* Mobile Select Navigation */}
+          <div className="lg:hidden">
+            <select
+              value={activeTab}
+              onChange={(e) => handleTabChange(e.target.value as SettingsTab)}
+              className={`${inputCls} w-full font-medium text-stone-700 shadow-sm`}
+            >
+              {SETTINGS_GROUPS.map((group) => {
+                const role = profile?.role || 'Stylist';
+                const visibleItems = group.items.filter((item) => {
+                  if (!item.roles.includes(role)) return false;
+                  if (searchQuery.trim()) {
+                    const query = searchQuery.toLowerCase();
+                    return (
+                      item.label.toLowerCase().includes(query) ||
+                      item.keywords.some((kw) => kw.toLowerCase().includes(query))
+                    );
+                  }
+                  return true;
+                });
+                if (visibleItems.length === 0) return null;
+                return (
+                  <optgroup key={group.group} label={group.group}>
+                    {visibleItems.map(item => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* Desktop Navigation Menu */}
+          <div data-tour-id="tabs-settings" className="hidden lg:block rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm">
             <SettingsNavigation
               activeTab={activeTab}
               onTabChange={handleTabChange}
               userRole={profile?.role || 'Stylist'}
+              searchQuery={searchQuery}
             />
           </div>
         </div>
@@ -353,6 +439,23 @@ export default function SettingsShell() {
         onCancel={handleCancel}
         isSensitive={isSensitiveTab}
       />
+
+      <AlertDialog open={pendingTab !== null} onOpenChange={(open) => !open && cancelTabChange()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes on this page. If you leave, your changes will be lost. Are you sure you want to discard them?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelTabChange}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmTabChange} className="bg-rose-600 hover:bg-rose-700 text-white">
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
