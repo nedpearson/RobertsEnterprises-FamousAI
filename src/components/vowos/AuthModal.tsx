@@ -3,7 +3,7 @@ import { LogIn, UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth, StaffRole, STAFF_ROLES, ROLE_DESCRIPTIONS } from '@/contexts/AuthContext';
 
 import { Modal, inputCls, btnPrimary } from './ui';
-import { InstallRobertsEnterprisesMobileButton } from '@/components/pwa/InstallRobertsEnterprisesMobileButton';
+import { InstallAppButton } from '@/components/pwa/InstallAppButton';
 
 export default function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { signIn, signUp, signInAsDemo } = useAuth();
@@ -208,7 +208,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                   </div>
                   
                   <div className="mt-4">
-                    <InstallRobertsEnterprisesMobileButton fullWidth variant="outline" className="border-stone-300 text-stone-700 hover:bg-stone-50" />
+                    <InstallAppButton fullWidth variant="outline" className="border-stone-300 text-stone-700 hover:bg-stone-50" />
                   </div>
                 </div>
               )}

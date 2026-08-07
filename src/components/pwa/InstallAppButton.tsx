@@ -7,7 +7,6 @@ import {
   Share, 
   PlusSquare, 
   Copy, 
-  AlertCircle, 
   RefreshCw, 
   Settings, 
   HelpCircle,
@@ -31,7 +30,7 @@ interface InstallButtonProps {
   fullWidth?: boolean;
 }
 
-export const InstallRobertsEnterprisesMobileButton: React.FC<InstallButtonProps> = ({
+export const InstallAppButton: React.FC<InstallButtonProps> = ({
   className,
   variant = "default",
   size = "default",
@@ -42,7 +41,6 @@ export const InstallRobertsEnterprisesMobileButton: React.FC<InstallButtonProps>
     isInstalled, 
     isStandalone, 
     isIOS, 
-    isOffline, 
     updateAvailable, 
     deferredPrompt, 
     promptInstall, 
@@ -161,12 +159,12 @@ User Agent: ${window.navigator.userAgent}
   };
 
   // Label text of primary button
-  let buttonText = "Install RobertsEnterprises Mobile";
+  let buttonText = "Install App";
   let leftIcon = <Download className="mr-2 h-4 w-4" />;
   let disabledState = false;
 
   if (isInstalled || isStandalone) {
-    buttonText = "RobertsEnterprises Mobile is Installed";
+    buttonText = "App Installed";
     leftIcon = <Check className="mr-2 h-4 w-4 text-emerald-500" />;
   }
 
@@ -187,7 +185,7 @@ User Agent: ${window.navigator.userAgent}
         <DialogContent className="max-w-md w-[95%] p-6 rounded-2xl bg-white border border-stone-200 shadow-xl overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl font-serif text-stone-900 text-center">
-              {isInstalled || isStandalone ? "RobertsEnterprises Mobile" : "Add Roberts Enterprises to Your Home Screen"}
+              {isInstalled || isStandalone ? "Roberts Mobile" : "Add Roberts Enterprises to Your Home Screen"}
             </DialogTitle>
             <DialogDescription className="text-stone-500 text-sm text-center mt-2">
               Add Roberts Enterprises to your phone, tablet, or computer for fast access to appointments, schedules, customers, operations, sales, and business insights.
@@ -237,7 +235,7 @@ User Agent: ${window.navigator.userAgent}
                   <div className="mx-auto w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
                     <Check className="h-5 w-5 text-emerald-600" />
                   </div>
-                  <h3 className="font-semibold text-sm text-stone-900">RobertsEnterprises Mobile is Installed</h3>
+                  <h3 className="font-semibold text-sm text-stone-900">App Installed</h3>
                   <p className="text-xs text-stone-500">
                     The app is currently running in standalone mode from your Home Screen.
                   </p>
@@ -323,7 +321,7 @@ User Agent: ${window.navigator.userAgent}
                   </div>
 
                   <div className="flex items-start gap-3 bg-stone-50 p-3 rounded-xl border border-stone-100">
-                    <div className="w-8 h-8 rounded-lg bg-stone-955 text-white shadow-sm flex items-center justify-center shrink-0 font-serif text-sm font-bold bg-stone-900">
+                    <div className="w-8 h-8 rounded-lg bg-stone-900 text-white shadow-sm flex items-center justify-center shrink-0 font-serif text-sm font-bold bg-stone-900">
                       R
                     </div>
                     <div className="text-xs space-y-1">

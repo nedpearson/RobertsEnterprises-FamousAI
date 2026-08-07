@@ -53,7 +53,7 @@ import OwnerExecutiveOverview from '@/components/vowos/OwnerExecutiveOverview';
 import MobileOwnerSales from '@/components/vowos/mobile/MobileOwnerSales';
 import { useDeviceMode } from '@/contexts/DeviceModeContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { InstallRobertsEnterprisesMobileButton } from '@/components/pwa/InstallRobertsEnterprisesMobileButton';
+import { InstallAppButton } from '@/components/pwa/InstallAppButton';
 function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void }) {
   return (
     <div className="flex flex-col items-center rounded-3xl border border-dashed border-stone-300 bg-white/60 px-6 py-20 text-center">
@@ -283,7 +283,7 @@ export default function AppLayout() {
                   <p className="text-xs text-stone-500">Get the native mobile experience</p>
                 </div>
               </div>
-              <InstallRobertsEnterprisesMobileButton size="sm" className="w-full sm:w-auto shrink-0 font-bold" />
+              <InstallAppButton size="sm" className="w-full sm:w-auto shrink-0 font-bold" />
             </div>
           )}
 

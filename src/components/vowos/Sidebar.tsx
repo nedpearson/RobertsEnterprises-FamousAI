@@ -17,7 +17,7 @@ import {
 } from '@/lib/navigation/userPreferences';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/use-toast';
-import { InstallRobertsEnterprisesMobileButton } from '@/components/pwa/InstallRobertsEnterprisesMobileButton';
+import { InstallAppButton } from '@/components/pwa/InstallAppButton';
 
 export const PUBLIC_VIEWS: ViewKey[] = ['dashboard', 'training', 'bride-portal'];
 
@@ -345,7 +345,7 @@ export default function Sidebar({
         {/* PWA Install Button (if applicable) */}
         {!compact && (
           <div className="pt-2">
-            <InstallRobertsEnterprisesMobileButton fullWidth variant="secondary" size="sm" className="bg-white/5 border-white/10 text-stone-300 hover:bg-white/10 hover:text-white" />
+            <InstallAppButton fullWidth variant="secondary" size="sm" className="bg-white/5 border-white/10 text-stone-300 hover:bg-white/10 hover:text-white" />
           </div>
         )}
 

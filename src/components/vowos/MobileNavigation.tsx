@@ -4,7 +4,7 @@ import { NAVIGATION_ITEMS, NAVIGATION_SECTIONS, NavigationItem, ViewKey } from '
 import { useAuth } from '@/contexts/AuthContext';
 import { canAccessView } from '@/components/vowos/Sidebar';
 import { useDeviceMode } from '@/contexts/DeviceModeContext';
-import { InstallRobertsEnterprisesMobileButton } from '@/components/pwa/InstallRobertsEnterprisesMobileButton';
+import { InstallAppButton } from '@/components/pwa/InstallAppButton';
 
 interface MobileNavigationProps {
   view: ViewKey;
@@ -117,7 +117,7 @@ export default function MobileNavigation({ view, onNavigate, onRequestSignIn }: 
             </div>
 
             <div className="mb-6 px-1">
-              <InstallRobertsEnterprisesMobileButton fullWidth variant="secondary" />
+              <InstallAppButton fullWidth variant="secondary" />
             </div>
 
             {/* Grouped Sections */}
