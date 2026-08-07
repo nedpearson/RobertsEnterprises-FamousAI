@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Plug, Loader2, Sparkles, AlertCircle, RefreshCw, CheckCircle2, XCircle, Settings } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { inputCls, Button } from '@/components/vowos/ui';
+import { inputCls } from '@/components/vowos/ui';
+import { Button } from '@/components/ui/button';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
