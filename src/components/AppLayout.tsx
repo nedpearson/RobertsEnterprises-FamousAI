@@ -47,6 +47,7 @@ import ConsultantFittingRoomView from '@/features/fitting-room/ConsultantFitting
 import MobileManagerToday from '@/components/vowos/mobile/MobileManagerToday';
 import MobileManagerSchedule from '@/components/vowos/mobile/MobileManagerSchedule';
 import MobileOwnerOverview from '@/components/vowos/mobile/MobileOwnerOverview';
+import OwnerExecutiveOverview from '@/components/vowos/OwnerExecutiveOverview';
 import MobileOwnerSales from '@/components/vowos/mobile/MobileOwnerSales';
 import { useDeviceMode } from '@/contexts/DeviceModeContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -307,7 +308,7 @@ export default function AppLayout() {
           ) : (
             <VowosErrorBoundary>
               {view === 'dashboard' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerToday onNavigate={setView} /> : <DashboardView onNavigate={setView} />)}
-              {view === 'overview' && (showMobileView && role === 'Owner' ? <MobileOwnerOverview onNavigate={setView} /> : <DashboardView onNavigate={setView} />)}
+              {view === 'overview' && (showMobileView ? <MobileOwnerOverview onNavigate={setView} /> : <OwnerExecutiveOverview onNavigate={setView} />)}
               {view === 'sales' && (showMobileView && (role === 'Owner' || role === 'Manager') ? <MobileOwnerSales onNavigate={setView} /> : <ReportsView />)}
               {view === 'customers' && <CustomersView />}
               {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
