@@ -30,6 +30,7 @@ import {
 import { Appointment360Panel } from './Appointment360Panel';
 import { AIAssignmentDrawer } from './AIAssignmentDrawer';
 import { NewAppointmentModal } from './NewAppointmentModal';
+import { NewRequestModal } from './NewRequestModal';
 import { EmployeeShiftModal } from './EmployeeShiftModal';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { 
@@ -59,6 +60,7 @@ export function UnifiedSchedulingWorkspace() {
   const [assigningRequest, setAssigningRequest] = useState<Record<string, any> | null>(null);
   const [newAppointmentData, setNewAppointmentData] = useState<{ start_at: string; employee_id: string } | null>(null);
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
+  const [isNewRequestModalOpen, setIsNewRequestModalOpen] = useState(false);
   const [shiftModalData, setShiftModalData] = useState<{ isOpen: boolean; data: any }>({ isOpen: false, data: null });
 
   // Layer Toggles for Calendar Mode
@@ -352,9 +354,7 @@ export function UnifiedSchedulingWorkspace() {
           )}
 
           <Button
-            onClick={() => {
-              setAssigningRequest(requests[0] || { id: 'new-req', customer: { first_name: 'Walk-in', last_name: 'Guest' } });
-            }}
+            onClick={() => setIsNewRequestModalOpen(true)}
             variant="outline"
             size="sm"
             className="text-xs font-medium border-stone-200"
@@ -375,7 +375,7 @@ export function UnifiedSchedulingWorkspace() {
       </div>
 
       {/* Main Workspace Body */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Left Panel: Mode-Specific Actions & Filter Queue */}
         <div className="w-80 border-r border-stone-200 bg-white flex flex-col shrink-0 hidden md:flex">
           {activeMode === 'calendar' && (
@@ -493,16 +493,20 @@ export function UnifiedSchedulingWorkspace() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
                 <Button 
                   onClick={() => setShiftModalData({ isOpen: true, data: { employee_id: selectedWorkforceStaff !== 'all' ? selectedWorkforceStaff : '' } })} 
                   variant="outline" 
-                  fullWidth 
-                  className="text-xs"
+                  className="text-xs mb-2 w-full"
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add Custom Shift
                 </Button>
-              </div>
+                <Button 
+                  onClick={() => setCalloutModalOpen(true)} 
+                  variant="outline" 
+                  className="text-xs w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                >
+                  Process Callout
+                </Button>
             </div>
           )}
 
@@ -542,10 +546,10 @@ export function UnifiedSchedulingWorkspace() {
         </div>
 
         {/* Center Panel: Primary View Display */}
-        <div className="flex-1 p-4 bg-[#faf8f5] overflow-y-auto">
+        <div className="flex-1 p-2 md:p-4 bg-[#faf8f5] overflow-y-auto overflow-x-hidden w-full">
           {activeMode === 'calendar' && (
-            <Card className="h-full flex flex-col shadow-xs border-stone-200">
-              <CardContent className="p-3 flex-1 min-h-[500px]">
+            <Card className="h-full flex flex-col shadow-xs border-stone-200 overflow-hidden">
+              <CardContent className="p-1 md:p-3 flex-1 min-h-[500px] overflow-hidden">
                 <FullCalendar
                   plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                   initialView="timeGridWeek"
@@ -611,14 +615,14 @@ export function UnifiedSchedulingWorkspace() {
           )}
 
           {activeMode === 'workforce' && (
-            <Card className="h-full flex flex-col shadow-xs border-stone-200 p-4">
+            <Card className="h-full flex flex-col shadow-xs border-stone-200 p-2 md:p-4 overflow-hidden">
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <h3 className="font-bold text-base text-stone-900">Workforce & Employee Schedule</h3>
                   <p className="text-xs text-stone-500">Manage shifts, breaks, and consultant coverage</p>
                 </div>
               </div>
-              <div className="flex-1 min-h-[450px]">
+              <div className="flex-1 min-h-[450px] overflow-hidden">
                 <FullCalendar
                   plugins={[timeGridPlugin, interactionPlugin]}
                   initialView="timeGridWeek"
@@ -644,19 +648,18 @@ export function UnifiedSchedulingWorkspace() {
               <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-amber-500" /> AI Scheduling Optimization & Recommendations
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="border-stone-200">
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-sm font-bold text-stone-900">Assign Request: Sarah Jenkins</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 text-xs text-stone-600 space-y-3">
-                    <p>AI matched Sarah with Senior Stylist Emma (98% compatibility based on Gown style preferences).</p>
-                    <div className="flex gap-2">
-                      <Button size="xs" className="bg-stone-900 text-white">Approve Assignment</Button>
-                      <Button size="xs" variant="outline">Compare Options</Button>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {requests.filter((r: any) => r.status === 'new' || r.status === 'ai_ready').length === 0 ? (
+                  <div className="col-span-full p-8 text-center text-stone-500 border border-dashed border-stone-200 rounded-xl">
+                    No pending booking requests requiring AI assignment.
+                  </div>
+                ) : (
+                  requests
+                    .filter((r: any) => r.status === 'new' || r.status === 'ai_ready')
+                    .map((req: any) => (
+                      <AIRequestCard key={req.id} request={req} onAssign={setAssigningRequest} />
+                    ))
+                )}
               </div>
             </div>
           )}
@@ -666,7 +669,7 @@ export function UnifiedSchedulingWorkspace() {
               <h2 className="text-lg font-bold text-stone-900">Capacity & Utilization Heatmap</h2>
               <Card className="p-6 text-center border-stone-200">
                 <p className="text-sm text-stone-600 mb-4">Location: {activeLocation.toUpperCase()} · Peak Hours: 11:00 AM - 3:00 PM</p>
-                <div className="grid grid-cols-7 gap-2 text-xs">
+                <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-xs">
                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
                     <div key={day} className="p-4 rounded-xl bg-rose-50 text-rose-900 font-bold border border-rose-100">
                       {day}
@@ -681,14 +684,8 @@ export function UnifiedSchedulingWorkspace() {
 
         {/* Right Panel: Appointment 360 Detail View */}
         {selectedRequest && (
-          <div className="w-96 border-l border-stone-200 bg-white p-4 overflow-y-auto shrink-0 shadow-lg animate-in slide-in-from-right duration-200">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-sm text-stone-900">Appointment 360</h3>
-              <Button onClick={() => updateSelectedRequestUrl(null)} variant="ghost" size="xs">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <Appointment360Panel request={selectedRequest} />
+          <div className="absolute inset-y-0 right-0 z-50 w-full md:w-96 md:border-l border-stone-200 bg-white p-0 md:p-0 overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-200 flex flex-col h-full">
+            <Appointment360Panel appointmentId={selectedRequest.id} request={selectedRequest} onClose={() => updateSelectedRequestUrl(null)} />
           </div>
         )}
       </div>
@@ -710,6 +707,13 @@ export function UnifiedSchedulingWorkspace() {
             setNewAppointmentData(null);
           }}
           initialData={newAppointmentData}
+        />
+      )}
+
+      {isNewRequestModalOpen && (
+        <NewRequestModal
+          isOpen={isNewRequestModalOpen}
+          onClose={() => setIsNewRequestModalOpen(false)}
         />
       )}
 

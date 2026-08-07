@@ -3,19 +3,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { useBusiness, useCustomers, useServices, useStaffProfiles, useAssignAppointmentRequest } from '@/lib/services/schedulingService';
+import { useBusiness, useCustomers, useServices } from '@/lib/services/schedulingService';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-export interface NewAppointmentModalProps {
+export interface NewRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialData?: { start_at?: string; employee_id?: string } | null;
 }
 
-export function NewAppointmentModal({ isOpen, onClose, initialData }: NewAppointmentModalProps) {
+export function NewRequestModal({ isOpen, onClose, initialData }: NewRequestModalProps) {
   const queryClient = useQueryClient();
   const { activeLocation } = useVowosData();
   const { data: business } = useBusiness();
@@ -23,12 +23,9 @@ export function NewAppointmentModal({ isOpen, onClose, initialData }: NewAppoint
   
   const { data: customers = [] } = useCustomers(businessId);
   const { data: services = [] } = useServices(businessId);
-  const { data: staff = [] } = useStaffProfiles();
-  const assignAppointment = useAssignAppointmentRequest();
   
   const [customerId, setCustomerId] = useState('');
   const [serviceId, setServiceId] = useState('');
-  const [employeeId, setEmployeeId] = useState(initialData?.employee_id || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset state when opened
@@ -40,16 +37,12 @@ export function NewAppointmentModal({ isOpen, onClose, initialData }: NewAppoint
   }, [isOpen]);
 
   const handleSave = async () => {
-    if (!customerId || !serviceId || !employeeId) {
-      toast.error('Please select customer, service, and employee.');
+    if (!customerId || !serviceId) {
+      toast.error('Please select both a customer and a service.');
       return;
     }
     if (!businessId || !activeLocation) {
       toast.error('Missing business or location context.');
-      return;
-    }
-    if (!initialData?.start_at) {
-      toast.error('Missing start time.');
       return;
     }
 
@@ -59,7 +52,6 @@ export function NewAppointmentModal({ isOpen, onClose, initialData }: NewAppoint
         ? new Date(initialData.start_at).toISOString().split('T')[0] 
         : new Date().toISOString().split('T')[0];
 
-      // 1. Create Request
       const requestPayload = {
         business_id: businessId,
         customer_id: customerId,
@@ -70,28 +62,16 @@ export function NewAppointmentModal({ isOpen, onClose, initialData }: NewAppoint
         channel: 'in-person'
       };
 
-      const { data: reqData, error: reqError } = await supabase.from('appointment_requests').insert(requestPayload).select().single();
-      if (reqError) throw reqError;
+      const { error } = await supabase.from('appointment_requests').insert(requestPayload);
+      if (error) throw error;
       
-      // 2. Assign directly using RPC (this enforces shift/conflict validation)
-      const service = services.find((s: any) => s.id === serviceId);
-      const durationMs = (service?.duration_minutes || 60) * 60 * 1000;
-      const startAt = new Date(initialData.start_at);
-      const endAt = new Date(startAt.getTime() + durationMs);
-
-      await assignAppointment.mutateAsync({
-        requestId: reqData.id,
-        employeeId: employeeId,
-        roomId: '00000000-0000-0000-0000-000000000000', // Default room for MVP
-        startAt: startAt.toISOString(),
-        endAt: endAt.toISOString()
-      });
+      toast.success('Appointment request submitted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
       
-      toast.success('Appointment booked successfully!');
       onClose();
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'Failed to book appointment. Ensure employee is scheduled and has no conflicts.');
+      toast.error(err.message || 'Failed to submit request');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,7 +81,7 @@ export function NewAppointmentModal({ isOpen, onClose, initialData }: NewAppoint
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>New Appointment Booking</DialogTitle>
+          <DialogTitle>New Booking Request</DialogTitle>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           {initialData?.start_at && (
@@ -136,20 +116,6 @@ export function NewAppointmentModal({ isOpen, onClose, initialData }: NewAppoint
               <SelectContent>
                 {services.map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>{s.name} ({s.duration_minutes} min)</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Employee</Label>
-            <Select value={employeeId} onValueChange={setEmployeeId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select staff member..." />
-              </SelectTrigger>
-              <SelectContent>
-                {staff.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

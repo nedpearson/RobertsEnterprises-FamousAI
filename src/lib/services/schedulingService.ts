@@ -76,7 +76,6 @@ export const fetchAppointmentHolds = async (businessId: string) => {
   if (error) throw error;
   return data;
 };
-
 export const fetchAppointment360 = async (appointmentId: string) => {
   try {
     const { data: appointment, error: aptError } = await supabase.from('appointments')
@@ -93,15 +92,19 @@ export const fetchAppointment360 = async (appointmentId: string) => {
     
     const { data: communications } = await supabase.from('communications').select('*').eq('appointment_id', appointmentId);
     const { data: files } = await supabase.from('files').select('*, file_links!inner(*)').eq('file_links.entity_id', appointmentId);
-    const { data: notes } = await supabase.from('internal_notes').select('*').eq('entity_id', appointmentId);
+    const { data: notes } = await supabase.from('internal_notes').select('*').eq('entity_id', appointmentId).order('created_at', { ascending: false });
     const { data: financials } = await supabase.from('payments').select('*').eq('appointment_id', appointmentId);
+    const { data: tasks } = await supabase.from('tasks').select('*').eq('entity_id', appointmentId).order('due_date', { ascending: true });
+    const { data: history } = await supabase.from('appointment_audit_events').select('*').eq('appointment_id', appointmentId).order('created_at', { ascending: false });
       
     return {
       appointment,
       communications: communications || [],
       files: files || [],
       notes: notes || [],
-      financials: financials || []
+      tasks: tasks || [],
+      financials: financials || [],
+      history: history || []
     };
   } catch (err) {
     console.warn('Failed to fetch appointment 360 data:', err);
@@ -249,3 +252,132 @@ export const useAssignStaff = () => {
   });
 };
 
+// --- Transactional RPC Mutations ---
+
+export const useAssignAppointmentRequest = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      requestId: string;
+      employeeId: string;
+      roomId: string;
+      startAt: string;
+      endAt: string;
+    }) => {
+      const { data, error } = await supabase.rpc('assign_appointment_request', {
+        p_request_id: params.requestId,
+        p_employee_id: params.employeeId,
+        p_room_id: params.roomId,
+        p_start_at: params.startAt,
+        p_end_at: params.endAt
+      });
+      
+      if (error) throw error;
+      return data; // Returns the new appointment UUID
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment_requests'] });
+    }
+  });
+};
+
+export const useRescheduleAppointment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      appointmentId: string;
+      newStartAt: string;
+      newEndAt: string;
+      newEmployeeId: string;
+    }) => {
+      const { data, error } = await supabase.rpc('reschedule_appointment', {
+        p_appointment_id: params.appointmentId,
+        p_new_start_at: params.newStartAt,
+        p_new_end_at: params.newEndAt,
+        p_new_employee_id: params.newEmployeeId
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    }
+  });
+};
+
+export const useGenerateAIRecommendations = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const { error } = await supabase.rpc('generate_ai_recommendations', {
+        p_request_id: requestId
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, requestId) => {
+      queryClient.invalidateQueries({ queryKey: ['ai_recommendations', requestId] });
+    }
+  });
+};
+
+export const useAddAppointmentNote = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appointmentId, content, businessId }: { appointmentId: string, content: string, businessId: string }) => {
+      const { data, error } = await supabase.from('internal_notes').insert({
+        entity_id: appointmentId,
+        entity_type: 'appointment',
+        business_id: businessId,
+        content
+      }).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['appointment360', variables.appointmentId] });
+    }
+  });
+};
+
+export const useAddAppointmentTask = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appointmentId, title, businessId }: { appointmentId: string, title: string, businessId: string }) => {
+      const { data, error } = await supabase.from('tasks').insert({
+        entity_id: appointmentId,
+        entity_type: 'appointment',
+        business_id: businessId,
+        title,
+        status: 'pending'
+      }).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['appointment360', variables.appointmentId] });
+    }
+  });
+};
+
+export const useAddCommunication = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appointmentId, content, businessId }: { appointmentId: string, content: string, businessId: string }) => {
+      const { data, error } = await supabase.from('communications').insert({
+        appointment_id: appointmentId,
+        business_id: businessId,
+        content,
+        type: 'sms',
+        direction: 'outbound',
+        status: 'sent'
+      }).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['appointment360', variables.appointmentId] });
+    }
+  });
+};

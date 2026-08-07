@@ -9,19 +9,41 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { User, Phone, Mail, Clock, DollarSign, FileText, CheckCircle, MessageSquare, Play, Calendar } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAppointment360, useStaffProfiles, useAIRecommendations, useUpdateAppointmentStatus, useAssignStaff } from '@/lib/services/schedulingService';
+import { 
+  useAppointment360, 
+  useStaffProfiles, 
+  useAIRecommendations, 
+  useUpdateAppointmentStatus, 
+  useAssignStaff,
+  useAddAppointmentNote,
+  useAddAppointmentTask,
+  useAddCommunication
+} from '@/lib/services/schedulingService';
+import { useVowosData } from '@/contexts/VowosDataContext';
 import { OutcomeModal } from './OutcomeModal';
 
 export function Appointment360Panel({ appointmentId, request, onClose }: { appointmentId: string, request: any, onClose: () => void }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [outcomeModalOpen, setOutcomeModalOpen] = useState(false);
   
+  const { businessId } = useVowosData();
   const { data: apt360, isLoading } = useAppointment360(appointmentId);
   const { data: staff = [] } = useStaffProfiles();
   const { data: aiRecs = [] } = useAIRecommendations(request?.id || appointmentId);
   
   const assignMutation = useAssignStaff();
   const statusMutation = useUpdateAppointmentStatus();
+  const addNoteMutation = useAddAppointmentNote();
+  const addTaskMutation = useAddAppointmentTask();
+  const addCommMutation = useAddCommunication();
+
+  const [newNote, setNewNote] = useState('');
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  
+  const [newTask, setNewTask] = useState('');
+  const [showTaskInput, setShowTaskInput] = useState(false);
+
+  const [newComm, setNewComm] = useState('');
 
   const handleAssignStaff = (employeeId: string) => {
     if (!appointmentId) return;
@@ -36,6 +58,35 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
   const handleStart = () => {
     if (!appointmentId) return;
     statusMutation.mutate({ appointmentId, status: 'in-progress' });
+  };
+
+  const handleAddNote = () => {
+    if (!appointmentId || !newNote.trim()) return;
+    addNoteMutation.mutate({ appointmentId, content: newNote, businessId }, {
+      onSuccess: () => {
+        setNewNote('');
+        setShowNoteInput(false);
+      }
+    });
+  };
+
+  const handleAddTask = () => {
+    if (!appointmentId || !newTask.trim()) return;
+    addTaskMutation.mutate({ appointmentId, title: newTask, businessId }, {
+      onSuccess: () => {
+        setNewTask('');
+        setShowTaskInput(false);
+      }
+    });
+  };
+
+  const handleSendComm = () => {
+    if (!appointmentId || !newComm.trim()) return;
+    addCommMutation.mutate({ appointmentId, content: newComm, businessId }, {
+      onSuccess: () => {
+        setNewComm('');
+      }
+    });
   };
 
   if (!request && !appointmentId) {
@@ -161,8 +212,25 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
             <div className="space-y-3">
               <h3 className="font-semibold text-sm uppercase text-muted-foreground tracking-wider flex justify-between">
                 Internal Notes
-                <Button variant="link" size="sm" className="h-auto p-0">Add Note</Button>
+                <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setShowNoteInput(!showNoteInput)}>
+                  {showNoteInput ? 'Cancel' : 'Add Note'}
+                </Button>
               </h3>
+              
+              {showNoteInput && (
+                <div className="space-y-2 mb-4">
+                  <Textarea 
+                    placeholder="Enter internal note..." 
+                    value={newNote} 
+                    onChange={(e) => setNewNote(e.target.value)}
+                    className="text-sm"
+                  />
+                  <Button size="sm" onClick={handleAddNote} disabled={addNoteMutation.isPending || !newNote.trim()}>
+                    {addNoteMutation.isPending ? 'Saving...' : 'Save Note'}
+                  </Button>
+                </div>
+              )}
+
               {apt360?.notes?.length ? (
                 apt360.notes.map((note: any) => (
                   <Card key={note.id} className="bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900 shadow-none mb-2">
@@ -185,8 +253,25 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
             <div className="space-y-3">
               <h3 className="font-semibold text-sm uppercase text-muted-foreground tracking-wider flex justify-between">
                 Next Actions
-                <Button variant="link" size="sm" className="h-auto p-0">Add Task</Button>
+                <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setShowTaskInput(!showTaskInput)}>
+                  {showTaskInput ? 'Cancel' : 'Add Task'}
+                </Button>
               </h3>
+              
+              {showTaskInput && (
+                <div className="space-y-2 mb-4">
+                  <Input 
+                    placeholder="Task title..." 
+                    value={newTask} 
+                    onChange={(e) => setNewTask(e.target.value)}
+                    className="text-sm"
+                  />
+                  <Button size="sm" onClick={handleAddTask} disabled={addTaskMutation.isPending || !newTask.trim()}>
+                    {addTaskMutation.isPending ? 'Saving...' : 'Save Task'}
+                  </Button>
+                </div>
+              )}
+
               {apt360?.tasks?.length ? (
                 apt360.tasks.map((task: any) => (
                   <div key={task.id} className="border rounded-md p-3 text-sm flex items-start gap-3">
@@ -285,8 +370,16 @@ export function Appointment360Panel({ appointmentId, request, onClose }: { appoi
             </div>
 
             <div className="flex gap-2">
-              <Input placeholder="Type a message..." className="flex-1" />
-              <Button size="icon"><Play className="h-4 w-4"/></Button>
+              <Input 
+                placeholder="Type a message..." 
+                className="flex-1" 
+                value={newComm}
+                onChange={(e) => setNewComm(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSendComm(); }}
+              />
+              <Button size="icon" onClick={handleSendComm} disabled={addCommMutation.isPending || !newComm.trim()}>
+                <Play className="h-4 w-4"/>
+              </Button>
             </div>
           </TabsContent>
 
