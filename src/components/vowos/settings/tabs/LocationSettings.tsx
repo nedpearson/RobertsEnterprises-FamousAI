@@ -41,8 +41,8 @@ export function LocationSettingsTab({
     setLoading(true);
     const dataPlane = getActiveDataPlane();
     const result = await resolveEffectiveSetting<Record<LocationId, LocationSettings>>(
-      'location_settings',
-      'location_settings',
+      'location',
+      'locations',
       { dataPlane },
       DEFAULT_LOCATION_SETTINGS
     );
@@ -67,7 +67,7 @@ export function LocationSettingsTab({
     setSaving(true);
     try {
       const dataPlane = getActiveDataPlane();
-      await saveScopedSetting('location_settings', 'location_settings', locations, { dataPlane }, 'Updated location configuration');
+      await saveScopedSetting('location', 'locations', locations, { dataPlane }, 'Updated location configuration');
     } catch (err: any) {
       setSaving(false);
       toast({

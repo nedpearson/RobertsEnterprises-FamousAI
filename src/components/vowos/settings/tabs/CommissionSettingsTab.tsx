@@ -36,7 +36,7 @@ export function CommissionSettingsTab({
     setLoading(true);
     const dataPlane = getActiveDataPlane();
     const result = await resolveEffectiveSetting<CommissionSettings>(
-      'commission_settings',
+      'staff',
       'commission_settings',
       { dataPlane },
       DEFAULT_COMMISSION_SETTINGS
@@ -59,7 +59,7 @@ export function CommissionSettingsTab({
   const handleSave = async (reason?: string): Promise<boolean> => {
     try {
       const dataPlane = getActiveDataPlane();
-      await saveScopedSetting('commission_settings', 'commission_settings', settings, { dataPlane }, reason);
+      await saveScopedSetting('staff', 'commission_settings', settings, { dataPlane }, reason);
       
       toast({
         title: 'Commission settings saved',

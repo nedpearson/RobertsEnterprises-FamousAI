@@ -56,7 +56,7 @@ export function AvailabilityRulesTab({
     setLoading(true);
     const dataPlane = getActiveDataPlane();
     const result = await resolveEffectiveSetting<SchedulingSettings>(
-      'scheduling_settings',
+      'scheduling',
       'scheduling_settings',
       { dataPlane },
       DEFAULT_SCHEDULING_SETTINGS
@@ -79,7 +79,7 @@ export function AvailabilityRulesTab({
   const handleSave = async (reason?: string): Promise<boolean> => {
     try {
       const dataPlane = getActiveDataPlane();
-      await saveScopedSetting('scheduling_settings', 'scheduling_settings', settings, { dataPlane }, reason);
+      await saveScopedSetting('scheduling', 'scheduling_settings', settings, { dataPlane }, reason);
       
       toast({
         title: 'Availability rules saved',

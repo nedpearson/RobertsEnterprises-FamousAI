@@ -213,6 +213,11 @@ export interface AISettings {
   humanApprovalRequired: boolean;
 }
 
+export interface DocumentSettings {
+  brandLogoUrl: string;
+  primaryFontFamily: string;
+}
+
 // ─── Default Configurations ───
 
 export const DEFAULT_ORG_SETTINGS: OrganizationSettings = {
@@ -376,12 +381,17 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
 
 export const DEFAULT_AI_SETTINGS: AISettings = {
   enabled: false,
-  provider: 'openai',
-  model: 'gpt-4o',
+  provider: 'gemini',
+  model: 'Gemini 3.1 Pro (High)',
   temperature: 0.2,
   costLimitCents: 5000,
   dataRetentionDays: 30,
   humanApprovalRequired: true,
+};
+
+export const DEFAULT_DOCUMENT_SETTINGS: DocumentSettings = {
+  brandLogoUrl: '',
+  primaryFontFamily: 'Inter',
 };
 
 export const DEFAULT_INVENTORY_SETTINGS: InventorySettings = {

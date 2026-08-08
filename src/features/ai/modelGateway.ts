@@ -52,7 +52,7 @@ export const INITIAL_AI_MODELS: AIModelConfig[] = [
   },
   {
     id: 'model-gemini-pro',
-    name: 'Gemini 1.5 Pro (High Reasoning)',
+    name: 'Gemini 3.1 Pro (High)',
     provider: 'Google Gemini',
     taskType: 'high_reasoning',
     isChampion: false,

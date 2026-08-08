@@ -52,7 +52,7 @@ export function SystemHealthSettingsTab({
       }
 
       // 3. Check AI Config
-      const aiResult = await resolveEffectiveSetting<any>('ai_settings', 'ai_settings', { dataPlane: 'production' }, { enabled: false });
+      const aiResult = await resolveEffectiveSetting<any>('integrations', 'ai_settings', { dataPlane: 'production' }, { enabled: false });
       setAiStatus(aiResult?.value?.enabled ? 'Healthy' : 'Disconnected');
 
       toast({

@@ -51,16 +51,16 @@ export function BookingSettingsTab({
     setLoading(true);
     const dataPlane = getActiveDataPlane();
     
-    const bookingResult = await resolveEffectiveSetting<BookingSettings>('booking_settings', 'booking_settings', { dataPlane }, DEFAULT_BOOKING_SETTINGS);
+    const bookingResult = await resolveEffectiveSetting<BookingSettings>('booking', 'booking_settings', { dataPlane }, DEFAULT_BOOKING_SETTINGS);
     setBooking(bookingResult.value);
     setDbBooking(bookingResult.value);
 
-    const questionsResult = await resolveEffectiveSetting<BookingQuestion[]>('booking_questions', 'booking_questions', { dataPlane }, DEFAULT_BOOKING_QUESTIONS);
+    const questionsResult = await resolveEffectiveSetting<BookingQuestion[]>('booking', 'booking_questions', { dataPlane }, DEFAULT_BOOKING_QUESTIONS);
     const sorted = [...questionsResult.value].sort((a, b) => a.displayOrder - b.displayOrder);
     setQuestions(sorted);
     setDbQuestions(JSON.parse(JSON.stringify(sorted)));
 
-    const feeResult = await resolveEffectiveSetting<BookingFeeSettings>('booking_fee_settings', 'booking_fee_settings', { dataPlane }, DEFAULT_BOOKING_FEE_SETTINGS);
+    const feeResult = await resolveEffectiveSetting<BookingFeeSettings>('booking', 'booking_fee_settings', { dataPlane }, DEFAULT_BOOKING_FEE_SETTINGS);
     setFeeSettings(feeResult.value);
     setDbFeeSettings(feeResult.value);
 
@@ -86,9 +86,9 @@ export function BookingSettingsTab({
     
     try {
       const dataPlane = getActiveDataPlane();
-      await saveScopedSetting('booking_settings', 'booking_settings', booking, { dataPlane }, reason);
-      await saveScopedSetting('booking_questions', 'booking_questions', orderedQuestions, { dataPlane }, reason);
-      await saveScopedSetting('booking_fee_settings', 'booking_fee_settings', feeSettings, { dataPlane }, reason);
+      await saveScopedSetting('booking', 'booking_settings', booking, { dataPlane }, reason);
+      await saveScopedSetting('booking', 'booking_questions', orderedQuestions, { dataPlane }, reason);
+      await saveScopedSetting('booking', 'booking_fee_settings', feeSettings, { dataPlane }, reason);
       
       setSaving(false);
       toast({

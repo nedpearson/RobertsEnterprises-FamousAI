@@ -15,9 +15,15 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { inputCls } from '@/components/vowos/ui';
-import { PageHeader } from '../ui';
+import { PageHeader } from '../../ui';
 import { supabase, getActiveDataPlane } from '@/lib/supabase';
 import { SettingsCard } from '../components/SettingsCard';
+import {
+  DocumentSettings,
+  DEFAULT_DOCUMENT_SETTINGS,
+  resolveEffectiveSetting,
+  saveScopedSetting,
+} from '@/lib/settings';
 
 interface DocumentTemplate {
   id: string;
@@ -43,7 +49,10 @@ export function DocumentsSettingsTab({
   resetTrigger,
 }: DocumentsSettingsTabProps) {
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+  const [settings, setSettings] = useState<DocumentSettings>(DEFAULT_DOCUMENT_SETTINGS);
+  const [dbSettings, setDbSettings] = useState<DocumentSettings>(DEFAULT_DOCUMENT_SETTINGS);
 
   const loadTemplates = async () => {
     try {
@@ -59,6 +68,15 @@ export function DocumentsSettingsTab({
 
       if (error) throw error;
       setTemplates(data || []);
+
+      const result = await resolveEffectiveSetting<DocumentSettings>(
+        'documents',
+        'document_templates',
+        { dataPlane },
+        DEFAULT_DOCUMENT_SETTINGS
+      );
+      setSettings(result.value);
+      setDbSettings(result.value);
     } catch (err: any) {
       console.error("Error loading templates:", err);
       toast({
@@ -74,6 +92,40 @@ export function DocumentsSettingsTab({
   useEffect(() => {
     loadTemplates();
   }, [resetTrigger]);
+
+  const isDirty = JSON.stringify(settings) !== JSON.stringify(dbSettings);
+
+  useEffect(() => {
+    onDirtyChange(isDirty);
+  }, [isDirty]);
+
+  const handleSave = async (reason?: string): Promise<boolean> => {
+    setSaving(true);
+    try {
+      const dataPlane = getActiveDataPlane();
+      await saveScopedSetting('documents', 'document_templates', settings, { dataPlane }, reason);
+      
+      toast({
+        title: 'Document settings saved',
+        description: 'Template typography and configuration updated.',
+      });
+      setDbSettings(settings);
+      setSaving(false);
+      return true;
+    } catch (err: any) {
+      setSaving(false);
+      toast({
+        title: 'Could not save document settings',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    registerSaveRef(handleSave);
+  }, [settings]);
 
   const handleUploadTemplate = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -258,15 +310,25 @@ export function DocumentsSettingsTab({
           </div>
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">Brand Logo URL</label>
-            <input type="text" placeholder="https://..." className={inputCls} />
+            <input 
+              type="text" 
+              placeholder="https://..." 
+              className={inputCls} 
+              value={settings.brandLogoUrl}
+              onChange={(e) => setSettings({ ...settings, brandLogoUrl: e.target.value })}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">Primary Font Family</label>
-            <select className={inputCls}>
-              <option>Inter</option>
-              <option>Roboto</option>
-              <option>Playfair Display</option>
-              <option>EB Garamond</option>
+            <select 
+              className={inputCls}
+              value={settings.primaryFontFamily}
+              onChange={(e) => setSettings({ ...settings, primaryFontFamily: e.target.value })}
+            >
+              <option value="Inter">Inter</option>
+              <option value="Roboto">Roboto</option>
+              <option value="Playfair Display">Playfair Display</option>
+              <option value="EB Garamond">EB Garamond</option>
             </select>
           </div>
         </div>

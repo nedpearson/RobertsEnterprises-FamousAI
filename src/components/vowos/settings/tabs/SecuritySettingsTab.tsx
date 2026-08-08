@@ -41,8 +41,8 @@ export function SecuritySettingsTab({
     setLoading(true);
     const dataPlane = getActiveDataPlane();
     const result = await resolveEffectiveSetting<SecuritySettingsExtended>(
-      'security_settings_extended',
-      'security_settings_extended',
+      'security',
+      'security_policy',
       { dataPlane },
       DEFAULT_SECURITY_EXTENDED
     );
@@ -65,7 +65,7 @@ export function SecuritySettingsTab({
   const handleSave = async (reason?: string): Promise<boolean> => {
     try {
       const dataPlane = getActiveDataPlane();
-      await saveScopedSetting('security_settings_extended', 'security_settings_extended', settings, { dataPlane }, reason);
+      await saveScopedSetting('security', 'security_policy', settings, { dataPlane }, reason);
 
       toast({
         title: 'Security policy updated',

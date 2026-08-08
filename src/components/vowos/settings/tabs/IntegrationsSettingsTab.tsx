@@ -61,8 +61,8 @@ export function IntegrationsSettingsTab({
       const dataPlane = getActiveDataPlane();
       
       const [aiResult, stripeResult] = await Promise.all([
-        resolveEffectiveSetting<AISettings>('ai_settings', 'ai_settings', { dataPlane }, DEFAULT_AI_SETTINGS),
-        resolveEffectiveSetting<StripeSettings>('stripe_settings', 'stripe_settings', { dataPlane }, DEFAULT_STRIPE_SETTINGS)
+        resolveEffectiveSetting<AISettings>('integrations', 'ai_settings', { dataPlane }, DEFAULT_AI_SETTINGS),
+        resolveEffectiveSetting<StripeSettings>('integrations', 'stripe_settings', { dataPlane }, DEFAULT_STRIPE_SETTINGS)
       ]);
       
       setAiSettings(aiResult?.value || DEFAULT_AI_SETTINGS);
@@ -106,8 +106,8 @@ export function IntegrationsSettingsTab({
   const handleSave = async (reason?: string): Promise<boolean> => {
     try {
       const dataPlane = getActiveDataPlane();
-      await saveScopedSetting('ai_settings', 'ai_settings', aiSettings, { dataPlane }, reason);
-      await saveScopedSetting('stripe_settings', 'stripe_settings', stripe, { dataPlane }, reason);
+      await saveScopedSetting('integrations', 'ai_settings', aiSettings, { dataPlane }, reason);
+      await saveScopedSetting('integrations', 'stripe_settings', stripe, { dataPlane }, reason);
       
       toast({
         title: 'Integrations & AI settings saved',

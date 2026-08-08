@@ -32,7 +32,7 @@ export function OrgSettingsTab({
   const loadSettings = async () => {
     setLoading(true);
     const dataPlane = getActiveDataPlane();
-    const result = await resolveEffectiveSetting<OrganizationSettings>('org_settings', 'org_settings', { dataPlane }, DEFAULT_ORG_SETTINGS);
+    const result = await resolveEffectiveSetting<OrganizationSettings>('organization', 'business_config', { dataPlane }, DEFAULT_ORG_SETTINGS);
     setSettings(result.value);
     setDbSettings(result.value);
     setLoading(false);
@@ -52,7 +52,7 @@ export function OrgSettingsTab({
     setSaving(true);
     try {
       const dataPlane = getActiveDataPlane();
-      await saveScopedSetting('org_settings', 'org_settings', settings, { dataPlane }, reason);
+      await saveScopedSetting('organization', 'business_config', settings, { dataPlane }, reason);
     } catch (err: any) {
       setSaving(false);
       toast({

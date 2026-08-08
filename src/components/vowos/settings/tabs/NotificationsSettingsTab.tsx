@@ -47,7 +47,7 @@ export function NotificationsSettingsTab({
     setLoading(true);
     const dataPlane = getActiveDataPlane();
     const result = await resolveEffectiveSetting<NotificationSettings>(
-      'notification_settings',
+      'alerts',
       'notification_settings',
       { dataPlane },
       DEFAULT_NOTIFICATION_SETTINGS
@@ -77,7 +77,7 @@ export function NotificationsSettingsTab({
   const handleSave = async (reason?: string): Promise<boolean> => {
     try {
       const dataPlane = getActiveDataPlane();
-      await saveScopedSetting('notification_settings', 'notification_settings', settings, { dataPlane }, reason);
+      await saveScopedSetting('alerts', 'notification_settings', settings, { dataPlane }, reason);
 
       toast({
         title: 'Notification preferences saved',
