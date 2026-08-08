@@ -442,6 +442,17 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
 
 // Legacy fetch/save json functions removed as part of Phase 4 Migration
 
+export const DEFAULT_ALTERATION_SETTINGS: AlterationSettings = {
+  services: [
+    { id: '1', name: 'Hem', priceCents: 15000, durationMinutes: 60 },
+    { id: '2', name: 'Bustle', priceCents: 20000, durationMinutes: 60 }
+  ],
+  fittingsMax: 3,
+  dueBufferDays: 14,
+  rushFeeCents: 10000,
+  readyTemplate: 'Your alterations are ready.'
+};
+
 export async function fetchBookingFeeCents(locationId?: LocationId): Promise<number> {
   const dataPlane = getActiveDataPlane();
   const result = await resolveEffectiveSetting<BookingFeeSettings>(
@@ -457,6 +468,17 @@ export async function fetchBookingFeeCents(locationId?: LocationId): Promise<num
     return settings.locationOverrides[locationId];
   }
   return settings.amountCents;
+}
+
+export async function fetchAlterationSettings(locationId?: LocationId): Promise<AlterationSettings> {
+  const dataPlane = getActiveDataPlane();
+  const result = await resolveEffectiveSetting<AlterationSettings>(
+    'alteration_settings',
+    'alteration_settings',
+    { dataPlane, locationId },
+    DEFAULT_ALTERATION_SETTINGS
+  );
+  return result.value;
 }
 
 // ─── Scoped Configuration Architecture ───

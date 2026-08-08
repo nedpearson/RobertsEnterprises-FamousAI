@@ -151,7 +151,7 @@ export default function PayrollView() {
   const exceptions = generateExceptions();
 
   // Handle Wizard Start
-  const handleStartWizard = () => {
+  const handleStartWizard = async () => {
     if (!scope.startDate || !scope.endDate) {
       toast({ title: 'Invalid Scope', description: 'Please select a concrete date range to begin payroll run.', variant: 'destructive' });
       return;
@@ -170,20 +170,25 @@ export default function PayrollView() {
     };
 
     const commissionsMap: Record<string, number> = {};
-    const result = compilePayrollPeriod(
-      draftPeriod,
-      profiles,
-      punches,
-      segments,
-      deductions,
-      reimbursements,
-      bonuses,
-      commissionsMap,
-      departments
-    );
+    
+    try {
+      const result = await compilePayrollPeriod(
+        draftPeriod,
+        profiles,
+        punches,
+        segments,
+        deductions,
+        reimbursements,
+        bonuses,
+        commissionsMap,
+        departments
+      );
 
-    setDraftRun(result);
-    setShowWizard(true);
+      setDraftRun(result);
+      setShowWizard(true);
+    } catch (err: any) {
+      toast({ title: 'Payroll Error', description: err.message, variant: 'destructive' });
+    }
   };
 
   const handlePostPayroll = async () => {

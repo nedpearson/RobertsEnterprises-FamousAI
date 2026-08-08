@@ -16,7 +16,8 @@ import { TransferModal } from './TransfersView';
 import { LocationBadge } from './LocationSelect';
 import OTBForecastingWidget from '@/features/inventory/components/OTBForecastingWidget';
 import ThermalBarcodePrinter from '@/features/inventory/components/ThermalBarcodePrinter';
-import { Printer } from 'lucide-react';
+import { Printer, Library } from 'lucide-react';
+import { useApplicationRoute } from '@/lib/navigation/useApplicationRoute';
 
 
 const CONDITION_BADGE: Record<string, string> = {
@@ -40,6 +41,7 @@ export default function InventoryView() {
   const [priceEditId, setPriceEditId] = useState<string | null>(null);
   const [priceValue, setPriceValue] = useState('');
   const [priceSaving, setPriceSaving] = useState(false);
+  const { navigateToView } = useApplicationRoute();
 
 
   const styles = useMemo(
@@ -131,9 +133,14 @@ export default function InventoryView() {
               <Printer className="h-4 w-4 text-rose-500" /> Print Thermal Barcode Tags
             </button>
 
-            <button data-tour-id="btn-add-gown" onClick={openAdd} className={btnPrimary}>
-              <Plus className="h-4 w-4" />
-              Add Gown
+            <button
+              onClick={() => navigateToView('catalog')}
+              className={btnPrimary}
+            >
+              <Library className="h-4 w-4" /> Import from Catalog
+            </button>
+            <button data-tour-id="btn-add-gown" onClick={openAdd} className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-800 hover:bg-stone-50 transition-colors flex items-center gap-2 shadow-xs cursor-pointer">
+              <Plus className="h-4 w-4 text-stone-500" /> Custom Item
             </button>
           </div>
         }

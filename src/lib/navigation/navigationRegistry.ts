@@ -39,6 +39,7 @@ export type ViewKey =
   | 'overview' // Maps to Overview (Owner)
   | 'customers' // Brides
   | 'leads'
+  | 'catalog' // Universal Vendor Catalog
   | 'inventory'
   | 'transfers'
   | 'schedule' // Calendar & Scheduling (Canonical)
@@ -61,7 +62,8 @@ export type ViewKey =
   | 'onlinestore'
   | 'marketing'
   | 'bride-portal'
-  | 'fitting-room';
+  | 'fitting-room'
+  | 'platform-admin';
 
 export interface NavigationSection {
   id: NavigationSectionId;
@@ -84,6 +86,7 @@ export interface NavigationItem {
   openInNewTab?: boolean;
   mobilePriority?: number; // Lower number = higher priority for bottom nav bar
   searchKeywords: string[];
+  requiredFeature?: string; // Feature key required to view this item
 }
 
 export const NAVIGATION_SECTIONS: NavigationSection[] = [
@@ -154,6 +157,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager'],
     mobilePriority: 4,
     searchKeywords: ['sales', 'revenue', 'reports'],
+    requiredFeature: 'reports.core',
   },
 
   // CLIENTS & SALES
@@ -179,9 +183,21 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     badgeKey: 'pendingContracts',
     mobilePriority: 11,
     searchKeywords: ['contracts', 'agreements', 'signatures', 'pending contracts', 'legal'],
+    requiredFeature: 'sales.contracts',
   },
 
   // GOWNS & OPERATIONS
+  {
+    id: 'catalog',
+    label: 'Vendor Catalog',
+    shortLabel: 'Catalog',
+    icon: PackageSearch,
+    path: '/catalog',
+    section: 'gowns',
+    allowedRoles: ['Owner', 'Manager'],
+    mobilePriority: 3.5,
+    searchKeywords: ['catalog', 'vendors', 'products', 'import', 'csv', 'designer catalog'],
+  },
   {
     id: 'inventory',
     label: 'Gown Inventory',
@@ -204,6 +220,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     badgeKey: 'alterationsDue',
     mobilePriority: 5,
     searchKeywords: ['alterations', 'fittings', 'seamstress', 'tailoring', 'modifications', 'fitting queue'],
+    requiredFeature: 'alterations.core',
   },
   {
     id: 'transfers',
@@ -216,6 +233,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     badgeKey: 'inTransitTransfers',
     mobilePriority: 12,
     searchKeywords: ['transfers', 'interstore', 'locations', 'baton rouge', 'covington', 'transit'],
+    requiredFeature: 'transfers.core',
   },
   {
     id: 'purchases',
@@ -228,6 +246,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     badgeKey: 'delayedOrders',
     mobilePriority: 13,
     searchKeywords: ['purchase orders', 'po', 'vendors', 'designers', 'special orders', 'ordering'],
+    requiredFeature: 'purchasing.core',
   },
 
   // FINANCE
@@ -253,6 +272,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager'],
     mobilePriority: 14,
     searchKeywords: ['ledgers', 'accounting', 'journal', 'transactions', 'financials', 'auditing'],
+    requiredFeature: 'reports.advanced',
   },
 
   // TEAM
@@ -288,6 +308,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
     mobilePriority: 16,
     searchKeywords: ['payroll', 'commissions', 'tips', 'wages', 'workforce', 'payouts'],
+    requiredFeature: 'payroll.core',
   },
   {
     id: 'training',
@@ -312,6 +333,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
     mobilePriority: 7.5,
     searchKeywords: ['growth', 'marketing', 'leads', 'pipeline', 'facebook', 'instagram', 'google ads', 'tiktok', 'pinterest', 'meta', 'campaigns', 'ad spend', 'roas'],
+    requiredFeature: 'marketing.leads',
   },
 
   // INSIGHTS
@@ -349,6 +371,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner', 'Manager'],
     mobilePriority: 17,
     searchKeywords: ['online store', 'shopify', 'proper', 'ecommerce', 'catalog import', 'web orders'],
+    requiredFeature: 'integrations.shopify',
   },
 
   // EXTERNAL
@@ -378,6 +401,7 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
   sales: '/sales',
   customers: '/brides',
   leads: '/growth/leads',
+  catalog: '/catalog',
   inventory: '/inventory',
   transfers: '/transfers',
   communications: '/communications',
@@ -394,6 +418,7 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
   training: '/training',
   onlinestore: '/onlinestore',
   marketing: '/growth',
+  'platform-admin': '/platform-admin',
 };
 
 /** Map path to view key */
@@ -419,6 +444,7 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/growth/lead-generation': 'marketing',
   '/growth/campaigns': 'marketing',
   '/marketing': 'marketing', // Legacy redirect
+  '/catalog': 'catalog',
   '/leads': 'leads', // Legacy redirect
   '/inventory': 'inventory',
   '/transfers': 'transfers',
@@ -436,4 +462,5 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/payroll': 'payroll',
   '/timeclock': 'timeclock',
   '/training': 'training',
+  '/platform-admin': 'platform-admin',
 };

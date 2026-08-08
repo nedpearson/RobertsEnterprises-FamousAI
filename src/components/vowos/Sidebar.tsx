@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTenantEntitlements } from '@/hooks/useTenantEntitlements';
 import { Gem, ChevronDown, ChevronRight, Lock, LogOut, ExternalLink, SlidersHorizontal, PanelLeftClose, PanelLeftOpen, Copy, Check, Eye, CalendarHeart } from 'lucide-react';
 import { useAuth, StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
@@ -93,7 +94,6 @@ interface SidebarProps {
   onCloseMobile: () => void;
   onRequestSignIn: () => void;
   isCompact?: boolean;
-  onToggleCompact?: () => void;
 }
 
 export default function Sidebar({
@@ -108,6 +108,7 @@ export default function Sidebar({
   const { session, profile, signOut } = useAuth();
   const { activeLocation } = useVowosData();
   const role: StaffRole | null = session && profile ? profile.role : null;
+  const { can } = useTenantEntitlements();
 
   const [compact, setCompact] = useState<boolean>(() => {
     if (externalCompact !== undefined) return externalCompact;
@@ -179,6 +180,8 @@ export default function Sidebar({
       if (activeLocation !== 'pc-br' && activeLocation !== 'pc-cov') return false;
     }
     if (item.id === 'training' || item.id === 'dashboard') return true;
+    if (item.requiredFeature && !can(item.requiredFeature)) return false;
+    
     if (!role) return false;
     if (role === 'Owner') return true;
     return item.allowedRoles.includes(role);
@@ -245,6 +248,10 @@ export default function Sidebar({
                     const Icon = item.icon;
 
                     if (item.id === 'staff' && role && role !== 'Owner') return null;
+                    
+                    // Actually hide the item if they don't have entitlement, so they don't see it locked if it's completely inaccessible
+                    // Wait, do we want to show it locked or hide it? The user requested: "Automatically hide left-nav items if the tenant lacks the required feature key."
+                    if (item.requiredFeature && !can(item.requiredFeature)) return null;
 
                     const buttonContent = (
                       <button
@@ -346,6 +353,19 @@ export default function Sidebar({
         {!compact && (
           <div className="pt-2">
             <InstallAppButton fullWidth variant="secondary" size="sm" className="bg-white/5 border-white/10 text-stone-300 hover:bg-white/10 hover:text-white" />
+          </div>
+        )}
+        
+        {/* Platform Admin Link */}
+        {role === 'Owner' && (
+          <div className="pt-2">
+            <button
+              onClick={() => onNavigate('platform-admin' as ViewKey)}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-white/10 text-stone-300 hover:text-white transition-colors"
+            >
+              <Lock className="h-3.5 w-3.5 text-stone-400" />
+              {!compact && <span className="text-xs font-semibold">Platform Admin</span>}
+            </button>
           </div>
         )}
 

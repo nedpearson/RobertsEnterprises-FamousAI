@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { assertEntitlement } from './entitlementService';
 
 export interface ActiveBusinessContext {
   businessId: string | undefined;
@@ -485,10 +486,13 @@ export const useRescheduleAppointment = () => {
   });
 };
 
-export const useGenerateAIRecommendations = () => {
+export const useGenerateAIRecommendations = (businessId?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (requestId: string) => {
+      if (businessId) {
+        await assertEntitlement('scheduling.ai', businessId);
+      }
       const { error } = await supabase.rpc('generate_ai_recommendations', {
         p_request_id: requestId
       });

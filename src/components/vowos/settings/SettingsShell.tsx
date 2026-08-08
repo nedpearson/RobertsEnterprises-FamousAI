@@ -37,6 +37,7 @@ import { AuditSettingsTab } from './tabs/AuditSettingsTab';
 import { SystemHealthSettingsTab } from './tabs/SystemHealthSettingsTab';
 import { FeatureFlagsSettingsTab } from './tabs/FeatureFlagsSettingsTab';
 import AIModelSettingsTab from './tabs/AIModelSettingsTab';
+import { SubscriptionsSettingsTab } from './tabs/SubscriptionsSettingsTab';
 import { Search } from 'lucide-react';
 import { inputCls } from '../ui';
 
@@ -293,6 +294,14 @@ export default function SettingsShell() {
             resetTrigger={resetTrigger}
           />
         );
+      case 'subscriptions':
+        return (
+          <SubscriptionsSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
       default:
         saveFnRef.current = null;
         return null;
@@ -323,6 +332,7 @@ export default function SettingsShell() {
       case 'audit': return 'Audit Log';
       case 'system-health': return 'System Health';
       case 'feature-flags': return 'Feature Flags';
+      case 'subscriptions': return 'Subscription & Modules';
       default:
         return activeTab.charAt(0).toUpperCase() + activeTab.slice(1).replace('-', ' ');
     }
@@ -352,6 +362,7 @@ export default function SettingsShell() {
       case 'audit': return 'Timeline of setting changes, actors, and reasons.';
       case 'system-health': return 'Monitor database connection state, integration adapters, and run checks.';
       case 'feature-flags': return 'Enable experimental rollouts for testing new features.';
+      case 'subscriptions': return 'Manage your VowOS subscription, billing, and toggle optional add-on modules.';
       default:
         return 'Manage and configure VowOS platform options.';
     }

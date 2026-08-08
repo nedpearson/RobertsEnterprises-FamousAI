@@ -1,4 +1,5 @@
 import { TimeEntry, TimeEntrySegment, CompensationProfile, Department, Deduction, Reimbursement, Bonus, OfficialPayrollPeriod } from './workforceStore';
+import { assertEntitlement } from './entitlementService';
 
 export interface DateRange {
   startDate: string; // YYYY-MM-DD
@@ -295,7 +296,7 @@ export function calculateEmployeePayroll(
   };
 }
 
-export function compilePayrollPeriod(
+export async function compilePayrollPeriod(
   period: OfficialPayrollPeriod,
   profiles: CompensationProfile[],
   punches: TimeEntry[],
@@ -305,7 +306,8 @@ export function compilePayrollPeriod(
   bonuses: Bonus[],
   commissionsMap: Record<string, number>,
   departments: Department[] = []
-): PayrollRunResult {
+): Promise<PayrollRunResult> {
+  await assertEntitlement('payroll.core', period.businessId);
   
   // Filter eligible profiles if period restricts it
   const eligibleProfiles = period.eligiblePayGroups && period.eligiblePayGroups.length > 0

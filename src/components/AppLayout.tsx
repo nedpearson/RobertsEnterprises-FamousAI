@@ -15,6 +15,7 @@ import { NAVIGATION_ITEMS } from '@/lib/navigation/navigationRegistry';
 import { useApplicationRoute } from '@/lib/navigation/useApplicationRoute';
 import { getStoredCompactSidebar } from '@/lib/navigation/userPreferences';
 import { fetchMessages } from '@/lib/messaging';
+import { EntitlementGuard } from '@/components/vowos/guards/EntitlementGuard';
 
 import { DemoModeBanner } from '@/components/demo/DemoModeBanner';
 import { DemoCursorOverlay } from '@/components/demo/DemoCursorOverlay';
@@ -43,6 +44,8 @@ import OnlineStorePage from '@/features/proper-commerce/pages/OnlineStorePage';
 import MarketingPage from '@/features/marketing/pages/MarketingPage';
 import BridePortalView from '@/features/bride-portal/BridePortalView';
 import ConsultantFittingRoomView from '@/features/fitting-room/ConsultantFittingRoomView';
+import { PlatformAdminView } from '@/components/vowos/PlatformAdminView';
+import CatalogView from '@/features/catalog/CatalogView';
 
 import MobileManagerToday from '@/components/vowos/mobile/MobileManagerToday';
 import MobileManagerSchedule from '@/components/vowos/mobile/MobileManagerSchedule';
@@ -309,41 +312,55 @@ export default function AppLayout() {
             <LockedPanel label={currentLabel} onSignIn={() => setAuthOpen(true)} />
           ) : isRoleLocked ? (
             <RoleLockedPanel label={currentLabel} view={view} role={role!} />
-          ) : (
-            <VowosErrorBoundary>
-              {view === 'dashboard' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerToday onNavigate={setView} /> : <DashboardView onNavigate={setView} />)}
-              {view === 'overview' && (showMobileView ? <MobileOwnerOverview onNavigate={setView} /> : <OwnerExecutiveOverview onNavigate={setView} />)}
-              {view === 'sales' && (showMobileView && (role === 'Owner' || role === 'Manager') ? <MobileOwnerSales onNavigate={setView} /> : <ReportsView />)}
-              {view === 'customers' && <CustomersView />}
-              {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
-              {view === 'inventory' && <InventoryView />}
-              {view === 'transfers' && <TransfersView />}
-              {(view === 'schedule' || view === 'appointments' || view === 'operations' || view === 'schedules') && (
-                showMobileView && (role === 'Manager' || role === 'Owner') && !window.location.search.includes('layout=unified') ? (
-                  <MobileManagerSchedule onNavigate={setView} />
-                ) : (
-                  <UnifiedSchedulingWorkspace />
-                )
-              )}
-              {view === 'communications' && <CommunicationsView />}
-              {view === 'contracts' && <ContractsView />}
-              {view === 'alterations' && <AlterationsView />}
+          ) : (() => {
+            const activeNavItem = NAVIGATION_ITEMS.find((n) => n.id === view);
+            const content = (
+              <VowosErrorBoundary>
+                {view === 'dashboard' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerToday onNavigate={setView} /> : <DashboardView onNavigate={setView} />)}
+                {view === 'overview' && (showMobileView ? <MobileOwnerOverview onNavigate={setView} /> : <OwnerExecutiveOverview onNavigate={setView} />)}
+                {view === 'sales' && (showMobileView && (role === 'Owner' || role === 'Manager') ? <MobileOwnerSales onNavigate={setView} /> : <ReportsView />)}
+                {view === 'customers' && <CustomersView />}
+                {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
+                {view === 'catalog' && <CatalogView />}
+                {view === 'inventory' && <InventoryView />}
+                {view === 'transfers' && <TransfersView />}
+                {(view === 'schedule' || view === 'appointments' || view === 'operations' || view === 'schedules') && (
+                  showMobileView && (role === 'Manager' || role === 'Owner') && !window.location.search.includes('layout=unified') ? (
+                    <MobileManagerSchedule onNavigate={setView} />
+                  ) : (
+                    <UnifiedSchedulingWorkspace />
+                  )
+                )}
+                {view === 'communications' && <CommunicationsView />}
+                {view === 'contracts' && <ContractsView />}
+                {view === 'alterations' && <AlterationsView />}
 
-              {view === 'invoices' && <InvoicesView />}
-              {view === 'purchases' && <PurchasesView />}
-              {view === 'reports' && <ReportsView />}
-              {view === 'ledgers' && <LedgersView />}
-              {view === 'staff' && <StaffView />}
-              {view === 'settings' && <SettingsView />}
-              {view === 'payroll' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobilePayroll onNavigate={setView} /> : <PayrollView />)}
-              {view === 'timeclock' && <TimeClockView />}
-              {view === 'training' && <TrainingCenterView onNavigate={setView} />}
-              {view === 'onlinestore' && <OnlineStorePage />}
-              {view === 'marketing' && <MarketingPage />}
-              {view === 'bride-portal' && <BridePortalView />}
-              {view === 'fitting-room' && <ConsultantFittingRoomView />}
-            </VowosErrorBoundary>
-          )}
+                {view === 'invoices' && <InvoicesView />}
+                {view === 'purchases' && <PurchasesView />}
+                {view === 'reports' && <ReportsView />}
+                {view === 'ledgers' && <LedgersView />}
+                {view === 'staff' && <StaffView />}
+                {view === 'settings' && <SettingsView />}
+                {view === 'payroll' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobilePayroll onNavigate={setView} /> : <PayrollView />)}
+                {view === 'timeclock' && <TimeClockView />}
+                {view === 'training' && <TrainingCenterView onNavigate={setView} />}
+                {view === 'onlinestore' && <OnlineStorePage />}
+                {view === 'marketing' && <MarketingPage />}
+                {view === 'bride-portal' && <BridePortalView />}
+                {view === 'fitting-room' && <ConsultantFittingRoomView />}
+                {view === 'platform-admin' && <PlatformAdminView />}
+              </VowosErrorBoundary>
+            );
+
+            if (activeNavItem?.requiredFeature) {
+              return (
+                <EntitlementGuard featureKey={activeNavItem.requiredFeature}>
+                  {content}
+                </EntitlementGuard>
+              );
+            }
+            return content;
+          })()}
 
           <DemoLauncherModal open={demoModalOpen} onClose={() => setDemoModalOpen(false)} onNavigateNeeded={setView} />
           <CommandPaletteModal open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} onNavigate={setView} />

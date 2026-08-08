@@ -23,6 +23,7 @@ import {
   Activity,
   Flag,
   Cpu,
+  Crown,
 } from 'lucide-react';
 
 export type SettingsTab =
@@ -48,7 +49,8 @@ export type SettingsTab =
   | 'audit'
   | 'system-health'
   | 'feature-flags'
-  | 'ai-models';
+  | 'ai-models'
+  | 'subscriptions';
 
 export interface SettingsCategory {
   group: string;
@@ -68,6 +70,7 @@ export const SETTINGS_GROUPS: SettingsCategory[] = [
       { id: 'organization', label: 'Organization', icon: Building, roles: ['Owner'], keywords: ['name', 'logo', 'business', 'company', 'contact'] },
       { id: 'locations', label: 'Locations', icon: MapPin, roles: ['Owner', 'Manager'], keywords: ['store', 'boutique', 'address', 'hours', 'holidays', 'timezone'] },
       { id: 'reporting', label: 'Reporting Settings', icon: BarChart3, roles: ['Owner', 'Manager'], keywords: ['fiscal', 'calendar', 'cost', 'metrics', 'goals'] },
+      { id: 'subscriptions', label: 'Subscription & Modules', icon: Crown, roles: ['Owner'], keywords: ['plan', 'billing', 'modules', 'features', 'upgrade', 'downgrade', 'addons'] },
     ],
   },
   {

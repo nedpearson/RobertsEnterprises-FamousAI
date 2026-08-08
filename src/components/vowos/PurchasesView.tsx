@@ -7,6 +7,8 @@ import { getVendorPortals, saveVendorPortal, VendorPortal } from '@/lib/services
 import { toast } from '@/components/ui/use-toast';
 
 import PODetailDrilldownModal from '@/features/inventory/components/PODetailDrilldownModal';
+import { catalogService } from '@/lib/services/catalogService';
+import { Vendor, Product, ProductVariant } from '@/types/catalog';
 
 export default function PurchasesView() {
   const { purchaseOrders: list, brides, loading, markPoDelivered, updatePoStatus, updatePurchaseOrder, deletePurchaseOrder, addPurchaseOrder } = useVowosData();
@@ -119,9 +121,22 @@ export default function PurchasesView() {
   const [portalRepEmail, setPortalRepEmail] = useState('');
   const [portalLeadTimeDays, setPortalLeadTimeDays] = useState('40');
 
+  const [catalogVendors, setCatalogVendors] = useState<Vendor[]>([]);
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
+  const [catalogVariants, setCatalogVariants] = useState<ProductVariant[]>([]);
+
   useEffect(() => {
     getVendorPortals().then(setPortals);
+    catalogService.getVendors('b0000000-0000-0000-0000-000000000001').then(setCatalogVendors).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (newVendor && catalogVendors.some(v => v.id === newVendor)) {
+      catalogService.getVendorProducts('b0000000-0000-0000-0000-000000000001', newVendor).then(setCatalogProducts).catch(console.error);
+    } else {
+      setCatalogProducts([]);
+    }
+  }, [newVendor, catalogVendors]);
 
   const togglePasswordVisibility = (id: string) => {
     setShowPassMap((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -219,8 +234,9 @@ export default function PurchasesView() {
     e.preventDefault();
     setSubmittingPo(true);
     const amountCents = Math.round(parseFloat(newAmountDollars || '0') * 100);
+    const vendorName = catalogVendors.find(v => v.id === newVendor)?.name || newVendor;
     const success = await addPurchaseOrder({
-      vendor: newVendor,
+      vendor: vendorName,
       items: newItems + (newCustomer ? ` (Bride: ${newCustomer})` : ''),
       amountCents: amountCents > 0 ? amountCents : 150000,
       expectedDelivery: newEta || new Date().toISOString().slice(0, 10),
@@ -231,7 +247,7 @@ export default function PurchasesView() {
       setNewItems('');
       setNewAmountDollars('');
       setRawIngestText('');
-      toast({ title: 'Purchase Order Created', description: `PO created and linked to ${newVendor}.` });
+      toast({ title: 'Purchase Order Created', description: `PO created and linked to ${vendorName}.` });
     }
   };
 
@@ -708,13 +724,12 @@ export default function PurchasesView() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-stone-700 block">Vendor / Designer</label>
+              <label className="text-xs font-semibold text-stone-700 block">Vendor / Designer (From Catalog)</label>
               <select value={newVendor} onChange={(e) => setNewVendor(e.target.value)} className={inputCls}>
-                <option value="Justin Alexander">Justin Alexander</option>
-                <option value="Pronovias">Pronovias</option>
-                <option value="Essense of Australia">Essense of Australia</option>
-                <option value="Morilee">Morilee</option>
-                <option value="Veil & Co.">Veil &amp; Co.</option>
+                <option value="">-- Choose Vendor --</option>
+                {catalogVendors.map(v => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
               </select>
             </div>
 
@@ -728,6 +743,26 @@ export default function PurchasesView() {
               </select>
             </div>
           </div>
+
+          {catalogProducts.length > 0 && (
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-stone-700 block">Select Product (Optional)</label>
+              <select
+                className={inputCls}
+                onChange={(e) => {
+                  const p = catalogProducts.find(prod => prod.id === e.target.value);
+                  if (p) {
+                    setNewItems(`${p.name} (Style: ${p.style_number})`);
+                  }
+                }}
+              >
+                <option value="">-- Choose Product --</option>
+                {catalogProducts.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.style_number})</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-stone-700 block">Order Items &amp; Description</label>
