@@ -21,7 +21,7 @@ export default function CampaignWizardModal({ onClose, onCampaignCreated }: Camp
   const [providers, setProviders] = useState<MarketingProvider[]>(['meta', 'google']);
   const [budgetCents, setBudgetCents] = useState(150000); // $1,500.00
   const [targetAudience, setTargetAudience] = useState('Engaged Women 22-38 within 45 miles of Baton Rouge & Covington');
-  const [destinationUrl, setDestinationUrl] = useState('https://robertsenterprises.bridgebox.ai/#booking');
+  const [destinationUrl, setDestinationUrl] = useState('https://robertsenterprises.vowos.com/#booking');
 
   const handleToggleLocation = (loc: LocationId) => {
     setLocations((prev) => (prev.includes(loc) ? prev.filter((l) => l !== loc) : [...prev, loc]));

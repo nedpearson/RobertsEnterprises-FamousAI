@@ -152,7 +152,7 @@ export default function PayInvoice() {
             <Gem className="h-6 w-6 text-white" />
           </div>
           <p className="mt-3 text-[10px] font-medium uppercase tracking-[0.25em] text-rose-500">
-            Roberts Enterprises Bridal
+            The Boutique Bridal
           </p>
           <h1 className="font-serif text-2xl text-stone-900">{loc ? loc.business : 'Secure Payment'}</h1>
           {loc && <p className="mt-1 text-xs text-stone-500">{loc.address} · {loc.phone}</p>}
@@ -306,7 +306,7 @@ export default function PayInvoice() {
         )}
 
         <p className="mt-8 text-center text-[11px] text-stone-400">
-          VowOS · Roberts Enterprises · I Do Bridal Couture + Proper &amp; Company
+          VowOS · The Boutique · I Do Bridal Couture + Proper &amp; Company
         </p>
       </div>
     </div>

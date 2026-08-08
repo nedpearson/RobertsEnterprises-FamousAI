@@ -1,4 +1,4 @@
-// ─── VowOS by Roberts Enterprises — Shared Data Module ───
+// ─── VowOS by The Boutique — Shared Data Module ───
 // Types, static catalog data, location directory, and formatting helpers.
 // Business records (brides, leads, appointments, invoices, purchase orders,
 // gowns, transfers) live in database tables and are loaded via VowosDataContext.
@@ -18,7 +18,7 @@ export const GOWN_IMAGES = [
 ];
 
 // ─── Multi-Location Directory ───
-// Roberts Enterprises operates two boutique brands, each with a Baton Rouge
+// The Boutique operates two boutique brands, each with a Baton Rouge
 // and a Covington, Louisiana storefront (owner: Ramsey Sims).
 
 export type LocationId = 'ido-br' | 'ido-cov' | 'pc-br' | 'pc-cov';

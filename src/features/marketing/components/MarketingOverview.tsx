@@ -68,7 +68,7 @@ export default function MarketingOverview({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-rose-300 uppercase tracking-widest">
-              <Sparkles className="h-4 w-4 text-rose-400" /> Roberts Enterprises Marketing Command Center
+              <Sparkles className="h-4 w-4 text-rose-400" /> The Boutique Marketing Command Center
             </div>
             <h2 className="text-2xl font-bold text-white mt-1">Cross-Platform Growth &amp; Attribution Hub</h2>
             <p className="text-xs text-stone-300 mt-1 max-w-xl">
@@ -228,7 +228,7 @@ export default function MarketingOverview({
             </div>
             <p className="text-xs text-stone-600 leading-relaxed">
               {emergencyPaused
-                ? 'This will resume active ad delivery across Meta, Google, TikTok, and Pinterest for Roberts Enterprises.'
+                ? 'This will resume active ad delivery across Meta, Google, TikTok, and Pinterest for The Boutique.'
                 : 'This will immediately lock and pause all active paid campaigns across Meta, Google, TikTok, and Pinterest. No further ad spend will be incurred until resumed.'}
             </p>
 

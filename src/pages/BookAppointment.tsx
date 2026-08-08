@@ -151,7 +151,7 @@ export default function BookAppointment() {
           </div>
           <div>
             <p className="font-serif text-lg leading-tight text-stone-900">I Do Bridal Couture · Proper &amp; Company</p>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">A Roberts Enterprises Family · Baton Rouge &amp; Covington, LA</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">A The Boutique Family · Baton Rouge &amp; Covington, LA</p>
           </div>
           <Link
             to="/"
@@ -452,7 +452,7 @@ export default function BookAppointment() {
       </main>
 
       <footer className="border-t border-stone-200 py-6 text-center text-xs text-stone-400">
-        © 2026 Roberts Enterprises · I Do Bridal Couture + Proper &amp; Company · Baton Rouge &amp; Covington, LA
+        © 2026 The Boutique · I Do Bridal Couture + Proper &amp; Company · Baton Rouge &amp; Covington, LA
       </footer>
     </div>
   );

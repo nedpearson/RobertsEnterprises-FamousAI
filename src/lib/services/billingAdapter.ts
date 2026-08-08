@@ -31,7 +31,7 @@ export class BillingAdapter {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Not authenticated');
 
-    // MOCK IMPLEMENTATION: In production, this would invoke a Supabase Edge Function
+    // SIMULATED STRIPE PROVIDER: In production, this would invoke a Supabase Edge Function
     // const { data, error } = await supabase.functions.invoke('stripe-checkout', {
     //   body: options,
     // });
@@ -40,7 +40,7 @@ export class BillingAdapter {
     
     console.log(`[BillingAdapter] Creating checkout session for business: ${options.businessId}, plan: ${options.plan}`);
     
-    // For now, simulate a network request and return a mock URL
+    // For now, simulate a network request and return a simulated checkout URL
     return new Promise(resolve => {
       setTimeout(() => {
         resolve({ url: `${window.location.origin}/settings?tab=subscriptions&checkout=success` });
@@ -56,7 +56,7 @@ export class BillingAdapter {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Not authenticated');
 
-    // MOCK IMPLEMENTATION: In production, this would invoke a Supabase Edge Function
+    // SIMULATED STRIPE PROVIDER: In production, this would invoke a Supabase Edge Function
     // const { data, error } = await supabase.functions.invoke('stripe-portal', {
     //   body: options,
     // });
@@ -80,7 +80,7 @@ export class BillingAdapter {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Not authenticated');
 
-    // MOCK IMPLEMENTATION: Invoke edge function to pull latest state from Stripe
+    // SIMULATED STRIPE PROVIDER: Invoke edge function to pull latest state from Stripe
     // await supabase.functions.invoke('stripe-sync', { body: { businessId } });
     
     console.log(`[BillingAdapter] Force syncing subscription state for business: ${businessId}`);

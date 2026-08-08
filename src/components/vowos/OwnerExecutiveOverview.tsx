@@ -49,7 +49,7 @@ export default function OwnerExecutiveOverview({ onNavigate }: OwnerExecutiveOve
               Executive Overview — {profile?.name || 'Owner'}
             </h1>
             <p className="text-sm text-stone-300 mt-1 max-w-xl">
-              High-level operational metrics, store comparative performance, gross margin ratios, and executive alerts across Roberts Enterprises.
+              High-level operational metrics, store comparative performance, gross margin ratios, and executive alerts across The Boutique.
             </p>
           </div>
 

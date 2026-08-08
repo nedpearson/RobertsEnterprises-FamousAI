@@ -104,7 +104,7 @@ const TRUTHFUL_CONNECTIONS: Record<MarketingProvider, ConnectionTruthDescriptor>
     isDemo: false,
     authMethod: 'oauth2',
     authMethodLabel: 'Official Meta OAuth 2.0 User Token',
-    externalOrganization: { id: 'meta-biz-49102', name: 'Roberts Enterprises Meta Portfolio', type: 'business' },
+    externalOrganization: { id: 'meta-biz-49102', name: 'The Boutique Meta Portfolio', type: 'business' },
     resources: [
       { id: 'fb-page-1', name: 'I Do Bridal Couture (Baton Rouge Page)', type: 'Facebook Page', externalId: '1092837491', brand: 'ido', locations: ['ido-br'], selected: true, status: 'active' },
       { id: 'fb-page-2', name: 'Proper & Company (Baton Rouge Page)', type: 'Facebook Page', externalId: '1092837492', brand: 'proper', locations: ['pc-br'], selected: true, status: 'active' },
@@ -145,7 +145,7 @@ const TRUTHFUL_CONNECTIONS: Record<MarketingProvider, ConnectionTruthDescriptor>
     isDemo: false,
     authMethod: 'oauth2',
     authMethodLabel: 'Google OAuth 2.0 + Ads Developer Token',
-    externalOrganization: { id: 'goog-org-88192', name: 'Roberts Enterprises Google Workspace', type: 'google_workspace' },
+    externalOrganization: { id: 'goog-org-88192', name: 'The Boutique Google Workspace', type: 'google_workspace' },
     resources: [
       { id: 'g-ads-1', name: 'Proper & Co Google Ads (ID: 481-902-1189)', type: 'Google Ads Customer', externalId: '481-902-1189', brand: 'proper', locations: ['pc-br', 'pc-cov'], selected: true, status: 'active' },
       { id: 'ga4-1', name: 'Proper & Co Web & Booking GA4 (Property: 3091829)', type: 'GA4 Property', externalId: '3091829', brand: 'proper', locations: ['pc-br', 'pc-cov'], selected: true, status: 'active' },
@@ -247,7 +247,7 @@ const TRUTHFUL_CONNECTIONS: Record<MarketingProvider, ConnectionTruthDescriptor>
     isDemo: false,
     authMethod: 'api_key',
     authMethodLabel: 'CallRail User API Key + Webhook Signing Secret',
-    externalOrganization: { id: 'cr-acc-10293', name: 'Roberts Enterprises CallRail Account', type: 'callrail_account' },
+    externalOrganization: { id: 'cr-acc-10293', name: 'The Boutique CallRail Account', type: 'callrail_account' },
     resources: [
       { id: 'cr-comp-1', name: 'I Do Bridal Couture (Perkins Rd)', type: 'CallRail Company', externalId: 'COM88102', brand: 'ido', locations: ['ido-br'], selected: true, status: 'active' },
       { id: 'cr-comp-2', name: 'Proper & Company (Baton Rouge)', type: 'CallRail Company', externalId: 'COM88103', brand: 'proper', locations: ['pc-br'], selected: true, status: 'active' },

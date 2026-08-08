@@ -101,7 +101,7 @@ export function PayrollScopeBar({ onScopeChange, departments }: PayrollScopeBarP
         to = today;
         break;
       case 'current_period':
-        // Mock current period to match instructions: July 16 - 31
+        // Simulate current period to match instructions: July 16 - 31
         from = new Date(today.getFullYear(), 6, 16);
         to = new Date(today.getFullYear(), 6, 31);
         break;
@@ -168,7 +168,7 @@ export function PayrollScopeBar({ onScopeChange, departments }: PayrollScopeBarP
           value={businessId}
           onChange={(e) => setBusinessId(e.target.value)}
         >
-          <option value="roberts-enterprises">Roberts Enterprises</option>
+          <option value="roberts-enterprises">The Boutique</option>
         </select>
       </div>
 

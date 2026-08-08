@@ -214,7 +214,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
               )}
 
               <p className="text-center text-[11px] text-stone-400">
-                Staff access is managed by Roberts Enterprises. Your role controls what you can edit.
+                Staff access is managed by The Boutique. Your role controls what you can edit.
               </p>
             </form>
           </>

@@ -1,5 +1,5 @@
 // service-worker-push.js
-// Handles web push notifications, cache cleanup of old FamousAI assets, and client takeover
+// Handles web push notifications, cache cleanup of old VowOS AI assets, and client takeover
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -11,7 +11,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => {
-            // Clean up obsolete FamousAI or old cached assets
+            // Clean up obsolete VowOS AI or old cached assets
             return (
               cacheName.includes('famousai') || 
               cacheName.includes('pwa-') ||
@@ -39,7 +39,7 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = data.title || 'Roberts Enterprises Mobile';
+  const title = data.title || 'VowOS Retailer Mobile';
   const options = {
     body: data.body || 'New operational update received.',
     icon: '/icons/pwa-192x192.png',

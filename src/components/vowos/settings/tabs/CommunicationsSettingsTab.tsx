@@ -17,7 +17,7 @@ interface ChannelConfig {
 
 const DEFAULT_CHANNEL_CONFIG: ChannelConfig = {
   emailSender: 'notifications@robertsenterprises.com',
-  senderDisplayName: 'Roberts Enterprises Bridal',
+  senderDisplayName: 'The Boutique Bridal',
   replyTo: 'support@robertsenterprises.com',
   smsConsentText: 'Reply STOP to unsubscribe. Msg & data rates may apply.',
 };
@@ -32,7 +32,7 @@ interface MessageTemplate {
 }
 
 const DEFAULT_TEMPLATES: MessageTemplate[] = [
-  { id: '1', name: 'Booking Created Confirmation', channel: 'Email', subject: 'Your Bridal Consultation at Roberts Enterprises', body: 'Hi {bride_name}, your appointment is confirmed for {appointment_date} at {location_name}. We look forward to helping you find your dream gown!', active: true },
+  { id: '1', name: 'Booking Created Confirmation', channel: 'Email', subject: 'Your Bridal Consultation at The Boutique', body: 'Hi {bride_name}, your appointment is confirmed for {appointment_date} at {location_name}. We look forward to helping you find your dream gown!', active: true },
   { id: '2', name: 'Booking Fee Invoice Request', channel: 'SMS', body: 'Hi {bride_name}, your VIP styling consultation requires a $75 booking fee reservation. Please finalize payment here: {payment_link}', active: true },
   { id: '3', name: '7-Day Appointment Reminder', channel: 'SMS', body: 'Hi {bride_name}, this is a reminder of your bridal styling consultation next week on {appointment_date} at {location_name}. Reply YES to confirm.', active: true },
   { id: '4', name: 'Alterations Completed pickup', channel: 'Email', subject: 'Your gown alterations are complete!', body: 'Dear {bride_name}, your gown alterations are finalized and passed quality inspection. Book a pickup appointment here: {pickup_link}', active: true },

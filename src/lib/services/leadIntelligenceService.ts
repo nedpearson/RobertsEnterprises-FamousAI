@@ -209,7 +209,7 @@ export const INITIAL_SEED_LEADS: UnifiedLeadRecord[] = [
         adName: 'Fleur Gown 15s Video Reel',
         creativeId: 'cr-8821',
         creativeName: 'Champagne Silk Runway Carousel',
-        landingPage: 'https://robertsenterprises.bridgebox.ai/book?campaign=br-fall',
+        landingPage: 'https://robertsenterprises.vowos.com/book?campaign=br-fall',
         formId: 'form-meta-101',
         formName: 'Baton Rouge VIP Consultation Request',
         source: 'instagram',

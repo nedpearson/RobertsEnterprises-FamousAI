@@ -198,7 +198,7 @@ export default function Sidebar({
           {!compact && (
             <div>
               <p className="font-serif text-lg leading-tight text-white font-bold">VowOS</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400 font-medium">Roberts Enterprises</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400 font-medium">The Boutique</p>
             </div>
           )}
         </div>

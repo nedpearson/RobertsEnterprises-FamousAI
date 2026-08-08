@@ -35,7 +35,7 @@ export function OnboardingDashboard({ onNavigateTab }: { onNavigateTab: (tab: st
               Boutique Setup &amp; Certification Dashboard
             </h1>
             <p className="text-stone-300 text-sm leading-relaxed">
-              Step-by-step interactive onboarding for Roberts Enterprises, Proper &amp; Co., and I Do Bridal Couture. Machine-verifiable setup ensures your stores are 100% ready before launch.
+              Step-by-step interactive onboarding for The Boutique, Proper &amp; Co., and I Do Bridal Couture. Machine-verifiable setup ensures your stores are 100% ready before launch.
             </p>
           </div>
 
@@ -116,7 +116,7 @@ export function OnboardingDashboard({ onNavigateTab }: { onNavigateTab: (tab: st
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-stone-900 text-base">Owner Onboarding Curriculum (23 Phases)</h3>
-            <p className="text-xs text-stone-500">Interactive step-by-step master setup curriculum for Roberts Enterprises</p>
+            <p className="text-xs text-stone-500">Interactive step-by-step master setup curriculum for The Boutique</p>
           </div>
           <button
             onClick={() => onNavigateTab('owner-setup')}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getOfficialPayrollPeriods, OfficialPayrollPeriod } from '@/lib/services/workforceStore';
 
-// We'll mock the location data from the statements since `OfficialPayrollPeriod` statements might not be fully persisted in our mock, 
+// We'll simulate the location data from the statements since `OfficialPayrollPeriod` statements might not be fully persisted in our simulation, 
 // but we assume we can build a trend. For demonstration, we'll synthesize location splits if statements aren't rich enough.
 
 export default function LocationPayrollReport() {

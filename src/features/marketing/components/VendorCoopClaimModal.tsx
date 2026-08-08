@@ -32,7 +32,7 @@ export default function VendorCoopClaimModal({ claimId, vendor, amountCents, onC
         <div className="border-b-2 border-stone-900 pb-4 mb-6 flex justify-between items-end">
           <div>
             <h1 className="text-2xl font-black text-stone-900 uppercase tracking-widest">Co-Op Advertising Claim</h1>
-            <p className="text-sm font-bold text-stone-500 mt-1">Submitted by: Roberts Enterprises (I Do Bridal Couture)</p>
+            <p className="text-sm font-bold text-stone-500 mt-1">Submitted by: The Boutique (I Do Bridal Couture)</p>
           </div>
           <div className="text-right">
             <p className="text-sm font-bold text-stone-900">Claim ID: <span className="font-mono text-stone-500">{claimId}</span></p>
@@ -104,7 +104,7 @@ export default function VendorCoopClaimModal({ claimId, vendor, amountCents, onC
               </div>
               <div>
                 <p className="text-xs font-bold text-stone-900">Ned Pearson</p>
-                <p className="text-[10px] text-stone-500">Owner, Roberts Enterprises</p>
+                <p className="text-[10px] text-stone-500">Owner, The Boutique</p>
               </div>
            </div>
         </div>

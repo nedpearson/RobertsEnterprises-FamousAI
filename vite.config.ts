@@ -42,9 +42,9 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
       },
       manifest: {
-        name: "Roberts Enterprises Mobile",
+        name: "VowOS Retailer Mobile",
         short_name: "Roberts Mobile",
-        description: "Mobile operations, scheduling, appointments, customers, sales, inventory, and business management for Roberts Enterprises.",
+        description: "Mobile operations, scheduling, appointments, customers, sales, inventory, and business management for VowOS Retailer.",
         id: "/",
         start_url: "/",
         scope: "/",

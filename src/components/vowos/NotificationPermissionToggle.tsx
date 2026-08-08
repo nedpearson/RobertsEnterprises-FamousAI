@@ -29,7 +29,7 @@ export function NotificationPermissionToggle() {
         });
         // Trigger a test notification locally
         try {
-          new Notification('Roberts Enterprises Mobile', {
+          new Notification('The Boutique Mobile', {
             body: 'Real-time notifications are active!',
             icon: '/icons/pwa-192x192.png',
           });
@@ -37,7 +37,7 @@ export function NotificationPermissionToggle() {
           // Some browsers only allow notifications from Service Worker registration
           if ('serviceWorker' in navigator) {
             const reg = await navigator.serviceWorker.ready;
-            reg.showNotification('Roberts Enterprises Mobile', {
+            reg.showNotification('The Boutique Mobile', {
               body: 'Real-time notifications are active!',
               icon: '/icons/pwa-192x192.png',
             });

@@ -120,7 +120,7 @@ export const InstallAppButton: React.FC<InstallButtonProps> = ({
   };
 
   const copyAddress = () => {
-    const url = "https://robertsenterprises.bridgebox.ai";
+    const url = "https://robertsenterprises.vowos.com";
     navigator.clipboard.writeText(url);
     toast.success("Website address copied to clipboard!");
   };
@@ -128,7 +128,7 @@ export const InstallAppButton: React.FC<InstallButtonProps> = ({
   const copyDiagnostics = () => {
     if (!diagnostics) return;
     const report = `
-Roberts Enterprises Mobile PWA Diagnostic Report
+The Boutique Mobile PWA Diagnostic Report
 -------------------------------------------------
 Timestamp: ${new Date().toISOString()}
 Display Mode: ${isStandalone ? 'Standalone' : 'Browser'}
@@ -185,10 +185,10 @@ User Agent: ${window.navigator.userAgent}
         <DialogContent className="max-w-md w-[95%] p-6 rounded-2xl bg-white border border-stone-200 shadow-xl overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl font-serif text-stone-900 text-center">
-              {isInstalled || isStandalone ? "Roberts Mobile" : "Add Roberts Enterprises to Your Home Screen"}
+              {isInstalled || isStandalone ? "Roberts Mobile" : "Add The Boutique to Your Home Screen"}
             </DialogTitle>
             <DialogDescription className="text-stone-500 text-sm text-center mt-2">
-              Add Roberts Enterprises to your phone, tablet, or computer for fast access to appointments, schedules, customers, operations, sales, and business insights.
+              Add The Boutique to your phone, tablet, or computer for fast access to appointments, schedules, customers, operations, sales, and business insights.
             </DialogDescription>
           </DialogHeader>
 
@@ -261,7 +261,7 @@ User Agent: ${window.navigator.userAgent}
                     </div>
                     <div className="text-xs space-y-1">
                       <p className="font-semibold text-stone-900">1. Verify Safari Browser</p>
-                      <p className="text-stone-500">Open robertsenterprises.bridgebox.ai inside Apple Safari.</p>
+                      <p className="text-stone-500">Open robertsenterprises.vowos.com inside Apple Safari.</p>
                     </div>
                   </div>
 

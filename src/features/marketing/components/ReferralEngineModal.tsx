@@ -57,7 +57,7 @@ export default function ReferralEngineModal({ open, onClose, brideName = 'Whitne
             <span>Referral Code: <span className="font-bold text-rose-300">{code}</span></span>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(`https://robertsenterprises.bridgebox.ai/#ref=${code}`);
+                navigator.clipboard.writeText(`https://robertsenterprises.vowos.com/#ref=${code}`);
                 toast({ title: 'Referral Link Copied!', description: 'Link copied to clipboard.' });
               }}
               className="text-rose-300 hover:text-white flex items-center gap-1 font-sans font-bold"

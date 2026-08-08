@@ -134,7 +134,7 @@ export default function BridePortal() {
             <Gem className="h-6 w-6 text-white" />
           </div>
           <p className="mt-3 text-[10px] font-medium uppercase tracking-[0.25em] text-rose-500">
-            {loc ? loc.business : 'Roberts Enterprises Bridal'}
+            {loc ? loc.business : 'The Boutique Bridal'}
           </p>
           <h1 className="font-serif text-3xl text-stone-900">
             {bride ? `Welcome back, ${first}` : 'Your Bridal Portal'}
@@ -415,7 +415,7 @@ export default function BridePortal() {
 
         <p className="mt-8 text-center text-[11px] text-stone-400">
           This portal link is private to you — please don't share it. <br />
-          VowOS · Roberts Enterprises · I Do Bridal Couture + Proper &amp; Company
+          VowOS · The Boutique · I Do Bridal Couture + Proper &amp; Company
         </p>
       </div>
     </div>

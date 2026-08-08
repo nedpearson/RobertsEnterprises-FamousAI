@@ -231,7 +231,7 @@ export interface MessageTemplates {
 
 export const emailShell = (title: string, bodyHtml: string, storeLine: string) => `
 <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:24px;background:#faf8f5;border-radius:16px">
-  <p style="letter-spacing:3px;font-size:11px;color:#e11d48;text-transform:uppercase;margin:0">VowOS · Roberts Enterprises Bridal</p>
+  <p style="letter-spacing:3px;font-size:11px;color:#e11d48;text-transform:uppercase;margin:0">VowOS · The Boutique Bridal</p>
   <h2 style="color:#1c1917;margin:8px 0 16px">${title}</h2>
   <div style="color:#44403c;font-size:15px;line-height:1.6">${bodyHtml}</div>
   <p style="margin-top:24px;color:#78716c;font-size:12px">${storeLine}</p>

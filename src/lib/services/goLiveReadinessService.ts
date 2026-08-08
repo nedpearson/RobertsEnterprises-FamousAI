@@ -12,7 +12,7 @@ const GOLIVE_ITEMS: GoLiveChecklistItem[] = [
     status: 'COMPLETED',
     ownerRoleId: 'owner',
     settingsRoute: '/settings',
-    evidence: 'Roberts Enterprises LLC (Baton Rouge & Covington operational)',
+    evidence: 'The Boutique LLC (Baton Rouge & Covington operational)',
   },
   {
     id: 'chk-biz-02',
@@ -126,7 +126,7 @@ const GOLIVE_ITEMS: GoLiveChecklistItem[] = [
     status: 'COMPLETED',
     ownerRoleId: 'owner',
     settingsRoute: '/booking',
-    evidence: 'robertsenterprises.bridgebox.ai active with SSL',
+    evidence: 'robertsenterprises.vowos.com active with SSL',
   },
 
   // MARKETING CONNECTIONS
@@ -265,7 +265,7 @@ export function getGoLiveReadinessReport(): GoLiveReadinessReport {
 
   return {
     organizationId: 'org-roberts-enterprises',
-    brand: 'Roberts Enterprises Portfolio',
+    brand: 'The Boutique Portfolio',
     status,
     readinessScore,
     completedCount,

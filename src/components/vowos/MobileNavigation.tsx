@@ -77,7 +77,7 @@ export default function MobileNavigation({ view, onNavigate, onRequestSignIn }: 
             <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
               <div>
                 <p className="font-serif text-lg text-white">VowOS Menu</p>
-                <p className="text-[10px] uppercase tracking-wider text-stone-400">Roberts Enterprises</p>
+                <p className="text-[10px] uppercase tracking-wider text-stone-400">The Boutique</p>
               </div>
               <button
                 onClick={() => setMoreOpen(false)}

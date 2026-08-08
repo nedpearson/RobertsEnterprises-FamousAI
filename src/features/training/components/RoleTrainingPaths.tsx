@@ -28,7 +28,7 @@ export function RoleTrainingPaths() {
           <h2 className="text-xl font-black text-stone-900">Role-Specific Employee Academy</h2>
         </div>
         <p className="text-xs text-stone-500 mt-1">
-          Customized training tracks tailored for every job role at Roberts Enterprises, Proper &amp; Co., and I Do Bridal Couture.
+          Customized training tracks tailored for every job role at The Boutique, Proper &amp; Co., and I Do Bridal Couture.
         </p>
       </div>
 

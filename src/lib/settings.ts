@@ -221,8 +221,8 @@ export interface DocumentSettings {
 // ─── Default Configurations ───
 
 export const DEFAULT_ORG_SETTINGS: OrganizationSettings = {
-  name: 'Roberts Enterprises',
-  legalName: 'Roberts Enterprises LLC',
+  name: 'The Boutique',
+  legalName: 'The Boutique LLC',
   website: 'https://robertsenterprises.com',
   supportEmail: 'support@robertsenterprises.com',
   timezone: 'America/Chicago',
@@ -361,7 +361,7 @@ export const DEFAULT_SALES_SETTINGS: SalesSettings = {
   quoteNumberPrefix: 'QT-',
   invoiceNumberPrefix: 'INV-',
   quoteExpirationDays: 30,
-  defaultTerms: 'Thank you for shopping with Roberts Enterprises! All sales are final. Deposits are non-refundable.',
+  defaultTerms: 'Thank you for shopping with The Boutique! All sales are final. Deposits are non-refundable.',
   defaultNotes: 'Alterations details will be confirmed during the first fitting.',
   discountLimitPct: 15,
   managerApprovalThresholdCents: 50000, // $500

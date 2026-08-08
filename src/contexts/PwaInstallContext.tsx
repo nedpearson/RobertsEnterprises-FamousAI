@@ -203,7 +203,7 @@ export const PwaInstallProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           result.manifestDetails = 'Manifest fetched successfully with correct content-type';
         }
 
-        const isNameCorrect = data.name === 'Roberts Enterprises Mobile';
+        const isNameCorrect = data.name === 'The Boutique Mobile';
         const isShortNameCorrect = data.short_name === 'Roberts Mobile';
 
         if (isNameCorrect && isShortNameCorrect) {

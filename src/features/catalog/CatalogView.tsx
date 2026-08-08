@@ -20,7 +20,7 @@ export default function CatalogView() {
     if (!selectedProduct) return;
     try {
       await catalogService.createPhysicalInventoryFromVariant(
-        'b0000000-0000-0000-0000-000000000001', // Default dummy business ID
+        'b0000000-0000-0000-0000-000000000001', // Default fallback system business ID
         'ido-br', // Default fallback
         variant, 
         selectedProduct, 

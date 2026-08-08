@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       'theme', 
       'vite-ui-theme', 
       'compact-sidebar', 
-      'roberts_enterprises_mobile_install_dismissed_v2'
+      'vowos_mobile_install_dismissed_v2'
     ];
     const itemsToKeep: Record<string, string> = {};
     for (const key of keysToKeep) {

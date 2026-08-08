@@ -376,7 +376,7 @@ export default function LeadGeneratorWizard({ onComplete, onCancel }: LeadGenera
               <div className="flex items-center justify-center gap-3 pt-2">
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`https://robertsenterprises.bridgebox.ai${publishedAsset.destination}?utm_campaign=${publishedAsset.utmCampaign}`);
+                    navigator.clipboard.writeText(`https://robertsenterprises.vowos.com${publishedAsset.destination}?utm_campaign=${publishedAsset.utmCampaign}`);
                     setCopiedLink(true);
                     setTimeout(() => setCopiedLink(false), 2000);
                   }}

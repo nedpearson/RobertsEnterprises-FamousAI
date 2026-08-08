@@ -64,7 +64,7 @@ function LockedPanel({ label, onSignIn }: { label: string; onSignIn: () => void 
       </div>
       <h2 className="mt-5 font-serif text-2xl text-stone-900">{label} is staff-only</h2>
       <p className="mt-2 max-w-sm text-sm text-stone-500">
-        Sign in with your Roberts Enterprises staff account to manage {label.toLowerCase()}. The
+        Sign in with your The Boutique staff account to manage {label.toLowerCase()}. The
         dashboard remains available as a preview for guests.
       </p>
       <button
@@ -154,7 +154,7 @@ export default function AppLayout() {
               <div>
                 <h1 className="text-lg font-bold text-stone-900">{currentLabel}</h1>
                 <p className="text-xs text-stone-500 mt-0.5">
-                  Roberts Enterprises · {activeLocation === 'all' ? 'All Locations' : locationById(activeLocation).short}
+                  The Boutique · {activeLocation === 'all' ? 'All Locations' : locationById(activeLocation).short}
                 </p>
                 <p className="text-[10px] text-stone-400 font-medium mt-0.5">
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -281,7 +281,7 @@ export default function AppLayout() {
                   R
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-stone-900">Roberts Enterprises App</p>
+                  <p className="text-sm font-bold text-stone-900">The Boutique App</p>
                   <p className="text-xs text-stone-500">Get the native mobile experience</p>
                 </div>
               </div>
@@ -369,7 +369,7 @@ export default function AppLayout() {
           <TourControlBar onNavigateNeeded={setView} />
 
           <footer className="mt-10 border-t border-stone-200 pt-6 pb-4 text-center text-xs text-stone-400">
-            VowOS — Bridal Retail Operating System · © 2026 Roberts Enterprises · I Do Bridal Couture
+            VowOS — Bridal Retail Operating System · © 2026 The Boutique · I Do Bridal Couture
             + Proper & Company · Baton Rouge & Covington, LA ·{' '}
             {activeLocation === 'all' ? 'Viewing all locations' : `Viewing ${locationById(activeLocation).short}`}
           </footer>

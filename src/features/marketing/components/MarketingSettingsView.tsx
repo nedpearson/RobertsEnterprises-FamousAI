@@ -27,7 +27,7 @@ export default function MarketingSettingsView() {
           <div className="space-y-1">
             <span className="font-bold text-stone-700">OAuth Redirect URI</span>
             <p className="font-mono text-stone-800 bg-stone-100 p-2 rounded-xl border border-stone-200 text-[11px]">
-              https://robertsenterprises.bridgebox.ai/api/marketing/connections/callback
+              https://robertsenterprises.vowos.com/api/marketing/connections/callback
             </p>
           </div>
         </div>

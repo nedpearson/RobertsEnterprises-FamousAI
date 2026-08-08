@@ -7,7 +7,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { supabase, getActiveDataPlane } from '@/lib/supabase';
 import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
 
-/** Connected Stripe account for Roberts Enterprises (Connect mode). */
+/** Connected Stripe account for The Boutique (Connect mode). */
 export const STRIPE_ACCOUNT_ID = 'acct_1Tv5qwHBbeH9ngcA';
 
 const STRIPE_PUBLISHABLE_KEY =

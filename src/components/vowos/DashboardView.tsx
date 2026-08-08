@@ -26,7 +26,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
   const watchList = purchaseOrders.filter((p) => p.status !== 'Delivered');
 
   const firstName = profile?.name?.split(' ')[0];
-  const greeting = session && firstName ? `Good evening, ${firstName}` : 'Welcome to Roberts Enterprises';
+  const greeting = session && firstName ? `Good evening, ${firstName}` : 'Welcome to The Boutique';
 
   const handleOpenMonth = (m: { month: string; revenue: number }) => {
     setSelectedMonth(m);
@@ -47,7 +47,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
     <div className="space-y-6">
       {/* Hero banner */}
       <div data-tour-id="hero-banner" className="relative overflow-hidden rounded-3xl shadow-lg">
-        <img src={HERO_IMAGE} alt="Roberts Enterprises bridal boutique" className="h-52 w-full object-cover sm:h-60" />
+        <img src={HERO_IMAGE} alt="The Boutique bridal boutique" className="h-52 w-full object-cover sm:h-60" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1c1a1f]/90 via-[#1c1a1f]/60 to-transparent" />
         <div className="absolute inset-0 flex flex-col justify-center px-8 sm:px-10">
           <p className="text-xs font-medium uppercase tracking-[0.25em] text-rose-300">Sunday, July 19, 2026</p>
