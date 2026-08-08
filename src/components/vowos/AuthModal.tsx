@@ -5,8 +5,11 @@ import { useAuth, StaffRole, STAFF_ROLES, ROLE_DESCRIPTIONS } from '@/contexts/A
 import { Modal, inputCls, btnPrimary } from './ui';
 import { InstallAppButton } from '@/components/pwa/InstallAppButton';
 
+const ROBERTS_API_URL = import.meta.env.VITE_ROBERTS_API_URL || 'https://api.robertsenterprises.bridgebox.ai';
+const ROBERTS_APP_URL = import.meta.env.VITE_ROBERTS_APP_URL || 'https://robertsenterprises.bridgebox.ai';
+
 export default function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { signIn, signUp, signInAsDemo } = useAuth();
+  const { signUp, signInAsDemo } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,22 +46,43 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
     onClose();
   };
 
+  const signInToRobertsTenant = async () => {
+    const response = await fetch(`${ROBERTS_API_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+    });
+
+    let payload: { token?: string; error?: string } = {};
+    try {
+      payload = await response.json();
+    } catch {
+      // Keep the generic error below if the gateway does not return JSON.
+    }
+
+    if (!response.ok || !payload.token) {
+      throw new Error(payload.error || 'Unable to sign in. Please verify your credentials and try again.');
+    }
+
+    // The JWT travels in the fragment, which is not sent to the destination
+    // web server. Roberts Enterprises consumes and removes it before React
+    // renders, then persists it under the application's existing auth keys.
+    const destination = `${ROBERTS_APP_URL}/#auth_token=${encodeURIComponent(payload.token)}`;
+    setSuccess('Opening Roberts Enterprises…');
+    window.setTimeout(() => window.location.assign(destination), 350);
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setBusy(true);
 
     if (mode === 'signin') {
-      const { error } = await signIn(email, password);
-      setBusy(false);
-      if (error) {
-        setError(error);
-      } else {
-        setSuccess('Welcome back!');
-        setTimeout(() => {
-          handleClose();
-          window.location.reload();
-        }, 900);
+      try {
+        await signInToRobertsTenant();
+      } catch (err) {
+        setBusy(false);
+        setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
       }
     } else {
       if (!name.trim()) {
@@ -150,7 +174,6 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                   </div>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-stone-400">{ROLE_DESCRIPTIONS[role]}</p>
                 </div>
-
               </>
             )}
 
@@ -197,28 +220,28 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
                   <p className="mt-1 text-xs text-stone-500">
                     Want to see Roberts Mobile in action without affecting real business data?
                   </p>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={handleDemoSignIn}
-                      className="mt-4 w-full rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 disabled:opacity-50"
-                    >
-                      Launch Demo Mode
-                    </button>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <InstallAppButton fullWidth variant="outline" className="border-stone-300 text-stone-700 hover:bg-stone-50" />
-                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={handleDemoSignIn}
+                    className="mt-4 w-full rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 disabled:opacity-50"
+                  >
+                    Launch Demo Mode
+                  </button>
                 </div>
-              )}
 
-              <p className="text-center text-[11px] text-stone-400">
-                Staff access is managed by The Boutique. Your role controls what you can edit.
-              </p>
-            </form>
-          </>
-        )}
-      </Modal>
+                <div className="mt-4">
+                  <InstallAppButton fullWidth variant="outline" className="border-stone-300 text-stone-700 hover:bg-stone-50" />
+                </div>
+              </div>
+            )}
+
+            <p className="text-center text-[11px] text-stone-400">
+              Staff access is managed by The Boutique. Your role controls what you can edit.
+            </p>
+          </form>
+        </>
+      )}
+    </Modal>
   );
 }
