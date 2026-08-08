@@ -79,11 +79,11 @@ export async function fetchActions(businessId: string, locationId?: string | 'al
   } catch (error) {
     console.error('Error fetching actions:', error);
     toast({
-      title: 'Action Center Error',
-      description: 'Failed to load open actions.',
+      title: 'Attention Engine Error',
+      description: 'Failed to load action items. The operational summary could not be retrieved.',
       variant: 'destructive'
     });
-    return [];
+    throw error;
   }
 }
 

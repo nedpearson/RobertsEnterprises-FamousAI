@@ -4,6 +4,9 @@ import { Invoice, formatCents } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useEffect } from 'react';
+import { resolveEffectiveSetting, DEFAULT_PAYMENT_TAX_SETTINGS, PaymentTaxSettings } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface TerminalCheckoutModalProps {
   invoice: Invoice | null;
@@ -14,10 +17,26 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
   const { setInvoices, invoices } = useVowosData();
   const [step, setStep] = useState<'method' | 'processing' | 'success'>('method');
   const [paymentMethod, setPaymentMethod] = useState<'card_on_file' | 'terminal' | null>(null);
+  const [taxSettings, setTaxSettings] = useState<PaymentTaxSettings | null>(null);
+
+  useEffect(() => {
+    if (invoice) {
+      const dataPlane = getActiveDataPlane();
+      resolveEffectiveSetting<PaymentTaxSettings>(
+        'payment_tax_settings',
+        'payment_tax_settings',
+        { dataPlane, locationId: invoice.location },
+        DEFAULT_PAYMENT_TAX_SETTINGS
+      ).then(res => setTaxSettings(res.value)).catch(console.error);
+    }
+  }, [invoice]);
 
   if (!invoice) return null;
 
   const balance = invoice.amountCents - invoice.paidCents;
+  const taxRate = taxSettings?.taxRates[invoice.location] ?? 0;
+  const taxAmount = Math.round(balance * (taxRate / 100));
+  const finalTotal = balance + taxAmount;
 
   const handleCharge = () => {
     setStep('processing');
@@ -57,8 +76,9 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
             
             <div className="bg-stone-800 rounded-xl p-4 mb-6 flex justify-between items-center border border-stone-700">
               <div>
-                <p className="text-stone-400 text-xs">Total Balance Due</p>
-                <p className="text-3xl font-bold text-white">{formatCents(balance)}</p>
+                <p className="text-stone-400 text-xs">Total Balance Due (incl. {taxRate}% tax)</p>
+                <p className="text-3xl font-bold text-white">{formatCents(finalTotal)}</p>
+                {taxAmount > 0 && <p className="text-stone-500 text-xs mt-1">Tax: {formatCents(taxAmount)}</p>}
               </div>
               <div className="text-right">
                 <p className="text-stone-400 text-xs">Invoice</p>
@@ -105,7 +125,7 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
                 disabled={!paymentMethod}
                 className="w-full h-12 bg-white text-stone-900 hover:bg-stone-200 text-sm font-bold shadow-md rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Charge {formatCents(balance)}
+                Charge {formatCents(finalTotal)}
               </Button>
             </div>
           </div>

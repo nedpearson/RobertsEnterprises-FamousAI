@@ -2,6 +2,9 @@ import { Modal } from './ui';
 import { User, Calendar, DollarSign, Target, Clock, TrendingUp } from 'lucide-react';
 import { StaffRole, ROLE_BADGE_CLASSES } from '@/contexts/AuthContext';
 import { formatCents } from '@/data/vowosData';
+import { useEffect, useState } from 'react';
+import { resolveEffectiveSetting, DEFAULT_COMMISSION_SETTINGS, CommissionSettings } from '@/lib/settings';
+import { getActiveDataPlane } from '@/lib/supabase';
 
 interface StaffRow {
   id: string;
@@ -23,7 +26,26 @@ export default function Staff360Modal({ staff, onClose }: Staff360ModalProps) {
     { date: 'Jul 24', hours: 8, location: 'Covington' },
   ];
 
-  const ytdCommissions = 1450000; // $14,500.00
+  const [commissionSettings, setCommissionSettings] = useState<CommissionSettings | null>(null);
+
+  useEffect(() => {
+    const dataPlane = getActiveDataPlane();
+    resolveEffectiveSetting<CommissionSettings>(
+      'commission_settings',
+      'commission_settings',
+      { dataPlane },
+      { plans: [] }
+    ).then(res => setCommissionSettings(res.value)).catch(console.error);
+  }, []);
+
+  const ytdSales = 450000 * 20; // Simulated $90k sales
+  const activePlan = commissionSettings?.plans.find(p => p.active) || null;
+  const rate = activePlan?.designerRates['All'] ?? activePlan?.ratePct ?? 10;
+  let ytdCommissions = Math.round(ytdSales * (rate / 100));
+  if (activePlan && activePlan.bonusThresholdCents > 0 && ytdSales >= activePlan.bonusThresholdCents) {
+    ytdCommissions += activePlan.bonusAmountCents;
+  }
+
   const ytdTips = 320050; // $3,200.50
   const conversionRate = 68; // 68%
 
@@ -78,7 +100,7 @@ export default function Staff360Modal({ staff, onClose }: Staff360ModalProps) {
             </h3>
             <div className="space-y-4">
                <div className="flex items-center justify-between">
-                 <p className="text-sm font-medium text-stone-600">Commissions</p>
+                 <p className="text-sm font-medium text-stone-600">Commissions {activePlan && <span className="text-xs text-stone-400">({activePlan.name})</span>}</p>
                  <p className="font-bold text-emerald-600">{formatCents(ytdCommissions)}</p>
                </div>
                <div className="flex items-center justify-between">

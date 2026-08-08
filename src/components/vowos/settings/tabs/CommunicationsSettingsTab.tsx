@@ -6,7 +6,7 @@ import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
 import { resolveEffectiveSetting, saveScopedSetting, DEFAULT_TWILIO_SETTINGS, TwilioSettings } from '@/lib/settings';
-import { getActiveDataPlane } from '@/lib/supabase';
+import { getActiveDataPlane, supabase } from '@/lib/supabase';
 
 interface ChannelConfig {
   emailSender: string;
@@ -140,12 +140,22 @@ export function CommunicationsSettingsTab({
 
   const testTwilioConnection = async () => {
     setTestingConnection(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setTestingConnection(false);
-    toast({
-      title: 'Twilio connection verified',
-      description: 'Webhook callbacks are functioning successfully.',
-    });
+    try {
+      const { error } = await supabase.rpc('test_twilio_connection');
+      if (error) throw error;
+      toast({
+        title: 'Twilio connection verified',
+        description: 'Webhook callbacks are functioning successfully.',
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Twilio connection failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingConnection(false);
+    }
   };
 
   const handleTemplateChange = (id: string, fields: Partial<MessageTemplate>) => {
@@ -171,13 +181,26 @@ export function CommunicationsSettingsTab({
       return;
     }
     setSendingTest(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setSendingTest(false);
-    toast({
-      title: 'Test dispatch triggered',
-      description: `Test message for "${selectedTemplate.name}" successfully sent to ${testSendPhoneEmail}.`,
-    });
-    setTestSendPhoneEmail('');
+    try {
+      const { error } = await supabase.rpc('send_test_template', { 
+        recipient: testSendPhoneEmail, 
+        template_id: selectedTemplate.id 
+      });
+      if (error) throw error;
+      toast({
+        title: 'Test dispatch triggered',
+        description: `Test message for "${selectedTemplate.name}" successfully sent to ${testSendPhoneEmail}.`,
+      });
+      setTestSendPhoneEmail('');
+    } catch (err: any) {
+      toast({
+        title: 'Test dispatch failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingTest(false);
+    }
   };
 
   if (loading) {

@@ -6,7 +6,7 @@ import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
 import { resolveEffectiveSetting, saveScopedSetting } from '@/lib/settings';
-import { getActiveDataPlane } from '@/lib/supabase';
+import { getActiveDataPlane, supabase } from '@/lib/supabase';
 
 interface AutomationRuleDetail {
   id: string;
@@ -140,12 +140,22 @@ export function AutomationsSettingsTab({
 
   const runTestRun = async (id: string) => {
     setTestingRule(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setTestingRule(false);
-    toast({
-      title: 'Dry-run execution finalized',
-      description: 'Found 14 matching candidate orders. 0 errors detected.',
-    });
+    try {
+      const { data, error } = await supabase.rpc('test_automation_rule', { rule_id: id });
+      if (error) throw error;
+      toast({
+        title: 'Dry-run execution finalized',
+        description: `Found ${data?.matches || 0} matching candidate orders. ${data?.errors || 0} errors detected.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Dry-run execution failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setTestingRule(false);
+    }
   };
 
   if (loading) {

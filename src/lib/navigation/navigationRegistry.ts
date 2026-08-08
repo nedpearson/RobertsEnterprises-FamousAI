@@ -44,7 +44,6 @@ export type ViewKey =
   | 'schedule' // Calendar & Scheduling (Canonical)
   | 'appointments' // Legacy alias
   | 'operations' // Legacy alias
-  | 'actions' // Manager Actions
   | 'sales' // Manager & Owner Sales
   | 'communications'
   | 'contracts'
@@ -122,17 +121,6 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     allowedRoles: ['Owner'],
     mobilePriority: 1,
     searchKeywords: ['overview', 'dashboard', 'executive'],
-  },
-  {
-    id: 'actions',
-    label: 'Action Center',
-    shortLabel: 'Actions',
-    icon: ShieldCheck,
-    path: '/actions',
-    section: 'today',
-    allowedRoles: ['Owner', 'Manager'],
-    mobilePriority: 3,
-    searchKeywords: ['actions', 'queue', 'tasks', 'todo'],
   },
   {
     id: 'schedule',
@@ -383,7 +371,6 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
 export const VIEW_TO_PATH: Record<ViewKey, string> = {
   dashboard: '/today',
   overview: '/overview',
-  actions: '/actions',
   schedule: '/schedule',
   operations: '/schedule',
   appointments: '/schedule',
@@ -414,7 +401,7 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/today': 'dashboard',
   '/dashboard': 'dashboard', // Legacy alias
   '/overview': 'overview',
-  '/actions': 'actions',
+  '/actions': 'dashboard', // Redirects to Today via App.tsx but maps here to dashboard
   '/schedule': 'schedule',
   '/operations': 'schedule', // Legacy alias -> schedule
   '/appointments': 'schedule', // Legacy alias -> schedule

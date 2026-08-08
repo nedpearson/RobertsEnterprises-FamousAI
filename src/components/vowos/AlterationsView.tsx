@@ -16,6 +16,7 @@ import {
   jobProgress,
   pickupReadyTemplates,
 } from '@/lib/contractsAlterations';
+import { fetchAlterationSettings, AlterationSettings } from '@/lib/settings';
 import BridalIdentity from './BridalIdentity';
 import { PageHeader, StatusBadge, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { toast } from '@/components/ui/use-toast';
@@ -318,6 +319,11 @@ function NewJobModal({
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState<LocationId>(activeLocation === 'all' ? 'ido-br' : activeLocation);
   const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState<AlterationSettings | null>(null);
+
+  useEffect(() => {
+    fetchAlterationSettings(location).then(setSettings).catch(console.error);
+  }, [location]);
 
   const toggle = (label: string) =>
     setSelected((prev) => (prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]));
@@ -327,8 +333,9 @@ function NewJobModal({
     setCustomer(name);
     const bride = allBrides.find((b) => b.name === name);
     if (bride?.weddingDate) {
+      const buffer = settings?.dueBufferDays ?? 14;
       const d = new Date(bride.weddingDate.slice(0, 10) + 'T12:00:00');
-      d.setDate(d.getDate() - 14);
+      d.setDate(d.getDate() - buffer);
       setDueDate(d.toISOString().slice(0, 10));
     }
     if (bride) setLocation(bride.location);
@@ -407,7 +414,7 @@ function NewJobModal({
         <div>
           <label className="mb-1 block text-xs font-medium text-stone-600">Alteration tasks *</label>
           <div className="flex flex-wrap gap-1.5">
-            {ALTERATION_TASK_PRESETS.map((t) => (
+            {(settings?.services.map(s => s.name) || ALTERATION_TASK_PRESETS).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -437,7 +444,7 @@ function NewJobModal({
           <div>
             <label className="mb-1 block text-xs font-medium text-stone-600">Pickup by</label>
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
-            <p className="mt-1 text-[10px] text-stone-400">Auto-set to 2 weeks before her wedding.</p>
+            <p className="mt-1 text-[10px] text-stone-400">Auto-set to {settings?.dueBufferDays ?? 14} days before her wedding.</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">

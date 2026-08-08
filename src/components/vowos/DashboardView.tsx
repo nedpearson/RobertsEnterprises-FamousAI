@@ -6,6 +6,7 @@ import { StatCard, StatusBadge, Modal, btnPrimary, btnSecondary } from './ui';
 import { ViewKey } from './Sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import BridalIdentity from './BridalIdentity';
+import NeedsAttention from './NeedsAttention';
 
 export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey) => void }) {
   const { session, profile } = useAuth();
@@ -183,8 +184,15 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
           </div>
         </div>
 
+        {/* Needs Attention */}
+        <div className="xl:col-span-2 h-full min-h-[400px]">
+          <NeedsAttention />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Upcoming appointments with Drilldown on item click */}
-        <div data-tour-id="list-upcoming-appts" className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm xl:col-span-2">
+        <div data-tour-id="list-upcoming-appts" className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm xl:col-span-1">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-serif text-lg text-stone-900">Upcoming Appointments</h2>
             <CalendarDays className="h-5 w-5 text-stone-400" />
@@ -221,10 +229,8 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
             View all appointments
           </button>
         </div>
-      </div>
-
       {/* Delivery watch with PO Drilldown */}
-      <div data-tour-id="grid-delivery-watch" className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm">
+      <div data-tour-id="grid-delivery-watch" className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm xl:col-span-2">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="font-serif text-lg text-stone-900">Delivery Watch</h2>
@@ -254,7 +260,7 @@ export default function DashboardView({ onNavigate }: { onNavigate: (v: ViewKey)
           ))}
         </div>
       </div>
-
+      </div>
       {/* --- DRILLDOWN MODAL 1: REVENUE COLLECTED --- */}
       <Modal open={drillModal === 'revenue'} onClose={() => setDrillModal(null)} title="Revenue Collected Drilldown (Fiscal YTD)">
         <div className="space-y-4">

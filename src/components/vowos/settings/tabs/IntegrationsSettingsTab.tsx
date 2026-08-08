@@ -131,7 +131,6 @@ export function IntegrationsSettingsTab({
   }, [aiSettings, stripe]);
 
   const handleToggleStripe = async () => {
-    // In a real app, this would start the Stripe OAuth flow
     if (stripeIntegration?.status === 'connected') {
       if (confirm('Disconnect Stripe? You will no longer be able to process payments.')) {
         await supabase.from('integrations').update({ status: 'disconnected', access_token: null }).eq('id', stripeIntegration.id);
@@ -139,12 +138,17 @@ export function IntegrationsSettingsTab({
         toast({ title: 'Stripe disconnected' });
       }
     } else {
-      toast({ title: 'Connecting to Stripe...', description: 'Redirecting to Stripe OAuth...' });
-      setTimeout(() => {
-        const newState = { ...stripeIntegration, status: 'connected', provider: 'stripe', last_sync_at: new Date().toISOString() } as IntegrationState;
-        setStripeIntegration(newState);
+      toast({ title: 'Connecting to Stripe...', description: 'Verifying integration state...' });
+      try {
+        const { data, error } = await supabase.rpc('connect_stripe_integration', { 
+          integration_id: stripeIntegration?.id 
+        });
+        if (error) throw error;
+        setStripeIntegration(data as IntegrationState);
         toast({ title: 'Stripe connected securely' });
-      }, 1000);
+      } catch (err: any) {
+        toast({ title: 'Connection failed', description: err.message, variant: 'destructive' });
+      }
     }
   };
 

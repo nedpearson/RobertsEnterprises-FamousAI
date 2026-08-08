@@ -22,8 +22,6 @@ import { TourControlBar } from '@/components/demo/TourControlBar';
 import { DemoLauncherModal } from '@/components/demo/DemoLauncherModal';
 import TrainingCenterView from '@/features/training/components/TrainingCenterView';
 import { VirtualCursorOverlay } from '@/features/training/components/VirtualCursorOverlay';
-import ActionCenter from '@/pages/actions/ActionCenter';
-
 import DashboardView from '@/components/vowos/DashboardView';
 import CustomersView from '@/components/vowos/CustomersView';
 import LeadsView from '@/components/vowos/LeadsView';
@@ -315,7 +313,6 @@ export default function AppLayout() {
             <VowosErrorBoundary>
               {view === 'dashboard' && (showMobileView && (role === 'Manager' || role === 'Owner') ? <MobileManagerToday onNavigate={setView} /> : <DashboardView onNavigate={setView} />)}
               {view === 'overview' && (showMobileView ? <MobileOwnerOverview onNavigate={setView} /> : <OwnerExecutiveOverview onNavigate={setView} />)}
-              {view === 'actions' && <ActionCenter />}
               {view === 'sales' && (showMobileView && (role === 'Owner' || role === 'Manager') ? <MobileOwnerSales onNavigate={setView} /> : <ReportsView />)}
               {view === 'customers' && <CustomersView />}
               {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}

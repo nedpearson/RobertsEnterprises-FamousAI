@@ -6,7 +6,7 @@ import { SettingsCard } from '../components/SettingsCard';
 import { SettingsField } from '../components/SettingsField';
 import { Switch } from '@/components/ui/switch';
 import { resolveEffectiveSetting, saveScopedSetting, DEFAULT_SECURITY_SETTINGS, SecuritySettings } from '@/lib/settings';
-import { getActiveDataPlane } from '@/lib/supabase';
+import { getActiveDataPlane, supabase } from '@/lib/supabase';
 
 interface SecuritySettingsExtended extends SecuritySettings {
   allowedIps: string;
@@ -89,12 +89,22 @@ export function SecuritySettingsTab({
 
   const handleRevokeSessions = async () => {
     setRevokingSessions(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setRevokingSessions(false);
-    toast({
-      title: 'Sessions terminated',
-      description: 'All active staff authentication cookies have been invalidated except yours.',
-    });
+    try {
+      const { error } = await supabase.rpc('revoke_all_sessions');
+      if (error) throw error;
+      toast({
+        title: 'Sessions terminated',
+        description: 'All active staff authentication cookies have been invalidated except yours.',
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Revoke sessions failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setRevokingSessions(false);
+    }
   };
 
   if (loading) {

@@ -99,13 +99,22 @@ export function DataSettingsTab({
 
   const clearStagingData = async () => {
     setCleaningStaging(true);
-    // Real implementation would delete files from Supabase Storage
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setCleaningStaging(false);
-    toast({
-      title: 'Staging files purged',
-      description: 'Released temporary spreadsheet upload blocks.',
-    });
+    try {
+      const { error } = await supabase.rpc('clear_staging_data');
+      if (error) throw error;
+      toast({
+        title: 'Staging files purged',
+        description: 'Released temporary spreadsheet upload blocks.',
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Cache purge failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setCleaningStaging(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,21 +132,19 @@ export function DataSettingsTab({
 
     setImporting(true);
     try {
-      // Simulate import process
-      toast({ title: 'Processing import file...' });
+      toast({ title: 'Uploading import file...' });
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const fileExt = file.name.split('.').pop();
       const filePath = `${user.id}/imports/${Date.now()}_${file.name}`;
 
-      // We could upload it to storage bucket 'data-imports' here for background processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { error } = await supabase.storage.from('data-imports').upload(filePath, file);
+      if (error) throw error;
       
       toast({ 
         title: 'Import completed',
-        description: `Successfully processed ${file.name}. 0 new records, 0 skipped.`,
+        description: `Successfully uploaded ${file.name}. Background processing started.`,
       });
     } catch (err: any) {
       toast({

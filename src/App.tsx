@@ -45,6 +45,7 @@ const App = () => (
                     <Route path="/portal/:brideId" element={<BridePortal />} />
                     
                     {/* Canonical & Legacy Scheduling Routes */}
+                    <Route path="/actions" element={<Navigate to="/today?section=attention" replace />} />
                     <Route path="/appointments" element={<Navigate to="/schedule?mode=calendar" replace />} />
                     <Route path="/operations" element={<Navigate to="/schedule?mode=calendar" replace />} />
                     <Route path="/schedules" element={<Navigate to="/schedule?mode=workforce" replace />} />

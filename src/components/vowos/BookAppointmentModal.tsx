@@ -23,6 +23,7 @@ import {
   isEmail,
   isPhone,
 } from '@/lib/messaging';
+import { fetchBookingFeeCents } from '@/lib/settings';
 
 
 const OTHER = '__other__';
@@ -69,6 +70,13 @@ export default function BookAppointmentModal({
   const [notify, setNotify] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [dynamicBookingFee, setDynamicBookingFee] = useState(BOOKING_FEE_CENTS);
+
+  useEffect(() => {
+    fetchBookingFeeCents(location).then(fee => {
+      setDynamicBookingFee(fee);
+    }).catch(console.error);
+  }, [location]);
 
 
   // Pre-fill the form when opening in edit mode; reset for booking mode
@@ -430,9 +438,9 @@ export default function BookAppointmentModal({
             />
             <span className="text-xs leading-relaxed text-rose-800">
               <span className="flex items-center gap-1 font-semibold">
-                <CreditCard className="h-3.5 w-3.5" /> {FEE_LABEL} booking fee collected
+                <CreditCard className="h-3.5 w-3.5" /> {formatCents(dynamicBookingFee)} booking fee collected
               </span>
-              Every booking carries a flat {FEE_LABEL} fee, credited toward her purchase. Uncheck if
+              Every booking carries a flat {formatCents(dynamicBookingFee)} fee, credited toward her purchase. Uncheck if
               collecting at check-in instead.
             </span>
           </label>
