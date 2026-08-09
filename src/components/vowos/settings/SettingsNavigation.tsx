@@ -24,6 +24,15 @@ import {
   Flag,
   Cpu,
   Crown,
+  Megaphone,
+  Calculator,
+  Mail,
+  Palette,
+  Star,
+  HeartHandshake,
+  GitMerge,
+  FileSignature,
+  MonitorSmartphone,
 } from 'lucide-react';
 
 export type SettingsTab =
@@ -50,7 +59,16 @@ export type SettingsTab =
   | 'system-health'
   | 'feature-flags'
   | 'ai-models'
-  | 'subscriptions';
+  | 'subscriptions'
+  | 'marketing'
+  | 'taxes'
+  | 'email-builder'
+  | 'brand-assets'
+  | 'reputation'
+  | 'loyalty'
+  | 'pipeline'
+  | 'contracts'
+  | 'client-portal';
 
 export interface SettingsCategory {
   group: string;
@@ -69,8 +87,18 @@ export const SETTINGS_GROUPS: SettingsCategory[] = [
     items: [
       { id: 'organization', label: 'Organization', icon: Building, roles: ['Owner'], keywords: ['name', 'logo', 'business', 'company', 'contact'] },
       { id: 'locations', label: 'Locations', icon: MapPin, roles: ['Owner', 'Manager'], keywords: ['store', 'boutique', 'address', 'hours', 'holidays', 'timezone'] },
+      { id: 'brand-assets', label: 'Brand & Assets', icon: Palette, roles: ['Owner'], keywords: ['logo', 'color', 'social', 'instagram', 'font', 'typography', 'identity'] },
       { id: 'reporting', label: 'Reporting Settings', icon: BarChart3, roles: ['Owner', 'Manager'], keywords: ['fiscal', 'calendar', 'cost', 'metrics', 'goals'] },
       { id: 'subscriptions', label: 'Subscription & Modules', icon: Crown, roles: ['Owner'], keywords: ['plan', 'billing', 'modules', 'features', 'upgrade', 'downgrade', 'addons'] },
+    ],
+  },
+  {
+    group: 'Growth & Marketing',
+    items: [
+      { id: 'marketing', label: 'Marketing Settings', icon: Megaphone, roles: ['Owner', 'Manager'], keywords: ['social', 'meta', 'ads', 'campaigns', 'growth', 'referrals'] },
+      { id: 'reputation', label: 'Review & Reputation', icon: Star, roles: ['Owner', 'Manager'], keywords: ['reviews', 'google', 'yelp', 'rating', 'feedback', 'sms'] },
+      { id: 'loyalty', label: 'Loyalty & Referrals', icon: HeartHandshake, roles: ['Owner', 'Manager'], keywords: ['perks', 'referrals', 'rewards', 'bridesmaids', 'discounts'] },
+      { id: 'client-portal', label: 'Client Portal', icon: MonitorSmartphone, roles: ['Owner', 'Manager'], keywords: ['portal', 'bride', 'dashboard', 'white label', 'upload', 'payments'] },
     ],
   },
   {
@@ -79,12 +107,14 @@ export const SETTINGS_GROUPS: SettingsCategory[] = [
       { id: 'scheduling', label: 'Availability Rules', icon: Calendar, roles: ['Owner', 'Manager'], keywords: ['calendar', 'durations', 'buffers', 'cooldown', 'staff'] },
       { id: 'booking', label: 'Online Booking', icon: MousePointerClick, roles: ['Owner', 'Manager'], keywords: ['appointments', 'intake', 'questions', 'limits', 'portal'] },
       { id: 'alterations', label: 'Alterations & Pickups', icon: Scissors, roles: ['Owner', 'Manager'], keywords: ['seamstress', 'fittings', 'pickup', 'pricing', 'schedule'] },
+      { id: 'pipeline', label: 'Sales Pipeline', icon: GitMerge, roles: ['Owner', 'Manager'], keywords: ['stages', 'workflow', 'journey', 'leads', 'process', 'status'] },
     ],
   },
   {
     group: 'Finance & Payments',
     items: [
-      { id: 'payments', label: 'Payments & Taxes', icon: CreditCard, roles: ['Owner', 'Manager'], keywords: ['credit card', 'surcharge', 'taxes', 'jurisdiction', 'gateway', 'stripe'] },
+      { id: 'payments', label: 'Payments & Gateway', icon: CreditCard, roles: ['Owner', 'Manager'], keywords: ['credit card', 'surcharge', 'gateway', 'stripe'] },
+      { id: 'taxes', label: 'Tax Settings', icon: Calculator, roles: ['Owner', 'Manager'], keywords: ['taxes', 'jurisdiction', 'rates', 'inclusive', 'exclusive', 'nexus'] },
       { id: 'sales', label: 'Sales & Invoicing', icon: Receipt, roles: ['Owner', 'Manager'], keywords: ['discounts', 'terms', 'invoice formats', 'numbering', 'receipts'] },
       { id: 'commission', label: 'Commission Plans', icon: Percent, roles: ['Owner'], keywords: ['bonuses', 'tiers', 'stylist pay', 'goals', 'rates'] },
     ],
@@ -101,9 +131,11 @@ export const SETTINGS_GROUPS: SettingsCategory[] = [
     group: 'Comms & Automation',
     items: [
       { id: 'communications', label: 'Channels & Twilio', icon: MessageSquare, roles: ['Owner', 'Manager'], keywords: ['sms', 'email', 'twilio', 'inbox', 'messaging'] },
+      { id: 'email-builder', label: 'Email Builder', icon: Mail, roles: ['Owner', 'Manager'], keywords: ['templates', 'campaigns', 'newsletter', 'design', 'drag and drop'] },
       { id: 'automations', label: 'Automation Rules', icon: Zap, roles: ['Owner', 'Manager'], keywords: ['triggers', 'reminders', 'followup', 'workflow', 'auto'] },
       { id: 'notifications', label: 'Notifications', icon: Bell, roles: ['Owner', 'Manager', 'Stylist', 'Front Desk'], keywords: ['alerts', 'push', 'preferences', 'sounds'] },
       { id: 'documents', label: 'Documents & Templates', icon: FileText, roles: ['Owner', 'Manager'], keywords: ['pdf', 'contracts', 'quotes', 'typography', 'branding', 'files'] },
+      { id: 'contracts', label: 'Contracts & Waivers', icon: FileSignature, roles: ['Owner', 'Manager'], keywords: ['legal', 'esignature', 'waiver', 'liability', 'terms'] },
     ],
   },
   {

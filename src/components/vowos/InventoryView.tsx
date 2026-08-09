@@ -16,6 +16,8 @@ import { TransferModal } from './TransfersView';
 import { LocationBadge } from './LocationSelect';
 import OTBForecastingWidget from '@/features/inventory/components/OTBForecastingWidget';
 import ThermalBarcodePrinter from '@/features/inventory/components/ThermalBarcodePrinter';
+import { InventoryRebalancingAI } from '@/features/inventory/components/InventoryRebalancingAI';
+import { SmartPOPredictor } from '@/features/inventory/components/SmartPOPredictor';
 import { Printer, Library } from 'lucide-react';
 import { useApplicationRoute } from '@/lib/navigation/useApplicationRoute';
 
@@ -41,6 +43,8 @@ export default function InventoryView() {
   const [priceEditId, setPriceEditId] = useState<string | null>(null);
   const [priceValue, setPriceValue] = useState('');
   const [priceSaving, setPriceSaving] = useState(false);
+  const [rebalancingOpen, setRebalancingOpen] = useState(false);
+  const [poPredictorOpen, setPoPredictorOpen] = useState(false);
   const { navigateToView } = useApplicationRoute();
 
 
@@ -126,6 +130,20 @@ export default function InventoryView() {
         subtitle={`${gowns.length} styles · ${stats.units} pieces ${scopeLabel}`}
         action={
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPoPredictorOpen(true)}
+              className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
+            >
+              <TrendingUp className="h-4 w-4" /> Smart PO Predictor
+            </button>
+
+            <button
+              onClick={() => setRebalancingOpen(true)}
+              className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
+            >
+              <ArrowLeftRight className="h-4 w-4" /> AI Rebalancer
+            </button>
+
             <button
               onClick={() => setThermalPrinterOpen(true)}
               className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-800 hover:bg-stone-50 transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
@@ -383,6 +401,8 @@ export default function InventoryView() {
       <AdjustStockModal gown={stockGown} onClose={() => setStockGown(null)} />
       <TransferModal open={!!transferGown} gown={transferGown} onClose={() => setTransferGown(null)} />
       <ThermalBarcodePrinter isOpen={thermalPrinterOpen} onClose={() => setThermalPrinterOpen(false)} />
+      <InventoryRebalancingAI open={rebalancingOpen} onClose={() => setRebalancingOpen(false)} />
+      <SmartPOPredictor open={poPredictorOpen} onClose={() => setPoPredictorOpen(false)} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Sparkles, Barcode, CheckCircle2, Heart, MessageSquare, Camera, Mail, Plus, X, ShieldCheck } from 'lucide-react';
+import { Sparkles, Barcode, CheckCircle2, Heart, MessageSquare, Camera, Mail, Plus, X, ShieldCheck, Wand2 } from 'lucide-react';
 import { formatCents } from '@/data/vowosData';
+import { PinterestMatchmakerModal } from '../ai/PinterestMatchmakerModal';
 
 export default function ConsultantFittingRoomView() {
   const [selectedBride, setSelectedBride] = useState('Camille Fontenot');
@@ -11,6 +12,7 @@ export default function ConsultantFittingRoomView() {
 
   const [newGownInput, setNewGownInput] = useState('');
   const [summarySent, setSummarySent] = useState(false);
+  const [matchmakerOpen, setMatchmakerOpen] = useState(false);
 
   const addGownToRack = () => {
     if (!newGownInput) return;
@@ -19,6 +21,18 @@ export default function ConsultantFittingRoomView() {
       { id: Date.now().toString(), name: newGownInput, style: 'SAMPLE-BARCODE', price: '$3,800', rating: 'pending', notes: 'Barcode scanned into fitting suite.' },
     ]);
     setNewGownInput('');
+  };
+
+  const handleAIPulledGowns = (gowns: any[]) => {
+    const newAdditions = gowns.map(g => ({
+      id: Date.now().toString() + Math.random().toString(36).substring(7),
+      name: g.name,
+      style: g.style,
+      price: g.price,
+      rating: 'pending',
+      notes: 'Pulled via AI Pinterest Matchmaker.',
+    }));
+    setFittingGowns(prev => [...prev, ...newAdditions]);
   };
 
   const updateRating = (id: string, rating: string) => {
@@ -58,25 +72,41 @@ export default function ConsultantFittingRoomView() {
         </div>
       )}
 
-      {/* Barcode Quick Scanner */}
-      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-3">
-        <label className="text-xs font-bold text-stone-800 flex items-center gap-2">
-          <Barcode className="h-4 w-4 text-rose-500" /> Scan Gown Barcode into Suite
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newGownInput}
-            onChange={(e) => setNewGownInput(e.target.value)}
-            placeholder="Scan barcode or type gown style name..."
-            className="flex-1 rounded-xl border border-stone-200 px-3.5 py-2 text-xs font-semibold text-stone-900 focus:border-purple-600 focus:outline-none"
-          />
-          <button
-            onClick={addGownToRack}
-            className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-bold text-white hover:bg-stone-800 transition-colors flex items-center gap-1 cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Add Gown
-          </button>
+      {/* Barcode Quick Scanner & AI */}
+      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex-1 space-y-3">
+            <label className="text-xs font-bold text-stone-800 flex items-center gap-2">
+              <Barcode className="h-4 w-4 text-rose-500" /> Scan Gown Barcode into Suite
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newGownInput}
+                onChange={(e) => setNewGownInput(e.target.value)}
+                placeholder="Scan barcode or type gown style name..."
+                className="flex-1 rounded-xl border border-stone-200 px-3.5 py-2 text-xs font-semibold text-stone-900 focus:border-purple-600 focus:outline-none"
+              />
+              <button
+                onClick={addGownToRack}
+                className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-bold text-white hover:bg-stone-800 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="h-4 w-4" /> Add
+              </button>
+            </div>
+          </div>
+
+          <div className="hidden sm:block w-px h-16 bg-stone-100"></div>
+
+          <div className="sm:w-64 pt-2 sm:pt-0">
+            <button
+              onClick={() => setMatchmakerOpen(true)}
+              className="w-full rounded-xl bg-purple-50 border border-purple-200 px-4 py-3 text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <Wand2 className="h-4 w-4" /> Launch AI Matchmaker
+            </button>
+            <p className="text-[10px] text-stone-400 text-center mt-2">Scan Bride's Pinterest Board</p>
+          </div>
         </div>
       </div>
 
@@ -143,6 +173,12 @@ export default function ConsultantFittingRoomView() {
         </div>
       </div>
 
+      <PinterestMatchmakerModal 
+        open={matchmakerOpen}
+        onClose={() => setMatchmakerOpen(false)}
+        brideName={selectedBride.split(' ')[0]}
+        onGownsSelected={handleAIPulledGowns}
+      />
     </div>
   );
 }

@@ -38,8 +38,45 @@ import { SystemHealthSettingsTab } from './tabs/SystemHealthSettingsTab';
 import { FeatureFlagsSettingsTab } from './tabs/FeatureFlagsSettingsTab';
 import AIModelSettingsTab from './tabs/AIModelSettingsTab';
 import { SubscriptionsSettingsTab } from './tabs/SubscriptionsSettingsTab';
-import { Search } from 'lucide-react';
+import { TaxSettingsTab } from './tabs/TaxSettingsTab';
+import { EmailBuilderSettingsTab } from './tabs/EmailBuilderSettingsTab';
+import { BrandAssetsSettingsTab } from './tabs/BrandAssetsSettingsTab';
+import { ReputationSettingsTab } from './tabs/ReputationSettingsTab';
+import { LoyaltySettingsTab } from './tabs/LoyaltySettingsTab';
+import { PipelineSettingsTab } from './tabs/PipelineSettingsTab';
+import { ContractsSettingsTab } from './tabs/ContractsSettingsTab';
+import { ClientPortalSettingsTab } from './tabs/ClientPortalSettingsTab';
+import MarketingSettingsView from '@/features/marketing/components/MarketingSettingsView';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Search, AlertTriangle } from 'lucide-react';
 import { inputCls } from '../ui';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+class LocalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Settings Tab Error:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-rose-200 bg-rose-50/50">
+          <AlertTriangle className="h-8 w-8 text-rose-500 mb-3" />
+          <h3 className="text-sm font-semibold text-stone-900">Failed to load this settings tab</h3>
+          <p className="text-xs text-stone-500 mt-1 max-w-sm">{this.state.error?.message}</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function SettingsShell() {
   const { profile } = useAuth();
@@ -302,6 +339,74 @@ export default function SettingsShell() {
             resetTrigger={resetTrigger}
           />
         );
+      case 'marketing':
+        return (
+          <MarketingSettingsView />
+        );
+      case 'taxes':
+        return (
+          <TaxSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
+      case 'email-builder':
+        return (
+          <EmailBuilderSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
+      case 'brand-assets':
+        return (
+          <BrandAssetsSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
+      case 'reputation':
+        return (
+          <ReputationSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
+      case 'loyalty':
+        return (
+          <LoyaltySettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
+      case 'pipeline':
+        return (
+          <PipelineSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
+      case 'contracts':
+        return (
+          <ContractsSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
+      case 'client-portal':
+        return (
+          <ClientPortalSettingsTab
+            onDirtyChange={setIsDirty}
+            registerSaveRef={registerSaveFn}
+            resetTrigger={resetTrigger}
+          />
+        );
       default:
         saveFnRef.current = null;
         return null;
@@ -333,6 +438,15 @@ export default function SettingsShell() {
       case 'system-health': return 'System Health';
       case 'feature-flags': return 'Feature Flags';
       case 'subscriptions': return 'Subscription & Modules';
+      case 'marketing': return 'Marketing Settings';
+      case 'taxes': return 'Tax Settings';
+      case 'email-builder': return 'Email Builder';
+      case 'brand-assets': return 'Brand & Assets';
+      case 'reputation': return 'Review & Reputation';
+      case 'loyalty': return 'Loyalty & Referrals';
+      case 'pipeline': return 'Sales Pipeline';
+      case 'contracts': return 'Contracts & Waivers';
+      case 'client-portal': return 'Client Portal';
       default:
         return activeTab.charAt(0).toUpperCase() + activeTab.slice(1).replace('-', ' ');
     }
@@ -363,6 +477,15 @@ export default function SettingsShell() {
       case 'system-health': return 'Monitor database connection state, integration adapters, and run checks.';
       case 'feature-flags': return 'Enable experimental rollouts for testing new features.';
       case 'subscriptions': return 'Manage your VowOS subscription, billing, and toggle optional add-on modules.';
+      case 'marketing': return 'Configure API keys and credentials for Marketing automations.';
+      case 'taxes': return 'Configure automated and manual tax jurisdictions and engine integrations.';
+      case 'email-builder': return 'Design automated email sequences and configure brand elements.';
+      case 'brand-assets': return 'Configure your boutique logos, primary colors, and social links.';
+      case 'reputation': return 'Manage automated review requests and connect review platforms.';
+      case 'loyalty': return 'Configure bridal party discounts and automate referral rewards.';
+      case 'pipeline': return 'Define your unique sales workflow stages and enforce required actions.';
+      case 'contracts': return 'Manage legal language and configure e-signature enforcement.';
+      case 'client-portal': return 'Configure the white-labeled self-service portal for your brides.';
       default:
         return 'Manage and configure VowOS platform options.';
     }
@@ -439,7 +562,9 @@ export default function SettingsShell() {
             title={getTabTitle()}
             subtitle={getTabSubtitle()}
           />
-          {renderTabContent()}
+          <LocalErrorBoundary>
+            {renderTabContent()}
+          </LocalErrorBoundary>
         </div>
       </div>
 

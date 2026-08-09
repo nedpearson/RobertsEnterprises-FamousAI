@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Coins, Calendar, AlertTriangle, UserCheck, CheckCircle, Plus, Trash2, ArrowRight, CreditCard, FileText, DollarSign, Briefcase, Eye } from 'lucide-react';
+import { Coins, Calendar, AlertTriangle, UserCheck, CheckCircle, Plus, Trash2, ArrowRight, CreditCard, FileText, DollarSign, Briefcase, Eye, Trophy } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
@@ -39,6 +39,8 @@ import { PayrollScopeBar, PayrollScope } from './PayrollScopeBar';
 import { ExceptionCenter, ExceptionData } from './ExceptionCenter';
 import { PayrollWizard } from './PayrollWizard';
 import { Timecard360 } from './Timecard360';
+import { CommissionOptimizerDashboard } from './CommissionOptimizerDashboard';
+import { PredictiveScheduleEngine } from './PredictiveScheduleEngine';
 import { format } from 'date-fns';
 
 export default function PayrollView() {
@@ -79,6 +81,9 @@ export default function PayrollView() {
   const [compRate, setCompRate] = useState('22.50');
   const [compEffective, setCompEffective] = useState('2026-07-01');
   const [compReason, setCompReason] = useState('Promo adjust');
+
+  const [showOptimizer, setShowOptimizer] = useState(false);
+  const [showPredictiveEngine, setShowPredictiveEngine] = useState(false);
 
   const loadData = async () => {
     try {
@@ -288,6 +293,15 @@ export default function PayrollView() {
               <StatCard label="Direct Deposit Auth" value={draftRun ? `$${(draftRun.totalNet/100).toLocaleString()}` : "Pending Run"} sub={draftRun ? "Calculated" : "Requires Payroll Run"} icon={<CreditCard className="h-5 w-5" />} accent="emerald" />
               <StatCard label="Open Exceptions" value={String(exceptions.length)} sub="Drill down to fix punches" icon={<AlertTriangle className="h-5 w-5 animate-bounce" />} accent="amber" />
               <StatCard label="Provider Status" value="Healthy" sub="Gusto API Connected" icon={<CheckCircle className="h-5 w-5" />} accent="rose" />
+            </div>
+
+            <div className="flex gap-3 mb-2">
+              <button onClick={() => setShowOptimizer(true)} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors flex items-center gap-2 shadow-xs cursor-pointer">
+                <Trophy className="h-4 w-4 text-amber-500" /> Stylist Commission Optimizer
+              </button>
+              <button onClick={() => setShowPredictiveEngine(true)} className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-800 hover:bg-blue-100 transition-colors flex items-center gap-2 shadow-xs cursor-pointer">
+                <Calendar className="h-4 w-4 text-blue-500" /> Predictive Schedule AI
+              </button>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
@@ -551,6 +565,8 @@ export default function PayrollView() {
         </form>
       </Modal>
 
+      <CommissionOptimizerDashboard open={showOptimizer} onClose={() => setShowOptimizer(false)} />
+      <PredictiveScheduleEngine open={showPredictiveEngine} onClose={() => setShowPredictiveEngine(false)} />
     </div>
   );
 }

@@ -46,6 +46,7 @@ import BridePortalView from '@/features/bride-portal/BridePortalView';
 import ConsultantFittingRoomView from '@/features/fitting-room/ConsultantFittingRoomView';
 import { PlatformAdminView } from '@/components/vowos/PlatformAdminView';
 import CatalogView from '@/features/catalog/CatalogView';
+import VendorPortalView from '@/components/vowos/vendors/VendorPortalView';
 
 import MobileManagerToday from '@/components/vowos/mobile/MobileManagerToday';
 import MobileManagerSchedule from '@/components/vowos/mobile/MobileManagerSchedule';
@@ -322,6 +323,7 @@ export default function AppLayout() {
                 {view === 'customers' && <CustomersView />}
                 {view === 'leads' && <LeadsView onNavigate={(v) => setView(v as ViewKey)} />}
                 {view === 'catalog' && <CatalogView />}
+                {view === 'vendor-portal' && <VendorPortalView />}
                 {view === 'inventory' && <InventoryView />}
                 {view === 'transfers' && <TransfersView />}
                 {(view === 'schedule' || view === 'appointments' || view === 'operations' || view === 'schedules') && (

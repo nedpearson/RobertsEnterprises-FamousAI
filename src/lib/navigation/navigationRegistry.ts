@@ -63,6 +63,7 @@ export type ViewKey =
   | 'marketing'
   | 'bride-portal'
   | 'fitting-room'
+  | 'vendor-portal'
   | 'platform-admin';
 
 export interface NavigationSection {
@@ -248,6 +249,17 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     searchKeywords: ['purchase orders', 'po', 'vendors', 'designers', 'special orders', 'ordering'],
     requiredFeature: 'purchasing.core',
   },
+  {
+    id: 'vendor-portal',
+    label: 'Vendor Connect OS',
+    shortLabel: 'Vendors',
+    icon: PackageSearch,
+    path: '/vendors',
+    section: 'gowns',
+    allowedRoles: ['Owner', 'Manager'],
+    mobilePriority: 13.5,
+    searchKeywords: ['vendors', 'supplier', 'scorecard', 'negotiation', 'B2B', 'brand portal'],
+  },
 
   // FINANCE
   {
@@ -419,6 +431,7 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
   onlinestore: '/onlinestore',
   marketing: '/growth',
   'platform-admin': '/platform-admin',
+  'vendor-portal': '/vendors',
 };
 
 /** Map path to view key */
@@ -463,4 +476,5 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/timeclock': 'timeclock',
   '/training': 'training',
   '/platform-admin': 'platform-admin',
+  '/vendors': 'vendor-portal',
 };

@@ -20,6 +20,7 @@ import { fetchAlterationSettings, AlterationSettings } from '@/lib/settings';
 import BridalIdentity from './BridalIdentity';
 import { PageHeader, StatusBadge, StatCard, Modal, inputCls, btnPrimary, btnSecondary } from './ui';
 import { toast } from '@/components/ui/use-toast';
+import { AlterationsPinningSuite } from './AlterationsPinningSuite';
 
 const STATUS_COLORS: Record<AlterationStatus, string> = {
   'Not Started': 'bg-stone-100 text-stone-600 ring-stone-200',
@@ -36,6 +37,7 @@ export default function AlterationsView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [notifyingId, setNotifyingId] = useState('');
   const [filter, setFilter] = useState<'Active' | 'All'>('Active');
+  const [pinningJob, setPinningJob] = useState<AlterationJob | null>(null);
 
   const load = useCallback(async () => {
     setJobs(await fetchAlterations());
@@ -253,13 +255,21 @@ export default function AlterationsView() {
                 {/* Actions */}
                 <div className="mt-4 flex items-center gap-2 border-t border-stone-100 pt-3">
                   {job.status !== 'Picked Up' && (
-                    <button
-                      onClick={() => advance(job)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700"
-                    >
-                      {ALTERATION_STATUSES[ALTERATION_STATUSES.indexOf(job.status) + 1]}
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => advance(job)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700"
+                      >
+                        {ALTERATION_STATUSES[ALTERATION_STATUSES.indexOf(job.status) + 1]}
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setPinningJob(job)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                      >
+                        <MapPin className="h-3.5 w-3.5 text-rose-500" /> Pinning Suite
+                      </button>
+                    </>
                   )}
                   {job.status === 'Ready for Pickup' && (
                     <button
@@ -289,6 +299,12 @@ export default function AlterationsView() {
         brideNames={brides.map((b) => b.name)}
         jobs={jobs}
         onCreated={(rec) => setJobs((prev) => [rec, ...prev])}
+      />
+
+      <AlterationsPinningSuite 
+        open={!!pinningJob} 
+        onClose={() => setPinningJob(null)} 
+        job={pinningJob} 
       />
     </div>
   );

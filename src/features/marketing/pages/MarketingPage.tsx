@@ -4,6 +4,7 @@ import MarketingOverview from '../components/MarketingOverview';
 import ConnectionsView from '../components/ConnectionsView';
 import CampaignsManager from '../components/CampaignsManager';
 import CampaignWizardModal from '../components/CampaignWizardModal';
+import { TrunkShowPlannerModal } from '../components/TrunkShowPlannerModal';
 import ContentCalendarView from '../components/ContentCalendarView';
 import CreativeStudioView from '../components/CreativeStudioView';
 import BudgetCenterView from '../components/BudgetCenterView';
@@ -79,6 +80,7 @@ export default function GrowthMarketingPage() {
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
+  const [showTrunkShowPlanner, setShowTrunkShowPlanner] = useState(false);
   const [selectedLead360, setSelectedLead360] = useState<any | null>(null);
   const [bookLeadModal, setBookLeadModal] = useState<{ name: string; email: string } | null>(null);
 
@@ -163,8 +165,15 @@ export default function GrowthMarketingPage() {
           </div>
 
           <button
+            onClick={() => setShowTrunkShowPlanner(true)}
+            className="rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-purple-700 transition-colors flex items-center gap-1.5"
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Smart Trunk Show
+          </button>
+          
+          <button
             onClick={() => setShowCampaignWizard(true)}
-            className="rounded-xl bg-rose-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-rose-600 transition-colors flex items-center gap-1.5"
+            className="rounded-xl bg-stone-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-stone-800 transition-colors flex items-center gap-1.5"
           >
             <PlusCircle className="h-3.5 w-3.5" /> Build Campaign
           </button>
@@ -300,6 +309,14 @@ export default function GrowthMarketingPage() {
         <CampaignWizardModal
           onClose={() => setShowCampaignWizard(false)}
           onCampaignCreated={() => setActiveTab('campaigns')}
+        />
+      )}
+
+      {/* Trunk Show Planner Modal */}
+      {showTrunkShowPlanner && (
+        <TrunkShowPlannerModal
+          open={true}
+          onClose={() => setShowTrunkShowPlanner(false)}
         />
       )}
     </div>
