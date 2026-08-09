@@ -2,13 +2,23 @@ import React, { useState } from 'react';
 import { Trophy, TrendingUp, Target, DollarSign, ArrowRight, Zap, Users } from 'lucide-react';
 import { Modal, btnPrimary } from '@/components/vowos/ui';
 
+import { CompensationProfile } from '@/lib/services/workforceStore';
+
 interface CommissionOptimizerDashboardProps {
   open: boolean;
   onClose: () => void;
+  profile?: CompensationProfile;
 }
 
-export function CommissionOptimizerDashboard({ open, onClose }: CommissionOptimizerDashboardProps) {
+export function CommissionOptimizerDashboard({ open, onClose, profile }: CommissionOptimizerDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'opportunities'>('overview');
+  
+  const currentTier = profile?.tier1Rate ? 1 : 0;
+  const currentRate = currentTier === 1 ? profile?.tier1Rate : profile?.commissionRate || 4.5;
+  const nextTierRate = profile?.tier2Rate || 5.5;
+  const target = profile?.tier2Threshold ? (profile.tier2Threshold / 100) : 25000;
+  const earned = 20750;
+  const away = target - earned;
 
   return (
     <Modal open={open} onClose={onClose} title="Commission Optimizer" size="lg">
@@ -29,7 +39,7 @@ export function CommissionOptimizerDashboard({ open, onClose }: CommissionOptimi
               <p className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Current Tier</p>
               <div className="flex items-center gap-1.5 mt-1 bg-stone-800 px-3 py-1 rounded-full border border-stone-700">
                 <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                <span className="text-sm font-bold text-white">Tier 2 (4.5%)</span>
+                <span className="text-sm font-bold text-white">Tier {currentTier + 1} ({currentRate}%)</span>
               </div>
             </div>
           </div>
@@ -60,17 +70,17 @@ export function CommissionOptimizerDashboard({ open, onClose }: CommissionOptimi
                 <div className="flex justify-between items-end mb-2">
                   <div>
                     <h3 className="text-stone-900 font-bold flex items-center gap-2">
-                      <Target className="h-4 w-4 text-stone-400" /> Progress to Tier 3 (5.5%)
+                      <Target className="h-4 w-4 text-stone-400" /> Progress to Tier {currentTier + 2} ({nextTierRate}%)
                     </h3>
-                    <p className="text-xs text-stone-500 mt-0.5">You are $4,250 away from unlocking your next bonus tier.</p>
+                    <p className="text-xs text-stone-500 mt-0.5">You are ${away.toLocaleString()} away from unlocking your next bonus tier.</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-serif text-2xl font-bold text-amber-600">$20,750</p>
-                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wide">/ $25,000 Goal</p>
+                    <p className="font-serif text-2xl font-bold text-amber-600">${earned.toLocaleString()}</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wide">/ ${target.toLocaleString()} Goal</p>
                   </div>
                 </div>
                 <div className="h-3 w-full bg-stone-100 rounded-full mt-4 overflow-hidden border border-stone-200/60">
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style={{ width: '83%' }}></div>
+                  <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style={{ width: `${Math.min(100, Math.round((earned / target) * 100))}%` }}></div>
                 </div>
               </div>
 
@@ -99,7 +109,7 @@ export function CommissionOptimizerDashboard({ open, onClose }: CommissionOptimi
               <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex gap-3 text-amber-900 text-sm">
                 <Zap className="h-5 w-5 text-amber-500 shrink-0" />
                 <p>
-                  <strong>AI Insight:</strong> Closing just 2 of these highly-engaged leads before Friday will bump you into Tier 3 (5.5% commission rate).
+                  <strong>AI Insight:</strong> Closing just 2 of these highly-engaged leads before Friday will bump you into Tier {currentTier + 2} ({nextTierRate}% commission rate).
                 </p>
               </div>
 

@@ -5,6 +5,7 @@ import ConnectionsView from '../components/ConnectionsView';
 import CampaignsManager from '../components/CampaignsManager';
 import CampaignWizardModal from '../components/CampaignWizardModal';
 import { TrunkShowPlannerModal } from '../components/TrunkShowPlannerModal';
+import TrunkShowRsvpView from '../components/TrunkShowRsvpView';
 import ContentCalendarView from '../components/ContentCalendarView';
 import CreativeStudioView from '../components/CreativeStudioView';
 import BudgetCenterView from '../components/BudgetCenterView';
@@ -32,7 +33,7 @@ import { leadService, UnifiedLeadRecord } from '@/lib/services/leadIntelligenceS
 import Lead360Modal from '@/components/vowos/Lead360Modal';
 import BookAppointmentModal from '@/components/vowos/BookAppointmentModal';
 
-import { TrendingUp, Megaphone, Calendar, Image, DollarSign, Users, Zap, BarChart3, CheckCircle2, Radio, Settings, PlusCircle, Filter, Sparkles, Bot, Cpu, Layers, Eye, ShieldCheck, Inbox, Clock, PieChart, Tag, ChevronDown } from 'lucide-react';
+import { TrendingUp, Megaphone, Calendar, Image, DollarSign, Users, Zap, BarChart3, CheckCircle2, Radio, Settings, PlusCircle, Filter, Sparkles, Bot, Cpu, Layers, Eye, ShieldCheck, Inbox, Clock, PieChart, Tag, ChevronDown, Ticket } from 'lucide-react';
 
 export type GrowthTab =
   | 'command-center'
@@ -46,6 +47,7 @@ export type GrowthTab =
   | 'prospecting'
   | 'audiences'
   | 'budget'
+  | 'trunk-shows'
   | 'attribution'
   | 'automations'
   | 'reports'
@@ -103,6 +105,7 @@ export default function GrowthMarketingPage() {
         { id: 'creatives', label: 'Creative Studio', icon: Image },
         { id: 'prospecting', label: 'AI Prospecting & Audiences', icon: Users },
         { id: 'budget', label: 'Budget Center', icon: DollarSign },
+        { id: 'trunk-shows', label: 'Trunk Shows & RSVPs', icon: Ticket, badge: 'Live' },
       ],
     },
     {
@@ -273,6 +276,7 @@ export default function GrowthMarketingPage() {
             onOpenWizard={() => setShowCampaignWizard(true)}
           />
         )}
+        {activeTab === 'trunk-shows' && <TrunkShowRsvpView />}
         {activeTab === 'content' && <ContentCalendarView />}
         {activeTab === 'creatives' && <CreativeStudioView />}
         {activeTab === 'budget' && <BudgetCenterView brandFilter={brandFilter} locationFilter={locationFilter} />}

@@ -1,4 +1,4 @@
-export type CommercialPlan = 'essentials' | 'growth' | 'pro' | 'enterprise';
+export type CommercialPlan = 'essentials' | 'growth' | 'pro' | 'enterprise' | 'franchise';
 
 export type FeatureCapability = 
   | 'CORE_OPERATING_REQUIREMENT'
@@ -6,7 +6,8 @@ export type FeatureCapability =
   | 'GROWTH'
   | 'INTELLIGENCE'
   | 'ENTERPRISE'
-  | 'INTEGRATION';
+  | 'INTEGRATION'
+  | 'FRANCHISE_EXPANSION';
 
 export interface VowosFeature {
   id: string;
@@ -119,13 +120,27 @@ export const VOWOS_CATALOG = {
         'security.sso': { id: 'security.sso', label: 'Single Sign-On (SSO)', capability: 'ENTERPRISE', planRecommendation: 'enterprise', dependencies: [] },
         'security.audit': { id: 'security.audit', label: 'Advanced Audit Logs', capability: 'ENTERPRISE', planRecommendation: 'enterprise', dependencies: [] }
       }
+    },
+    franchise: {
+      id: 'franchise',
+      label: 'Franchise Command Center',
+      features: {
+        'franchise.core': { id: 'franchise.core', label: 'Franchise Core Operations', capability: 'FRANCHISE_EXPANSION', planRecommendation: 'enterprise', addOnEligible: true },
+        'franchise.territories': { id: 'franchise.territories', label: 'Territory Management', capability: 'FRANCHISE_EXPANSION', planRecommendation: 'enterprise', addOnEligible: true, dependencies: ['franchise.core'] },
+        'franchise.royalties': { id: 'franchise.royalties', label: 'Royalty & Fee Management', capability: 'FRANCHISE_EXPANSION', planRecommendation: 'enterprise', addOnEligible: true, dependencies: ['franchise.core'] },
+        'scale.expansion_readiness': { id: 'scale.expansion_readiness', label: 'Expansion Intelligence', capability: 'FRANCHISE_EXPANSION', planRecommendation: 'enterprise', addOnEligible: true, dependencies: ['franchise.core'] },
+        'scale.market_intelligence': { id: 'scale.market_intelligence', label: 'Market Explorer', capability: 'FRANCHISE_EXPANSION', planRecommendation: 'enterprise', addOnEligible: true, dependencies: ['scale.expansion_readiness'] },
+        'scale.location_intelligence': { id: 'scale.location_intelligence', label: 'Location Intelligence', capability: 'FRANCHISE_EXPANSION', planRecommendation: 'enterprise', addOnEligible: true, dependencies: ['scale.market_intelligence'] }
+      }
     }
   }
 } as const;
 
-export const PLANS: Record<CommercialPlan, { label: string; includedFeatures: string[] }> = {
+export const PLANS: Record<CommercialPlan, { label: string; includedFeatures: string[]; price?: string; description?: string }> = {
   essentials: {
     label: 'VowOS Essentials',
+    price: '$99 / month',
+    description: 'Core CRM and operating tools for independent boutiques.',
     includedFeatures: [
       'crm.core', 'crm.customer360', 'sales.contracts', 'sales.invoicing', 'communications.core',
       'scheduling.core', 'scheduling.requests', 'workforce.core',
@@ -136,6 +151,8 @@ export const PLANS: Record<CommercialPlan, { label: string; includedFeatures: st
   },
   growth: {
     label: 'VowOS Growth',
+    price: '$249 / month',
+    description: 'Advanced scheduling, automation, and basic intelligence.',
     includedFeatures: [
       // All Essentials
       'crm.core', 'crm.customer360', 'sales.contracts', 'sales.invoicing', 'communications.core',
@@ -154,6 +171,8 @@ export const PLANS: Record<CommercialPlan, { label: string; includedFeatures: st
   },
   pro: {
     label: 'VowOS Pro',
+    price: '$499 / month',
+    description: 'AI forecasting, multi-location, and API access.',
     includedFeatures: [
       // All Growth
       'crm.core', 'crm.customer360', 'sales.contracts', 'sales.invoicing', 'communications.core',
@@ -179,6 +198,8 @@ export const PLANS: Record<CommercialPlan, { label: string; includedFeatures: st
   },
   enterprise: {
     label: 'VowOS Enterprise',
+    price: 'Custom Pricing',
+    description: 'Full white-labeling, SSO, and advanced audits.',
     includedFeatures: [
       // All Pro (which includes all lower)
       'crm.core', 'crm.customer360', 'sales.contracts', 'sales.invoicing', 'communications.core',
@@ -203,7 +224,43 @@ export const PLANS: Record<CommercialPlan, { label: string; includedFeatures: st
       'reports.enterprise',
       'integrations.api',
       'branding.custom_domain', 'branding.white_label',
-      'security.sso', 'security.audit'
+      'security.sso', 'security.audit',
+      // Plus Franchise
+      'franchise.core', 'franchise.territories', 'franchise.royalties',
+      'scale.expansion_readiness', 'scale.market_intelligence', 'scale.location_intelligence'
+    ]
+  },
+  franchise: {
+    label: 'VowOS Franchise Hub',
+    price: '$999 / month',
+    description: 'Complete franchise management, royalties, and FDD control.',
+    includedFeatures: [
+      // All Enterprise (which includes all lower)
+      'crm.core', 'crm.customer360', 'sales.contracts', 'sales.invoicing', 'communications.core',
+      'scheduling.core', 'scheduling.requests', 'workforce.core',
+      'inventory.core', 'purchasing.core', 'alterations.core',
+      'payroll.core',
+      'ai.core', 'reports.core',
+      'communications.advanced',
+      'scheduling.advanced', 'scheduling.smart', 'workforce.advanced',
+      'inventory.advanced', 'purchasing.advanced', 'alterations.advanced', 'transfers.core',
+      'marketing.leads', 'marketing.automation',
+      'ai.advanced', 'reports.advanced',
+      'integrations.google', 'integrations.meta',
+      'scheduling.ai',
+      'inventory.optimization', 'purchasing.central', 'transfers.advanced',
+      'marketing.campaigns', 'marketing.attribution',
+      'payroll.advanced', 'payroll.analytics',
+      'ai.executive', 'ai.forecasting',
+      'integrations.shopify',
+      'scale.multi_location',
+      'reports.enterprise',
+      'integrations.api',
+      'branding.custom_domain', 'branding.white_label',
+      'security.sso', 'security.audit',
+      // Plus Franchise
+      'franchise.core', 'franchise.territories', 'franchise.royalties',
+      'scale.expansion_readiness', 'scale.market_intelligence', 'scale.location_intelligence'
     ]
   }
 };

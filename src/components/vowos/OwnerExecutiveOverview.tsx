@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -12,7 +12,10 @@ import {
   ShieldCheck, 
   Building2,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  LineChart,
+  Lock,
+  Wallet
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,13 +24,30 @@ import { ViewKey } from '@/lib/navigation/navigationRegistry';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVowosData } from '@/contexts/VowosDataContext';
 
+function TabButton({ active, onClick, icon: Icon, children }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all ${
+        active 
+          ? 'bg-stone-900 text-white shadow-sm' 
+          : 'bg-white text-stone-500 hover:bg-stone-50 border border-stone-200'
+      }`}
+    >
+      {Icon && <Icon className="h-3.5 w-3.5" />}
+      {children}
+    </button>
+  );
+}
+
 interface OwnerExecutiveOverviewProps {
   onNavigate: (view: ViewKey) => void;
 }
 
 export default function OwnerExecutiveOverview({ onNavigate }: OwnerExecutiveOverviewProps) {
   const { profile } = useAuth();
-  const { brides, invoices } = useVowosData();
+  const { invoices } = useVowosData();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'forecasting' | 'rbac' | 'financials'>('dashboard');
 
   const totalCollected = invoices.reduce((sum, i) => sum + i.paidCents, 0) / 100;
   const outstandingBalance = invoices.reduce((sum, i) => sum + (i.amountCents - i.paidCents), 0) / 100;
@@ -72,206 +92,353 @@ export default function OwnerExecutiveOverview({ onNavigate }: OwnerExecutiveOve
         </div>
       </div>
 
-      {/* Core Executive KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-stone-200 shadow-xs hover:border-stone-300 transition-all">
-          <CardContent className="p-5">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Total Revenue YTD</span>
-              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-                <TrendingUp className="h-4 w-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-stone-900">${totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-            <p className="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-              <ArrowUpRight className="h-3.5 w-3.5" /> +18.4% vs last year
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-stone-200 shadow-xs hover:border-stone-300 transition-all">
-          <CardContent className="p-5">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Outstanding Receivables</span>
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-                <DollarSign className="h-4 w-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-stone-900">${outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-            <p className="text-xs text-stone-500 font-medium mt-1">Across 15 open invoices</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-stone-200 shadow-xs hover:border-stone-300 transition-all">
-          <CardContent className="p-5">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Gross Profit Margin</span>
-              <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-                <Percent className="h-4 w-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-stone-900">68.2%</p>
-            <p className="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-              <ArrowUpRight className="h-3.5 w-3.5" /> +1.2% this month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-stone-200 shadow-xs hover:border-stone-300 transition-all">
-          <CardContent className="p-5">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Labor / Sales Ratio</span>
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
-                <Users className="h-4 w-4" />
-              </div>
-            </div>
-            <p className="text-2xl font-black text-stone-900">14.5%</p>
-            <p className="text-xs text-emerald-600 font-semibold mt-1">Healthy (Target &lt; 18%)</p>
-          </CardContent>
-        </Card>
+      {/* Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <TabButton 
+          active={activeTab === 'dashboard'} 
+          onClick={() => setActiveTab('dashboard')}
+          icon={BarChart3}
+        >
+          Executive Dashboard
+        </TabButton>
+        <TabButton 
+          active={activeTab === 'financials'} 
+          onClick={() => setActiveTab('financials')}
+          icon={Wallet}
+        >
+          Consolidated Financials
+        </TabButton>
+        <TabButton 
+          active={activeTab === 'forecasting'} 
+          onClick={() => setActiveTab('forecasting')}
+          icon={LineChart}
+        >
+          Forecasting &amp; Growth
+        </TabButton>
+        <TabButton 
+          active={activeTab === 'rbac'} 
+          onClick={() => setActiveTab('rbac')}
+          icon={ShieldCheck}
+        >
+          Role-Based Access Control
+        </TabButton>
       </div>
 
-      {/* Multi-Location Store Performance Comparison */}
-      <Card className="border-stone-200 shadow-xs">
-        <CardHeader className="p-5 border-b border-stone-100 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-bold text-stone-900 flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-stone-500" />
-              Location Performance Comparison
-            </CardTitle>
-            <p className="text-xs text-stone-500 mt-0.5">Real-time revenue, target attainment, and conversion metrics by store</p>
+      {activeTab === 'dashboard' && (
+        <div className="space-y-6">
+          {/* Core Executive KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border-stone-200 shadow-xs hover:border-stone-300 transition-all">
+              <CardContent className="p-5">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Total Revenue YTD</span>
+                  <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                    <TrendingUp className="h-4 w-4" />
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-stone-900">${totalCollected.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                <p className="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                  <ArrowUpRight className="h-3.5 w-3.5" /> +18.4% vs last year
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-stone-200 shadow-xs hover:border-stone-300 transition-all">
+              <CardContent className="p-5">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Outstanding Receivables</span>
+                  <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+                    <DollarSign className="h-4 w-4" />
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-stone-900">${outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                <p className="text-xs text-stone-500 font-medium mt-1">Across 15 open invoices</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-stone-200 shadow-xs hover:border-stone-300 transition-all">
+              <CardContent className="p-5">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Gross Profit Margin</span>
+                  <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                    <Percent className="h-4 w-4" />
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-stone-900">68.2%</p>
+                <p className="text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                  <ArrowUpRight className="h-3.5 w-3.5" /> +1.2% this month
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-stone-200 shadow-xs hover:border-stone-300 transition-all">
+              <CardContent className="p-5">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Labor / Sales Ratio</span>
+                  <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+                    <Users className="h-4 w-4" />
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-stone-900">14.5%</p>
+                <p className="text-xs text-emerald-600 font-semibold mt-1">Healthy (Target &lt; 18%)</p>
+              </CardContent>
+            </Card>
           </div>
-          <Button onClick={() => onNavigate('sales')} variant="ghost" size="sm" className="text-xs font-semibold text-rose-600">
-            View All Reports <ChevronRight className="h-3.5 w-3.5 ml-1" />
-          </Button>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 font-bold uppercase tracking-wider">
-              <tr>
-                <th className="p-4">Location</th>
-                <th className="p-4">July Revenue</th>
-                <th className="p-4">Target Attainment</th>
-                <th className="p-4">Conversion Rate</th>
-                <th className="p-4">Avg Order Value</th>
-                <th className="p-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              <tr className="hover:bg-stone-50/50 transition-colors">
-                <td className="p-4 font-bold text-stone-900 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-rose-500" />
-                  Baton Rouge (Downtown)
-                </td>
-                <td className="p-4 font-semibold text-stone-900">$14,250.00</td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 bg-stone-100 rounded-full h-2 overflow-hidden">
-                      <div className="bg-emerald-500 h-full rounded-full" style={{ width: '88%' }} />
-                    </div>
-                    <span className="font-bold text-stone-800">88%</span>
-                  </div>
-                </td>
-                <td className="p-4 font-semibold text-stone-800">44.2%</td>
-                <td className="p-4 font-semibold text-stone-800">$2,450.00</td>
-                <td className="p-4">
-                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">On Track</Badge>
-                </td>
-              </tr>
-              <tr className="hover:bg-stone-50/50 transition-colors">
-                <td className="p-4 font-bold text-stone-900 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-blue-500" />
-                  Covington (Main St)
-                </td>
-                <td className="p-4 font-semibold text-stone-900">$7,500.00</td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 bg-stone-100 rounded-full h-2 overflow-hidden">
-                      <div className="bg-amber-500 h-full rounded-full" style={{ width: '65%' }} />
-                    </div>
-                    <span className="font-bold text-stone-800">65%</span>
-                  </div>
-                </td>
-                <td className="p-4 font-semibold text-stone-800">32.1%</td>
-                <td className="p-4 font-semibold text-stone-800">$2,100.00</td>
-                <td className="p-4">
-                  <Badge className="bg-amber-100 text-amber-800 border-amber-200">Needs Attention</Badge>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
 
-      {/* Top Stylists & Executive Operational Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Stylists Leaderboard */}
-        <Card className="border-stone-200 shadow-xs">
-          <CardHeader className="p-5 border-b border-stone-100 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-bold text-stone-900 flex items-center gap-2">
-              <Award className="h-4 w-4 text-amber-500" />
-              Top Revenue Consultants (This Month)
-            </CardTitle>
-            <Button onClick={() => onNavigate('staff')} variant="ghost" size="xs" className="text-xs font-semibold text-stone-600">
-              Manage Staff
-            </Button>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3 text-xs">
-            {[
-              { rank: 1, name: 'Emma Vance', location: 'Baton Rouge', revenue: '$8,450', conversion: '52%' },
-              { rank: 2, name: 'Sarah Jenkins', location: 'Covington', revenue: '$5,200', conversion: '44%' },
-              { rank: 3, name: 'Claire Dupont', location: 'Baton Rouge', revenue: '$4,100', conversion: '39%' },
-            ].map(stylist => (
-              <div key={stylist.name} className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-100">
-                <div className="flex items-center gap-3">
-                  <div className="h-7 w-7 rounded-full bg-stone-900 text-white font-bold flex items-center justify-center text-xs">
-                    #{stylist.rank}
+          {/* Multi-Location Store Performance Comparison */}
+          <Card className="border-stone-200 shadow-xs">
+            <CardHeader className="p-5 border-b border-stone-100 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold text-stone-900 flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-stone-500" />
+                  Location Performance Comparison
+                </CardTitle>
+                <p className="text-xs text-stone-500 mt-0.5">Real-time revenue, target attainment, and conversion metrics by store</p>
+              </div>
+              <Button onClick={() => onNavigate('sales')} variant="ghost" size="sm" className="text-xs font-semibold text-rose-600">
+                View All Reports <ChevronRight className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 font-bold uppercase tracking-wider">
+                  <tr>
+                    <th className="p-4">Location</th>
+                    <th className="p-4">July Revenue</th>
+                    <th className="p-4">Target Attainment</th>
+                    <th className="p-4">Conversion Rate</th>
+                    <th className="p-4">Avg Order Value</th>
+                    <th className="p-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  <tr className="hover:bg-stone-50/50 transition-colors">
+                    <td className="p-4 font-bold text-stone-900 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-rose-500" />
+                      Baton Rouge (Downtown)
+                    </td>
+                    <td className="p-4 font-semibold text-stone-900">$14,250.00</td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-stone-100 rounded-full h-2 overflow-hidden">
+                          <div className="bg-emerald-500 h-full rounded-full" style={{ width: '88%' }} />
+                        </div>
+                        <span className="font-bold text-stone-800">88%</span>
+                      </div>
+                    </td>
+                    <td className="p-4 font-semibold text-stone-800">44.2%</td>
+                    <td className="p-4 font-semibold text-stone-800">$2,450.00</td>
+                    <td className="p-4">
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">On Track</Badge>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-stone-50/50 transition-colors">
+                    <td className="p-4 font-bold text-stone-900 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-blue-500" />
+                      Covington (Main St)
+                    </td>
+                    <td className="p-4 font-semibold text-stone-900">$7,500.00</td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-stone-100 rounded-full h-2 overflow-hidden">
+                          <div className="bg-amber-500 h-full rounded-full" style={{ width: '65%' }} />
+                        </div>
+                        <span className="font-bold text-stone-800">65%</span>
+                      </div>
+                    </td>
+                    <td className="p-4 font-semibold text-stone-800">32.1%</td>
+                    <td className="p-4 font-semibold text-stone-800">$2,100.00</td>
+                    <td className="p-4">
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200">Needs Attention</Badge>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+
+          {/* Top Stylists & Executive Operational Alerts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Stylists Leaderboard */}
+            <Card className="border-stone-200 shadow-xs">
+              <CardHeader className="p-5 border-b border-stone-100 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                  <Award className="h-4 w-4 text-amber-500" />
+                  Top Revenue Consultants (This Month)
+                </CardTitle>
+                <Button onClick={() => onNavigate('staff')} variant="ghost" size="xs" className="text-xs font-semibold text-stone-600">
+                  Manage Staff
+                </Button>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3 text-xs">
+                {[
+                  { rank: 1, name: 'Emma Vance', location: 'Baton Rouge', revenue: '$8,450', conversion: '52%' },
+                  { rank: 2, name: 'Sarah Jenkins', location: 'Covington', revenue: '$5,200', conversion: '44%' },
+                  { rank: 3, name: 'Claire Dupont', location: 'Baton Rouge', revenue: '$4,100', conversion: '39%' },
+                ].map(stylist => (
+                  <div key={stylist.name} className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-100">
+                    <div className="flex items-center gap-3">
+                      <div className="h-7 w-7 rounded-full bg-stone-900 text-white font-bold flex items-center justify-center text-xs">
+                        #{stylist.rank}
+                      </div>
+                      <div>
+                        <p className="font-bold text-stone-900">{stylist.name}</p>
+                        <p className="text-[10px] text-stone-500">{stylist.location}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-stone-900">{stylist.revenue}</p>
+                      <p className="text-[10px] text-emerald-600 font-semibold">{stylist.conversion} conversion</p>
+                    </div>
                   </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Executive Action Alerts */}
+            <Card className="border-stone-200 shadow-xs">
+              <CardHeader className="p-5 border-b border-stone-100">
+                <CardTitle className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-rose-500" />
+                  Executive Alerts & Action items
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3 text-xs">
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-bold text-stone-900">{stylist.name}</p>
-                    <p className="text-[10px] text-stone-500">{stylist.location}</p>
+                    <p className="font-bold text-rose-950">Covington Sales Target Alert</p>
+                    <p className="text-stone-600 mt-0.5">Covington store is currently 35% behind July target. Consider staffing adjustment or marketing push.</p>
+                  </div>
+                  <Button onClick={() => onNavigate('marketing')} size="xs" className="bg-rose-600 text-white shrink-0">
+                    Growth Plan
+                  </Button>
+                </div>
+
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-amber-950">3 Store Transfers Pending Approval</p>
+                    <p className="text-stone-600 mt-0.5">Gown samples requested for cross-store fittings awaiting logistics release.</p>
+                  </div>
+                  <Button onClick={() => onNavigate('transfers')} size="xs" variant="outline" className="border-amber-300 shrink-0">
+                    View Transfers
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'financials' && (
+        <div className="space-y-6">
+          <h2 className="text-lg font-bold text-stone-900">Consolidated Financials &amp; Cash Flow</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-stone-200 shadow-xs">
+              <CardHeader className="p-5 border-b border-stone-100">
+                <CardTitle className="text-sm font-bold text-stone-900">Accounts Receivable (Multi-Store)</CardTitle>
+              </CardHeader>
+              <CardContent className="p-5">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                    <span className="text-xs text-stone-600 font-bold">Current (0-30 Days)</span>
+                    <span className="text-xs font-bold text-stone-900">$24,500.00</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                    <span className="text-xs text-stone-600 font-bold">31-60 Days</span>
+                    <span className="text-xs font-bold text-amber-600">$8,200.00</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                    <span className="text-xs text-stone-600 font-bold">61-90 Days</span>
+                    <span className="text-xs font-bold text-rose-600">$1,450.00</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-sm text-stone-900 font-black uppercase">Total A/R</span>
+                    <span className="text-sm font-black text-stone-900">$34,150.00</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-stone-900">{stylist.revenue}</p>
-                  <p className="text-[10px] text-emerald-600 font-semibold">{stylist.conversion} conversion</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-stone-200 shadow-xs">
+              <CardHeader className="p-5 border-b border-stone-100">
+                <CardTitle className="text-sm font-bold text-stone-900">30-Day Cash Flow Projection</CardTitle>
+              </CardHeader>
+              <CardContent className="p-5">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                    <span className="text-xs text-stone-600 font-bold">Expected Inflows (Scheduled Payments)</span>
+                    <span className="text-xs font-bold text-emerald-600">+$18,500.00</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                    <span className="text-xs text-stone-600 font-bold">Expected Outflows (Purchase Orders)</span>
+                    <span className="text-xs font-bold text-rose-600">-$12,200.00</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-stone-100 pb-2">
+                    <span className="text-xs text-stone-600 font-bold">Estimated Payroll</span>
+                    <span className="text-xs font-bold text-rose-600">-$8,400.00</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-sm text-stone-900 font-black uppercase">Net Cash Position</span>
+                    <span className="text-sm font-black text-rose-600">-$2,100.00</span>
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'forecasting' && (
+        <div className="space-y-6">
+          <h2 className="text-lg font-bold text-stone-900">Year-Over-Year Forecasting</h2>
+          <Card className="border-stone-200 shadow-xs">
+            <CardHeader className="p-5 border-b border-stone-100">
+              <CardTitle className="text-sm font-bold text-stone-900">Revenue Projection Model</CardTitle>
+            </CardHeader>
+            <CardContent className="p-10 flex items-center justify-center bg-stone-50">
+              <div className="text-center">
+                <LineChart className="h-10 w-10 text-stone-400 mx-auto mb-3" />
+                <p className="text-sm font-bold text-stone-600">Q3-Q4 Growth Trajectory</p>
+                <p className="text-xs text-stone-500 max-w-sm mt-2">Based on current booked appointments and historical close rates, revenue is projected to exceed last year by 22% in Q4.</p>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'rbac' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-stone-900">Role-Based Access Control (RBAC)</h2>
+            <Button size="sm" className="bg-stone-900 text-white">Add New Role</Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {['Owner', 'Manager', 'Stylist', 'Front Desk', 'Seamstress'].map(role => (
+              <Card key={role} className="border-stone-200 shadow-xs">
+                <CardHeader className="p-4 border-b border-stone-100 bg-stone-50">
+                  <CardTitle className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-stone-500" />
+                    {role} Tier
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ul className="text-xs text-stone-600 space-y-2">
+                    <li className="flex items-center gap-2"><ShieldCheck className="h-3 w-3 text-emerald-500" /> View Schedule</li>
+                    <li className="flex items-center gap-2"><ShieldCheck className="h-3 w-3 text-emerald-500" /> View Brides</li>
+                    {role === 'Owner' || role === 'Manager' ? (
+                      <li className="flex items-center gap-2"><ShieldCheck className="h-3 w-3 text-emerald-500" /> Financial Reports</li>
+                    ) : (
+                      <li className="flex items-center gap-2 opacity-50"><Lock className="h-3 w-3 text-stone-400" /> Financial Reports</li>
+                    )}
+                  </ul>
+                  <Button variant="outline" size="sm" className="w-full mt-4 text-xs">Edit Permissions</Button>
+                </CardContent>
+              </Card>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+      )}
 
-        {/* Executive Action Alerts */}
-        <Card className="border-stone-200 shadow-xs">
-          <CardHeader className="p-5 border-b border-stone-100">
-            <CardTitle className="text-sm font-bold text-stone-900 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-rose-500" />
-              Executive Alerts & Action items
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3 text-xs">
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start justify-between gap-3">
-              <div>
-                <p className="font-bold text-rose-950">Covington Sales Target Alert</p>
-                <p className="text-stone-600 mt-0.5">Covington store is currently 35% behind July target. Consider staffing adjustment or marketing push.</p>
-              </div>
-              <Button onClick={() => onNavigate('marketing')} size="xs" className="bg-rose-600 text-white shrink-0">
-                Growth Plan
-              </Button>
-            </div>
-
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start justify-between gap-3">
-              <div>
-                <p className="font-bold text-amber-950">3 Store Transfers Pending Approval</p>
-                <p className="text-stone-600 mt-0.5">Gown samples requested for cross-store fittings awaiting logistics release.</p>
-              </div>
-              <Button onClick={() => onNavigate('transfers')} size="xs" variant="outline" className="border-amber-300 shrink-0">
-                View Transfers
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

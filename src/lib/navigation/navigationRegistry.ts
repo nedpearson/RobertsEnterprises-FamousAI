@@ -64,6 +64,7 @@ export type ViewKey =
   | 'bride-portal'
   | 'fitting-room'
   | 'vendor-portal'
+  | 'expansion'
   | 'platform-admin';
 
 export interface NavigationSection {
@@ -347,6 +348,18 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     searchKeywords: ['growth', 'marketing', 'leads', 'pipeline', 'facebook', 'instagram', 'google ads', 'tiktok', 'pinterest', 'meta', 'campaigns', 'ad spend', 'roas'],
     requiredFeature: 'marketing.leads',
   },
+  {
+    id: 'expansion',
+    label: 'Franchise & Expansion',
+    shortLabel: 'Expansion',
+    icon: Sparkles,
+    path: '/expansion',
+    section: 'growth',
+    allowedRoles: ['Owner', 'Manager'],
+    mobilePriority: 7.8,
+    searchKeywords: ['franchise', 'expansion', 'territories', 'fdd', 'command center', 'market explorer'],
+    requiredFeature: 'franchise.core',
+  },
 
   // INSIGHTS
   {
@@ -430,6 +443,7 @@ export const VIEW_TO_PATH: Record<ViewKey, string> = {
   training: '/training',
   onlinestore: '/onlinestore',
   marketing: '/growth',
+  expansion: '/expansion',
   'platform-admin': '/platform-admin',
   'vendor-portal': '/vendors',
 };
@@ -475,6 +489,7 @@ export const PATH_TO_VIEW: Record<string, ViewKey> = {
   '/payroll': 'payroll',
   '/timeclock': 'timeclock',
   '/training': 'training',
+  '/expansion': 'expansion',
   '/platform-admin': 'platform-admin',
   '/vendors': 'vendor-portal',
 };

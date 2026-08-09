@@ -546,14 +546,27 @@ export default function PurchasesView() {
                       </span>
                       <h4 className="text-base font-semibold text-stone-900 mt-1">{p.name}</h4>
                     </div>
-                    <a
-                      href={p.portalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-xl bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-700 shadow-xs"
-                    >
-                      Launch Portal <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                    <div className="flex flex-col items-end gap-2">
+                      <a
+                        href={p.portalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-xl bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-700 shadow-xs"
+                      >
+                        Launch Portal <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                      <button
+                        onClick={() => {
+                          const vendorBase64 = btoa(p.brand || p.name);
+                          const link = `${window.location.origin}/vendor/${vendorBase64}?t=vowos-vendor-link`;
+                          navigator.clipboard.writeText(link);
+                          toast({ title: 'Vendor Link Copied!', description: 'Link ready to send to ' + p.brand });
+                        }}
+                        className="inline-flex items-center gap-1 rounded-xl bg-stone-100 border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-200 shadow-xs"
+                      >
+                        <Copy className="h-3.5 w-3.5" /> Vendor Access Link
+                      </button>
+                    </div>
                   </div>
 
                   {/* Credentials Section */}

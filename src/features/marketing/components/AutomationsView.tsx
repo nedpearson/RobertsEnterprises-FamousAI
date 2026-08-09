@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { MarketingAutomationRule } from '../types/marketingTypes';
-import { Zap, ShieldCheck, CheckCircle2, Play, Pause, AlertTriangle } from 'lucide-react';
+import { Zap, ShieldCheck, CheckCircle2, Play, Pause, AlertTriangle, PlusCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { SequenceBuilderModal } from './SequenceBuilderModal';
 
 const INITIAL_RULES: MarketingAutomationRule[] = [
   {
@@ -30,6 +31,7 @@ const INITIAL_RULES: MarketingAutomationRule[] = [
 
 export default function AutomationsView() {
   const [rules, setRules] = useState<MarketingAutomationRule[]>(INITIAL_RULES);
+  const [showSequenceBuilder, setShowSequenceBuilder] = useState(false);
 
   const handleToggleRule = (id: string) => {
     setRules((prev) =>
@@ -46,9 +48,17 @@ export default function AutomationsView() {
 
   return (
     <div className="space-y-6 select-none max-w-5xl">
-      <div>
-        <h2 className="text-xl font-bold text-stone-900">Rule-Based Marketing Automations</h2>
-        <p className="text-xs text-stone-500">Automated inventory safeguards, budget pacing alerts, and lead assignment routing.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-stone-900">Rule-Based Marketing Automations &amp; Sequences</h2>
+          <p className="text-xs text-stone-500">Automated inventory safeguards, budget pacing alerts, and lead assignment routing.</p>
+        </div>
+        <button
+          onClick={() => setShowSequenceBuilder(true)}
+          className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-stone-800 transition-colors flex items-center gap-2"
+        >
+          <PlusCircle className="h-4 w-4" /> Build Nurture Sequence
+        </button>
       </div>
 
       <div className="space-y-4">
@@ -85,6 +95,13 @@ export default function AutomationsView() {
           </div>
         ))}
       </div>
+
+      {showSequenceBuilder && (
+        <SequenceBuilderModal
+          open={true}
+          onClose={() => setShowSequenceBuilder(false)}
+        />
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ interface AlterationsPinningSuiteProps {
   open: boolean;
   onClose: () => void;
   job: AlterationJob | null;
+  onSaveCost?: (jobId: string, totalCostCents: number) => void;
 }
 
 const PIN_TYPES = [
@@ -26,7 +27,7 @@ const PIN_TYPES = [
   { label: 'Shorten Straps', cost: 45 },
 ];
 
-export function AlterationsPinningSuite({ open, onClose, job }: AlterationsPinningSuiteProps) {
+export function AlterationsPinningSuite({ open, onClose, job, onSaveCost }: AlterationsPinningSuiteProps) {
   const [pins, setPins] = useState<Pin[]>([]);
   const [activePinType, setActivePinType] = useState(PIN_TYPES[0]);
   const [view, setView] = useState<'front' | 'back'>('front');
@@ -60,6 +61,9 @@ export function AlterationsPinningSuite({ open, onClose, job }: AlterationsPinni
 
   const handleGenerateTicket = () => {
     // In a real app, this would save the pins to the database and generate a PDF
+    if (onSaveCost) {
+      onSaveCost(job.id, totalCost * 100);
+    }
     alert(`Alteration ticket generated successfully for ${job.customer}. Total: $${totalCost}`);
     onClose();
   };

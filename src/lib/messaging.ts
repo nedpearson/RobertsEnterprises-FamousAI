@@ -7,7 +7,7 @@
 import { supabase, getActiveDataPlane } from '@/lib/supabase';
 import { Appointment, Customer, Invoice, locationById, formatCents, formatDate } from '@/data/vowosData';
 
-export type MessageChannel = 'sms' | 'email';
+export type MessageChannel = 'sms' | 'email' | 'instagram' | 'facebook' | 'tiktok' | 'pinterest';
 export type MessageKind =
   | 'confirmation'
   | 'reschedule'
@@ -20,6 +20,8 @@ export type MessageKind =
   | 'contract'
   | 'portal'
   | 'pickup'
+  | 'gown_preservation_upsell'
+  | 'anniversary_reminder'
   | 'general';
 
 export const KIND_LABELS: Record<MessageKind, string> = {
@@ -34,6 +36,8 @@ export const KIND_LABELS: Record<MessageKind, string> = {
   contract: 'Contract',
   portal: 'Portal link',
   pickup: 'Pickup ready',
+  gown_preservation_upsell: 'Gown preservation',
+  anniversary_reminder: 'Anniversary reminder',
   general: 'General',
 };
 

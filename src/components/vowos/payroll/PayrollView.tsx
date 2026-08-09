@@ -79,6 +79,10 @@ export default function PayrollView() {
   const [compEmployee, setCompEmployee] = useState('');
   const [compType, setCompType] = useState<'hourly' | 'salary'>('hourly');
   const [compRate, setCompRate] = useState('22.50');
+  const [compTier1Threshold, setCompTier1Threshold] = useState('5000');
+  const [compTier1Rate, setCompTier1Rate] = useState('7.5');
+  const [compTier2Threshold, setCompTier2Threshold] = useState('10000');
+  const [compTier2Rate, setCompTier2Rate] = useState('10');
   const [compEffective, setCompEffective] = useState('2026-07-01');
   const [compReason, setCompReason] = useState('Promo adjust');
 
@@ -242,6 +246,10 @@ export default function PayrollView() {
       hourlyRate: compType === 'hourly' ? rateCents : 0,
       salaryAmount: compType === 'salary' ? rateCents * 24 : 0, 
       commissionRate: 5,
+      tier1Threshold: parseInt(compTier1Threshold) * 100,
+      tier1Rate: parseFloat(compTier1Rate),
+      tier2Threshold: parseInt(compTier2Threshold) * 100,
+      tier2Rate: parseFloat(compTier2Rate),
       drawAmount: 0,
       effectiveDate: compEffective,
       reason: compReason
@@ -551,6 +559,28 @@ export default function PayrollView() {
           <div className="space-y-1">
             <label className="text-xs font-semibold text-stone-600 block">Amount (Hourly Rate or Annual Salary in USD)</label>
             <input type="number" step="0.01" required value={compRate} onChange={e => setCompRate(e.target.value)} className={inputCls} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-stone-600 block">Tier 1 Target (USD)</label>
+              <input type="number" required value={compTier1Threshold} onChange={e => setCompTier1Threshold(e.target.value)} className={inputCls} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-stone-600 block">Tier 1 Comm %</label>
+              <input type="number" step="0.1" required value={compTier1Rate} onChange={e => setCompTier1Rate(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-stone-600 block">Tier 2 Target (USD)</label>
+              <input type="number" required value={compTier2Threshold} onChange={e => setCompTier2Threshold(e.target.value)} className={inputCls} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-stone-600 block">Tier 2 Comm %</label>
+              <input type="number" step="0.1" required value={compTier2Rate} onChange={e => setCompTier2Rate(e.target.value)} className={inputCls} />
+            </div>
           </div>
 
           <div className="space-y-1">

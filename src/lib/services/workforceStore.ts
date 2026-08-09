@@ -26,6 +26,10 @@ export interface CompensationProfile {
   hourlyRate: number; // in cents
   salaryAmount: number; // in cents
   commissionRate: number; // in percentage, e.g. 10 for 10%
+  tier1Threshold?: number; // in cents
+  tier1Rate?: number; // in percentage
+  tier2Threshold?: number; // in cents
+  tier2Rate?: number; // in percentage
   drawAmount: number; // in cents, draw against commission
   effectiveDate: string; // YYYY-MM-DD
   reason?: string;

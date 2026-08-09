@@ -55,6 +55,7 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   training: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   onlinestore: ['Owner', 'Manager'],
   marketing: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
+  expansion: ['Owner', 'Manager'],
   'bride-portal': ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   'fitting-room': ['Owner', 'Manager', 'Stylist', 'Front Desk'],
 };

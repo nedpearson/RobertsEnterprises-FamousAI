@@ -12,6 +12,7 @@ import { useVowosData } from '@/contexts/VowosDataContext';
 import { toast } from '@/components/ui/use-toast';
 import { PageHeader, StatusBadge, inputCls, btnPrimary } from './ui';
 import { GownFormModal, AdjustStockModal } from './GownModals';
+import GownProfileModal from './GownProfileModal';
 import { TransferModal } from './TransfersView';
 import { LocationBadge } from './LocationSelect';
 import OTBForecastingWidget from '@/features/inventory/components/OTBForecastingWidget';
@@ -45,6 +46,7 @@ export default function InventoryView() {
   const [priceSaving, setPriceSaving] = useState(false);
   const [rebalancingOpen, setRebalancingOpen] = useState(false);
   const [poPredictorOpen, setPoPredictorOpen] = useState(false);
+  const [detailGown, setDetailGown] = useState<Gown | null>(null);
   const { navigateToView } = useApplicationRoute();
 
 
@@ -254,7 +256,8 @@ export default function InventoryView() {
                   <img
                     src={g.image}
                     alt={`${g.name} by ${g.designer}`}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
+                    onClick={() => setDetailGown(g)}
                   />
                   <div className="absolute left-3 top-3 flex flex-col gap-1.5">
                     <StatusBadge status={g.status} />
@@ -276,7 +279,7 @@ export default function InventoryView() {
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-serif text-lg text-stone-900">{g.name}</h3>
+                      <button onClick={() => setDetailGown(g)} className="font-serif text-lg text-stone-900 hover:text-rose-600 text-left transition-colors cursor-pointer block">{g.name}</button>
                       <p className="text-xs text-stone-500">{g.designer}</p>
                     </div>
                     <div className="text-right">
@@ -398,6 +401,7 @@ export default function InventoryView() {
       )}
 
       <GownFormModal open={formOpen} gown={editingGown} onClose={() => setFormOpen(false)} />
+      <GownProfileModal gown={detailGown} open={!!detailGown} onClose={() => setDetailGown(null)} />
       <AdjustStockModal gown={stockGown} onClose={() => setStockGown(null)} />
       <TransferModal open={!!transferGown} gown={transferGown} onClose={() => setTransferGown(null)} />
       <ThermalBarcodePrinter isOpen={thermalPrinterOpen} onClose={() => setThermalPrinterOpen(false)} />

@@ -125,6 +125,16 @@ export default function AlterationsView() {
     );
   };
 
+  const handleSaveCost = async (jobId: string, newCostCents: number) => {
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, priceCents: newCostCents } : j)));
+    const err = await updateAlteration(jobId, { priceCents: newCostCents });
+    if (err) {
+      toast({ title: 'Could not update cost', description: err, variant: 'destructive' });
+    } else {
+      toast({ title: 'Quote updated from Pinning Suite' });
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -137,28 +147,25 @@ export default function AlterationsView() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
-          label="Active jobs"
-          value={String(active.length)}
-          sub="In the sewing room now"
-          icon={<Scissors className="h-5 w-5" />}
-          accent="violet"
-        />
-        <StatCard
-          label="Due within 3 weeks"
-          value={String(dueSoon.length)}
-          sub="Pickup deadlines approaching"
-          icon={<CalendarClock className="h-5 w-5" />}
-          accent="amber"
-        />
-        <StatCard
-          label="Ready for pickup"
-          value={String(readyForPickup.length)}
-          sub="Pressed, bagged & waiting"
-          icon={<PackageCheck className="h-5 w-5" />}
-          accent="emerald"
-        />
+      <div className="mb-6">
+        <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">Timeline Tracker (Active Gowns)</h3>
+        <div className="flex gap-2 p-4 rounded-2xl bg-white border border-stone-200 shadow-sm overflow-x-auto">
+          {ALTERATION_STATUSES.map((status, idx) => {
+            const count = scoped.filter(j => j.status === status).length;
+            const isLast = idx === ALTERATION_STATUSES.length - 1;
+            return (
+              <div key={status} className="flex items-center gap-2 flex-shrink-0">
+                <div className={`px-4 py-2 rounded-xl flex items-center gap-3 border ${count > 0 ? 'bg-stone-50 border-stone-300' : 'bg-transparent border-dashed border-stone-200 opacity-60'}`}>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase text-stone-500">{status}</span>
+                    <span className="text-lg font-serif font-bold text-stone-900">{count} gown{count !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+                {!isLast && <ChevronRight className="h-4 w-4 text-stone-300" />}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mb-5 flex gap-2">
@@ -305,6 +312,7 @@ export default function AlterationsView() {
         open={!!pinningJob} 
         onClose={() => setPinningJob(null)} 
         job={pinningJob} 
+        onSaveCost={handleSaveCost}
       />
     </div>
   );

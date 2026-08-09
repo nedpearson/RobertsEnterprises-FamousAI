@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeftRight, ArrowRight, Loader2, PackageCheck, Plus, Truck, Store } from 'lucide-react';
-import { Gown, LocationId, LOCATIONS, locationById, formatDate } from '@/data/vowosData';
+import { Gown, LocationId, LOCATIONS, locationById, formatDate, Transfer } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { PageHeader, StatusBadge, Modal, inputCls, btnPrimary, btnSecondary, StatCard } from './ui';
 import { LocationBadge, LocationSelect } from './LocationSelect';
 import RebalancingEngine from '@/features/inventory/components/RebalancingEngine';
 import InventoryBalancerWidget from '@/features/inventory/components/InventoryBalancerWidget';
+import TransferDetailModal from './TransferDetailModal';
 
 const labelCls = 'mb-1 block text-xs font-medium uppercase tracking-wider text-stone-500';
 
@@ -159,6 +160,7 @@ export default function TransfersView() {
   const { transfers, activeLocation, loading, receiveTransfer } = useVowosData();
   const [modalOpen, setModalOpen] = useState(false);
   const [receivingId, setReceivingId] = useState<string | null>(null);
+  const [detailTransfer, setDetailTransfer] = useState<Transfer | null>(null);
 
   const inTransit = transfers.filter((t) => t.status === 'In Transit');
   const received = transfers.filter((t) => t.status === 'Received');
@@ -244,8 +246,8 @@ export default function TransfersView() {
               </thead>
               <tbody>
                 {transfers.map((t) => (
-                  <tr key={t.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50/50">
-                    <td className="px-4 py-3 font-medium text-stone-700">{t.id}</td>
+                  <tr key={t.id} onClick={() => setDetailTransfer(t)} className="border-b border-stone-100 last:border-0 hover:bg-stone-50/50 cursor-pointer">
+                    <td className="px-4 py-3 font-medium text-stone-700 hover:text-violet-600 transition-colors">{t.id}</td>
                     <td className="px-4 py-3">
                       <p className="font-serif text-stone-900">{t.gownName}</p>
                       {t.note && <p className="text-xs text-stone-400">{t.note}</p>}
@@ -266,7 +268,7 @@ export default function TransfersView() {
                     <td className="px-4 py-3 text-right">
                       {t.status === 'In Transit' ? (
                         <button
-                          onClick={() => handleReceive(t.id)}
+                          onClick={(e) => { e.stopPropagation(); handleReceive(t.id); }}
                           disabled={receivingId === t.id}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-50"
                         >
@@ -290,6 +292,7 @@ export default function TransfersView() {
       )}
 
       <TransferModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <TransferDetailModal transfer={detailTransfer} open={!!detailTransfer} onClose={() => setDetailTransfer(null)} />
     </div>
   );
 }

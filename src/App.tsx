@@ -11,6 +11,7 @@ import BookAppointment from "./pages/BookAppointment";
 import PayInvoice from "./pages/PayInvoice";
 import SignContract from "./pages/SignContract";
 import BridePortal from "./pages/BridePortal";
+import VendorPortal from "./pages/VendorPortal";
 import NotFound from "./pages/NotFound";
 
 import { VowosErrorBoundary } from "@/components/vowos/ErrorBoundary";
@@ -43,6 +44,7 @@ const App = () => (
                     <Route path="/pay/:invoiceId" element={<PayInvoice />} />
                     <Route path="/sign/:contractId" element={<SignContract />} />
                     <Route path="/portal/:brideId" element={<BridePortal />} />
+                    <Route path="/vendor/:vendorId" element={<VendorPortal />} />
                     
                     {/* Canonical & Legacy Scheduling Routes */}
                     <Route path="/actions" element={<Navigate to="/today?section=attention" replace />} />

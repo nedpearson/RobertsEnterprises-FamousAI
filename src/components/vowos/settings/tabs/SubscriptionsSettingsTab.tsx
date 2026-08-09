@@ -190,17 +190,19 @@ export function SubscriptionsSettingsTab({
             </div>
           
           <div className="mt-6 border-t pt-4">
-            <h4 className="text-sm font-semibold text-stone-900 mb-2">Sales Demo Preview</h4>
-            <p className="text-xs text-stone-500 mb-3">
-              Temporarily override your current plan to preview features. Only applies to your local browser.
+            <h4 className="text-sm font-semibold text-stone-900 mb-2">Available Plans & Demo Preview</h4>
+            <p className="text-xs text-stone-500 mb-4">
+              Select a plan below to preview its features locally. Only applies to your browser session.
             </p>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {Object.keys(PLANS).map((p) => {
                 const planKey = p as CommercialPlan;
                 const isSelected = typeof window !== 'undefined' && localStorage.getItem('vowos_demo_plan_override') === planKey;
                 const isActual = planKey === subscription?.plan && !localStorage.getItem('vowos_demo_plan_override');
+                const planDef = PLANS[planKey];
+                
                 return (
-                  <button
+                  <div
                     key={planKey}
                     onClick={() => {
                       if (planKey === subscription?.plan) {
@@ -210,14 +212,22 @@ export function SubscriptionsSettingsTab({
                       }
                       window.location.reload();
                     }}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                      isSelected ? 'border-rose-500 bg-rose-50 text-rose-700' : 
-                      isActual ? 'border-emerald-500 bg-emerald-50 text-emerald-700' :
-                      'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'
+                    className={`flex flex-col p-4 cursor-pointer rounded-xl border transition-all ${
+                      isSelected ? 'border-rose-500 bg-rose-50/50 ring-1 ring-rose-500' : 
+                      isActual ? 'border-emerald-500 bg-emerald-50/50 ring-1 ring-emerald-500' :
+                      'border-stone-200 bg-white hover:border-stone-300 shadow-sm hover:shadow-md'
                     }`}
                   >
-                    {PLANS[planKey].label}
-                  </button>
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="font-bold text-sm text-stone-900">{planDef.label}</h4>
+                      {isActual && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                      {isSelected && !isActual && <CheckCircle2 className="h-4 w-4 text-rose-500" />}
+                    </div>
+                    <div className="mt-1 mb-2">
+                      <span className="text-lg font-extrabold text-stone-900">{planDef.price || 'Contact Us'}</span>
+                    </div>
+                    <p className="text-xs text-stone-500 flex-1">{planDef.description}</p>
+                  </div>
                 );
               })}
             </div>

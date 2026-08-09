@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MessageSquare, Mail, Search, Send, Loader2, CheckCircle2, AlertCircle, CalendarCheck, Link2, BellRing, Sparkles, Zap, RefreshCw, X, ArrowDownLeft, Sunrise, Phone } from 'lucide-react';
+import { MessageSquare, Mail, Search, Send, Loader2, CheckCircle2, AlertCircle, CalendarCheck, Link2, BellRing, Sparkles, Zap, RefreshCw, X, ArrowDownLeft, Sunrise, Phone, Instagram, Facebook, Video, Pin } from 'lucide-react';
 import { Customer, formatCents, formatDate, locationById } from '@/data/vowosData';
 import { useVowosData } from '@/contexts/VowosDataContext';
 import { supabase } from '@/lib/supabase';
@@ -332,7 +332,7 @@ export default function CommunicationsView() {
           <div>
             <p className="text-sm font-semibold">Auto-pilot is on — runs every morning at 9am</p>
             <p className="text-xs text-stone-400">
-              Visit reminders 24h before · overdue balances chased every 4 days (max 4) · wedding photo email 2 months after the big day · morning digest to staff · bride replies flow back in below
+              Visit reminders 24h before · overdue balances chased every 4 days (max 4) · wedding photo email 2 months after · gown preservation upsell 2 weeks after · anniversary gifts 1 year after · morning digest to staff · bride replies flow back in below
             </p>
           </div>
         </div>
@@ -488,19 +488,29 @@ export default function CommunicationsView() {
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${threadLoading ? 'animate-spin' : ''}`} />
                     </button>
-                    <div className="flex rounded-lg border border-stone-200 p-0.5">
-                      {(['sms', 'email'] as MessageChannel[]).map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => setChannel(c)}
-                          className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                            channel === c ? 'bg-stone-900 text-white' : 'text-stone-500 hover:text-stone-800'
-                          }`}
-                        >
-                          {c === 'sms' ? <MessageSquare className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
-                          {c === 'sms' ? 'Text' : 'Email'}
-                        </button>
-                      ))}
+                    <div className="flex rounded-lg border border-stone-200 p-0.5 bg-stone-50 overflow-x-auto max-w-full">
+                      {(['sms', 'email', 'instagram', 'facebook', 'tiktok', 'pinterest'] as MessageChannel[]).map((c) => {
+                        let Icon = MessageSquare;
+                        let label = 'Text';
+                        if (c === 'email') { Icon = Mail; label = 'Email'; }
+                        else if (c === 'instagram') { Icon = Instagram; label = 'IG DM'; }
+                        else if (c === 'facebook') { Icon = Facebook; label = 'FB DM'; }
+                        else if (c === 'tiktok') { Icon = Video; label = 'TikTok'; }
+                        else if (c === 'pinterest') { Icon = Pin; label = 'PinMsg'; }
+
+                        return (
+                          <button
+                            key={c}
+                            onClick={() => setChannel(c)}
+                            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors flex-shrink-0 ${
+                              channel === c ? 'bg-stone-900 text-white shadow-sm' : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100'
+                            }`}
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            {label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -555,6 +565,18 @@ export default function CommunicationsView() {
                 {/* Composer */}
                 <div className="border-t border-stone-100 p-4">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!selected) return;
+                        setBody('Generating...');
+                        setTimeout(() => {
+                          setBody(`Hi ${selected.name.split(' ')[0]}! ✨ We just got some amazing new pieces in that perfectly match your style and budget. Would you like to come in this weekend to try them on?`);
+                        }, 800);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" /> AI Suggest Reply
+                    </button>
                     {templateChips.map(({ key, label, icon: Icon }) => (
                       <button
                         key={key}

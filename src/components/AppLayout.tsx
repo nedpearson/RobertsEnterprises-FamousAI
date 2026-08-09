@@ -47,6 +47,7 @@ import ConsultantFittingRoomView from '@/features/fitting-room/ConsultantFitting
 import { PlatformAdminView } from '@/components/vowos/PlatformAdminView';
 import CatalogView from '@/features/catalog/CatalogView';
 import VendorPortalView from '@/components/vowos/vendors/VendorPortalView';
+import GrowthExpansionHub from '@/features/expansion/GrowthExpansionHub';
 
 import MobileManagerToday from '@/components/vowos/mobile/MobileManagerToday';
 import MobileManagerSchedule from '@/components/vowos/mobile/MobileManagerSchedule';
@@ -348,6 +349,7 @@ export default function AppLayout() {
                 {view === 'training' && <TrainingCenterView onNavigate={setView} />}
                 {view === 'onlinestore' && <OnlineStorePage />}
                 {view === 'marketing' && <MarketingPage />}
+                {view === 'expansion' && <GrowthExpansionHub />}
                 {view === 'bride-portal' && <BridePortalView />}
                 {view === 'fitting-room' && <ConsultantFittingRoomView />}
                 {view === 'platform-admin' && <PlatformAdminView />}

@@ -17,6 +17,7 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
   const { setInvoices, invoices } = useVowosData();
   const [step, setStep] = useState<'method' | 'processing' | 'success'>('method');
   const [paymentMethod, setPaymentMethod] = useState<'card_on_file' | 'terminal' | null>(null);
+  const [paymentPlan, setPaymentPlan] = useState<'full' | 'deposit'>('full');
   const [taxSettings, setTaxSettings] = useState<PaymentTaxSettings | null>(null);
 
   useEffect(() => {
@@ -37,6 +38,7 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
   const taxRate = taxSettings?.taxRates[invoice.location] ?? 0;
   const taxAmount = Math.round(balance * (taxRate / 100));
   const finalTotal = balance + taxAmount;
+  const chargeAmount = paymentPlan === 'full' ? finalTotal : Math.round(finalTotal / 2);
 
   const handleCharge = () => {
     setStep('processing');
@@ -45,7 +47,7 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
       setInvoices(
         invoices.map((i) =>
           i.id === invoice.id
-            ? { ...i, paidCents: i.amountCents, status: 'Paid' }
+            ? { ...i, paidCents: i.paidCents + chargeAmount, status: i.paidCents + chargeAmount >= i.amountCents ? 'Paid' : 'Partial' }
             : i
         )
       );
@@ -56,6 +58,7 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
   const handleClose = () => {
     setStep('method');
     setPaymentMethod(null);
+    setPaymentPlan('full');
     onClose();
   };
 
@@ -83,6 +86,30 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
               <div className="text-right">
                 <p className="text-stone-400 text-xs">Invoice</p>
                 <p className="text-sm font-medium text-stone-300">{invoice.id}</p>
+              </div>
+            </div>
+
+            <div className="mb-6 space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-stone-500">Payment Plan</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPaymentPlan('full')}
+                  className={`flex-1 p-3 rounded-xl border text-sm font-semibold transition-all ${
+                    paymentPlan === 'full' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700'
+                  }`}
+                >
+                  Pay in Full
+                  <span className="block text-xs font-normal opacity-70">{formatCents(finalTotal)}</span>
+                </button>
+                <button
+                  onClick={() => setPaymentPlan('deposit')}
+                  className={`flex-1 p-3 rounded-xl border text-sm font-semibold transition-all ${
+                    paymentPlan === 'deposit' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700'
+                  }`}
+                >
+                  50% Deposit Now
+                  <span className="block text-xs font-normal opacity-70">{formatCents(Math.round(finalTotal / 2))}</span>
+                </button>
               </div>
             </div>
 
@@ -125,7 +152,7 @@ export default function TerminalCheckoutModal({ invoice, onClose }: TerminalChec
                 disabled={!paymentMethod}
                 className="w-full h-12 bg-white text-stone-900 hover:bg-stone-200 text-sm font-bold shadow-md rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Charge {formatCents(finalTotal)}
+                Charge {formatCents(chargeAmount)}
               </Button>
             </div>
           </div>
