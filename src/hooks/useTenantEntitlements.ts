@@ -27,6 +27,11 @@ export const useTenantEntitlements = () => {
   const industryPackId = effectiveSubscription?.industryPack || 'bridal';
 
   const can = (featureKey: string) => {
+    // Force all features to be enabled in Demo Mode
+    if (typeof window !== 'undefined' && localStorage.getItem('vowos_data_plane') === 'demo') {
+      return true;
+    }
+    
     if (isLoading || !effectiveSubscription) return false;
     const result = EntitlementService.resolveEntitlement(effectiveSubscription, featureKey);
     return result.status === 'ENABLED' || result.status === 'GRANDFATHERED' || result.status === 'ENTERPRISE_OVERRIDE' || result.status === 'TRIAL';
