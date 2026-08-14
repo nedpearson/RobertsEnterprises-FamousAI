@@ -24,8 +24,8 @@ export default function ShopifyConnectModal({ open, onClose, connection, onUpdat
 
     setLoading(true);
     try {
-      // Direct the user to the real backend OAuth initiation endpoint
-      window.location.href = `http://localhost:8080/api/auth/connect/shopify?brand=Proper%20%26%20Company&shop=${encodeURIComponent(shopDomain)}`;
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      window.location.href = `${apiUrl}/api/auth/connect/shopify?brand=Proper%20%26%20Company&shop=${encodeURIComponent(shopDomain)}`;
     } catch (e: any) {
       toast({ title: 'Connection failed', description: e.message || 'Could not authorize with Shopify.', variant: 'destructive' });
       setLoading(false);

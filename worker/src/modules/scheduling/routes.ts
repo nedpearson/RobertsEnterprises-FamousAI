@@ -2,9 +2,14 @@ import { Router } from 'express';
 import { requireBusinessContext } from '../../index';
 import { checkAvailability } from './availability';
 import { scoreAssignments } from './scoring';
-import { assignAndConfirm } from './concurrency';
+import { ConcurrencyEngine } from './concurrency';
+
+import { publicSchedulingRouter } from './public';
 
 export const schedulingRouter = Router();
+
+// Mount public sub-routes (e.g. /api/scheduling/public/book)
+schedulingRouter.use('/public', publicSchedulingRouter);
 
 // Endpoint for the public form to check availability windows
 schedulingRouter.post('/availability', async (req, res) => {
@@ -60,7 +65,7 @@ schedulingRouter.post('/recommendations', requireBusinessContext, async (req, re
 schedulingRouter.post('/assign', requireBusinessContext, async (req, res) => {
   try {
     const context = (req as any).context;
-    const appointment = await assignAndConfirm(context.db, {
+    const appointment = await ConcurrencyEngine.safeAssignAppointment(context.db, {
       businessId: context.businessId,
       requestId: req.body.requestId,
       employeeId: req.body.employeeId,

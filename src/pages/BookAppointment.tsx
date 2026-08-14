@@ -69,73 +69,46 @@ export default function BookAppointment() {
   /** Called by CardPaymentForm AFTER the card has actually been charged. */
   const completeBooking = async (payment: CardPaymentResult) => {
     setError(null);
-
-    const suffix = Date.now().toString().slice(-6);
-    const apptId = `A-${suffix}`;
-
-    // 1) Create the appointment request (Pending until staff confirm) — fee paid
-    const { error: apptErr } = await supabase.from('appointments').insert({
-      id: apptId,
-      customer: name.trim(),
-      type,
-      date,
-      time,
-      stylist: 'Unassigned',
-      status: 'Pending',
-      location: store,
-      looking_for: lookingFor,
-      budget_cents: budgetCents,
-      fee_paid: true,
-    });
-    if (apptErr) {
-      setError(
-        `Your card was charged (ref ${payment.paymentIntentId}) but we could not save the booking — please call the boutique at ${locationById(store).phone} and we will finish it by hand.`,
-      );
-      return;
-    }
-
-    // 2) Log a lead with her budget so the sales team can follow up (best effort)
-    await supabase.from('leads').insert({
-      id: `L-${suffix}`,
-      name: name.trim(),
-      email: email.trim(),
-      source: 'Booking Page',
-      budget_cents: budgetCents,
-      wedding_date: weddingDate || date,
-      stage: 'Appointment Set',
-    });
-
-    // 3) Record the real card payment in her communications timeline (best effort)
-    await supabase.from('messages').insert({
-      customer: name.trim(),
-      channel: 'email',
-      to_address: email.trim(),
-      subject: `Booking fee received — ${apptId}`,
-      body: `${formatCents(payment.totalCents)} charged to ${payment.brandLabel} (${FEE_LABEL} booking fee${payment.surchargeCents > 0 ? ` + ${formatCents(payment.surchargeCents)} ${payment.surchargePct}% card fee` : ''}) for ${type} on ${formatDate(date)} at ${time} (${locationById(store).short}). Looking for: ${lookingFor}. Budget: ${budgetLabel(budgetCents)}. Stripe ref ${payment.paymentIntentId}. Fee is credited toward her purchase.`,
-      kind: 'payment',
-      status: 'sent',
-    });
-
-    // 4) Add the bride to the boutique's contact list (CRM)
     try {
-      await fetch('https://famous.ai/api/crm/6a5d5dc9d84ad34d886e72c1/subscribe', {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/scheduling/public/book`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          email: email.trim(),
           name: name.trim(),
-          phone: phone.trim() || undefined,
-          sms_opt_in: smsOptIn === true,
-          source: 'bride-booking-page',
-          tags: ['bride', 'appointment-request', 'fee-paid', locationById(store).short],
-        }),
+          email: email.trim(),
+          phone: phone.trim(),
+          smsOptIn,
+          weddingDate,
+          store,
+          type,
+          lookingFor,
+          budgetCents,
+          date,
+          time,
+          paymentIntentId: payment.paymentIntentId,
+          totalCents: payment.totalCents,
+          brandLabel: payment.brandLabel,
+          surchargeCents: payment.surchargeCents,
+          surchargePct: payment.surchargePct
+        })
       });
-    } catch {
-      // CRM subscribe is best-effort; the appointment itself is already saved
-    }
 
-    setConfirmed({ id: apptId, store, date, time });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to complete booking');
+      }
+
+      setConfirmed({ id: data.appointmentId, store, date, time });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e: any) {
+      setError(
+        `Your card was charged (ref ${payment.paymentIntentId}) but we could not save the booking — please call the boutique at ${locationById(store).phone} and we will finish it by hand. Error: ${e.message}`,
+      );
+    }
   };
 
 

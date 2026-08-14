@@ -29,11 +29,12 @@ export class CommunicationsEngine {
       .single();
       
     if (!thread) {
-      const { data: newThread } = await supabase
+      const { data: newThread, error: newThreadErr } = await supabase
         .from('communication_threads')
         .insert([{ business_id: businessId, customer_id: customerId, appointment_id: appointmentId }])
         .select()
         .single();
+      if (newThreadErr || !newThread) throw new Error('Failed to create communication thread');
       thread = newThread;
     }
 
@@ -41,7 +42,7 @@ export class CommunicationsEngine {
     const { data: message, error } = await supabase
       .from('communications')
       .insert([{
-        thread_id: thread.id,
+        thread_id: thread!.id,
         business_id: businessId,
         customer_id: customerId,
         appointment_id: appointmentId,
