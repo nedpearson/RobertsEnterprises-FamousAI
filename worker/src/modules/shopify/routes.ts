@@ -82,17 +82,22 @@ shopifyRouter.post('/webhooks/orders/create', async (req: Request, res: Response
     const brandLabel = businessId === 'biz_ido_bridal' ? 'I Do Bridal Couture' : 'Proper & Co.';
     const bodyText = `New appointment booked via Shopify by ${name}. Total Paid: $${(totalCents / 100).toFixed(2)}. Appointment: ${type} on ${date} at ${time} (${store}).`;
 
-    try {
-      await supabase.functions.invoke('send-message', {
-        body: {
-          channel: 'email',
-          to: 'robertsenterprises@bridgebox.ai',
-          subject: `Shopify Booking — ${apptId} (${email})`,
-          body: bodyText
-        }
-      });
-    } catch (e) {
-      console.error('Shopify Webhook - Failed to invoke send-message edge function:', e);
+    const boutiqueEmail = businessId === 'biz_ido_bridal' ? 'ido@idobridalcouture.com' : 'hello@properandcompany.com';
+    const recipients = ['robertsenterprises@bridgebox.ai', boutiqueEmail, email.trim()];
+
+    for (const recipient of recipients) {
+      try {
+        await supabase.functions.invoke('send-message', {
+          body: {
+            channel: 'email',
+            to: recipient,
+            subject: `Shopify Booking Confirmation — ${apptId}`,
+            body: bodyText
+          }
+        });
+      } catch (e) {
+        console.error(`Shopify Webhook - Failed to send email to ${recipient}:`, e);
+      }
     }
 
     // 4) Record the email in messages table
