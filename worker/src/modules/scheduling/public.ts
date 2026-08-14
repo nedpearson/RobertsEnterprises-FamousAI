@@ -57,6 +57,20 @@ publicSchedulingRouter.post('/book', async (req, res) => {
     const feeLabel = '$75.00'; 
     const bodyText = `${(totalCents / 100).toFixed(2)} charged to ${brandLabel} (${feeLabel} booking fee${surchargeCents > 0 ? ` + ${(surchargeCents/100).toFixed(2)} ${surchargePct}% card fee` : ''}) for ${type} on ${date} at ${time} (${store}). Looking for: ${lookingFor}. Budget: ${budgetCents}. Stripe ref ${paymentIntentId}. Fee is credited toward her purchase.`;
 
+    // Actually invoke the edge function to SEND the email
+    try {
+      await supabase.functions.invoke('send-message', {
+        body: {
+          channel: 'email',
+          to: 'robertsenterprises@bridgebox.ai',
+          subject: `Booking fee received — ${apptId} (${email.trim()})`,
+          body: bodyText
+        }
+      });
+    } catch (e) {
+      console.error('Failed to send email:', e);
+    }
+
     await supabase.from('messages').insert({
       customer: name.trim(),
       channel: 'email',

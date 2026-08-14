@@ -106,6 +106,10 @@ app.use('/api/marketing-ai', marketingAIRouter);
 import { schedulingRouter } from './modules/scheduling/routes';
 app.use('/api/scheduling', schedulingRouter);
 
+// Mount Shopify Router
+import { shopifyRouter } from './modules/shopify/routes';
+app.use('/api/shopify', shopifyRouter);
+
 // OAuth Connect Endpoint
 app.get('/api/auth/connect/:provider', (req, res) => {
   const { provider } = req.params;
