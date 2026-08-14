@@ -7,11 +7,15 @@ import { runJobPoller } from './jobs/runner';
 
 dotenv.config();
 
-const prodUrl = process.env.VITE_SUPABASE_URL || 'https://klzzdgqxahglnifuwgke.databasepad.com';
-const prodServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'fake-key';
+const prodUrl = process.env.VITE_SUPABASE_URL;
+const prodServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const demoUrl = process.env.VITE_DEMO_SUPABASE_URL || 'https://demo-klzzdgqxahglnifuwgke.databasepad.com';
-const demoServiceKey = process.env.DEMO_SUPABASE_SERVICE_ROLE_KEY || 'fake-key';
+if (!prodUrl || !prodServiceKey) {
+  throw new Error('Missing Supabase environment variables! Ensure VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.');
+}
+
+const demoUrl = process.env.VITE_DEMO_SUPABASE_URL || prodUrl;
+const demoServiceKey = process.env.DEMO_SUPABASE_SERVICE_ROLE_KEY || prodServiceKey;
 
 export const productionSupabase = createClient(prodUrl, prodServiceKey);
 export const demoSupabase = createClient(demoUrl, demoServiceKey);

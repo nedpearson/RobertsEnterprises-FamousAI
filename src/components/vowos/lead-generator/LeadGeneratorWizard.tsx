@@ -17,7 +17,7 @@ export default function LeadGeneratorWizard({ onComplete, onCancel }: LeadGenera
   // Form State
   const [objective, setObjective] = useState<string>('Generate appointments');
   const [brand, setBrand] = useState<'Proper & Co.' | 'I Do Bridal Couture'>('I Do Bridal Couture');
-  const [boutiqueId, setBoutiqueId] = useState<'ido-br' | 'ido-cov' | 'all'>('ido-br');
+  const [boutiqueId, setBoutiqueId] = useState<'ido-br' | 'ido-cov' | 'proper-br' | 'proper-cov' | 'all'>('ido-br');
   const [destination, setDestination] = useState<string>('/book');
   const [assetType, setAssetType] = useState<LeadGenerationAsset['assetType']>('appointment_page');
   const [provider, setProvider] = useState<LeadGenerationAsset['provider']>('vowos');
@@ -180,8 +180,10 @@ export default function LeadGeneratorWizard({ onComplete, onCancel }: LeadGenera
             <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">Select Boutique Location</label>
             <div className="grid grid-cols-3 gap-3 mt-2">
               {[
-                { id: 'ido-br', name: 'Baton Rouge Downtown' },
-                { id: 'ido-cov', name: 'Covington Boutique' },
+                { id: 'ido-br', name: 'I Do Bridal Couture - Baton Rouge' },
+                { id: 'ido-cov', name: 'I Do Bridal Couture - Covington' },
+                { id: 'proper-br', name: 'Proper & Co. - Baton Rouge' },
+                { id: 'proper-cov', name: 'Proper & Co. - Covington' },
                 { id: 'all', name: 'All Locations (Multi-store)' },
               ].map((loc) => (
                 <button
@@ -332,7 +334,7 @@ export default function LeadGeneratorWizard({ onComplete, onCancel }: LeadGenera
 
           <div className="bg-white rounded-lg p-4 border border-stone-200 space-y-3 max-w-sm mx-auto shadow-xs">
             <p className="text-sm font-bold text-stone-900 text-center">Book Your VIP Bridal Appointment</p>
-            <p className="text-xs text-stone-500 text-center">{brand} — {boutiqueId === 'ido-br' ? 'Baton Rouge' : 'Covington'}</p>
+            <p className="text-xs text-stone-500 text-center">{brand} — {boutiqueId === 'all' ? 'All Locations' : boutiqueId.includes('br') ? 'Baton Rouge' : 'Covington'}</p>
 
             <div className="space-y-2 text-xs">
               {selectedFields.slice(0, 5).map((f) => (

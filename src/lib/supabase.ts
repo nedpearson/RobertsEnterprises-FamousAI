@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize database clients
-const prodUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yyexmcaumkzxvhplipkl.supabase.co';
-const prodKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_lASIBvmSjXthkgf4D__cLw_OpMrfeyb';
+const prodUrl = import.meta.env.VITE_SUPABASE_URL;
+const prodKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!prodUrl || !prodKey) {
+  throw new Error('Missing Supabase environment variables! Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.');
+}
 
 const demoUrl = import.meta.env.VITE_DEMO_SUPABASE_URL || prodUrl;
 const demoKey = import.meta.env.VITE_DEMO_SUPABASE_ANON_KEY || prodKey;
