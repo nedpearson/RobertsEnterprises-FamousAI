@@ -71,14 +71,14 @@ BEGIN
     END IF;
 
     -- 2. Create Business & Locations
-    INSERT INTO businesses (id, name) VALUES (v_business_id, 'Roberts Enterprises (Demo)') ON CONFLICT (id) DO NOTHING;
+    INSERT INTO businesses (id, name) VALUES (v_business_id, 'VowOS Demo') ON CONFLICT (id) DO NOTHING;
     
     INSERT INTO locations (id, business_id, name, address) 
     VALUES 
-        (v_loc1_id, v_business_id, 'I Do Bridal Couture - Baton Rouge', '4343 Perkins Rd, Baton Rouge, LA 70808'),
-        (v_loc2_id, v_business_id, 'I Do Bridal Couture - Covington', '316 Lee Ln, Covington, LA 70433'),
-        (v_loc3_id, v_business_id, 'Proper & Co. - Baton Rouge', '4347 Perkins Rd, Suite A, Baton Rouge, LA 70808'),
-        (v_loc4_id, v_business_id, 'Proper & Co. - Covington', '311 Lee Ln, Suite A, Covington, LA 70433')
+        (v_loc1_id, v_business_id, 'Boutique Alpha', 'Baton Rouge, LA'),
+        (v_loc2_id, v_business_id, 'Boutique Alpha - North', 'Covington, LA'),
+        (v_loc3_id, v_business_id, 'Boutique Beta', 'Baton Rouge, LA'),
+        (v_loc4_id, v_business_id, 'Boutique Beta - East', 'Covington, LA')
     ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, address = EXCLUDED.address;
     
     -- 3. Business Memberships

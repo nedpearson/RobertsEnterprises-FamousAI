@@ -38,7 +38,7 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signInAsDemo: () => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, name: string, role: StaffRole) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   /** Re-read the signed-in user's profile (e.g. after an owner changes their role). */
   refreshProfile: () => Promise<void>;
@@ -129,12 +129,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? error.message : null };
   };
 
-  const signUp = async (email: string, password: string, name: string, role: StaffRole) => {
+  const signUp = async (email: string, password: string, name: string) => {
     setActiveDataPlane('production');
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, role } },
+      options: { data: { name } },
     });
     if (!error) {
       // The signup trigger may predate the expanded role set — make sure the

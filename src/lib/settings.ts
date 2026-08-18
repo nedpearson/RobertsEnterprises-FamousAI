@@ -527,7 +527,7 @@ export async function resolveEffectiveSetting<T>(
         businessId = membership.business_id;
       } else {
         // Fallback for demo environments if no membership exists
-        const { data: defaultBusiness } = await supabase.from('businesses').select('id').limit(1).maybeSingle();
+        throw new Error('User is not a member of any business');
         if (defaultBusiness) businessId = defaultBusiness.id;
       }
     }
@@ -614,7 +614,7 @@ export async function saveScopedSetting<T>(
     if (membership) {
       businessId = membership.business_id;
     } else {
-      const { data: defaultBusiness } = await supabase.from('businesses').select('id').limit(1).maybeSingle();
+      throw new Error('User is not a member of any business');
       if (defaultBusiness) businessId = defaultBusiness.id;
     }
   }
