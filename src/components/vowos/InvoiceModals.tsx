@@ -20,6 +20,7 @@ export function NewInvoiceModal({ open, onClose }: { open: boolean; onClose: () 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [deposit, setDeposit] = useState('');
+  const [stagedPlan, setStagedPlan] = useState(false);
   const [dueDate, setDueDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -35,6 +36,7 @@ export function NewInvoiceModal({ open, onClose }: { open: boolean; onClose: () 
       setDescription('');
       setAmount('');
       setDeposit('');
+      setStagedPlan(false);
       setDueDate('');
       setError('');
       setSaving(false);
@@ -285,3 +287,4 @@ export function RecordPaymentModal({
     </Modal>
   );
 }
+

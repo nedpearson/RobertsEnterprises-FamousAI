@@ -110,6 +110,7 @@ export interface Gown {
   msrpCents: number;
   /** Merchandise category (bridal gown, bridesmaids, veil, …). */
   category: string;
+  inventoryType?: 'Sample' | 'Sellable' | 'Special Order';
   /** New / Sample / Consignment / Clearance. */
   condition: string;
   /** Ordering vendor (often, but not always, the designer). */
@@ -360,3 +361,4 @@ export function formatDate(iso?: string | null): string {
     return String(iso ?? '—');
   }
 }
+

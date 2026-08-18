@@ -12,6 +12,16 @@ interface InvoiceDetailModalProps {
 }
 
 export default function InvoiceDetailModal({ invoice, open, onClose, onPay, onLink }: InvoiceDetailModalProps) {
+  const [schedules, setSchedules] = useState<any[]>([]);
+  useEffect(() => {
+    if (open && invoice && invoice.id.length > 20) {
+      supabase.from('payment_schedules').select('*').eq('invoice_id', invoice.id).order('created_at').then(({data}) => {
+        if (data) setSchedules(data);
+      });
+    } else {
+      setSchedules([]);
+    }
+  }, [open, invoice]);
   if (!invoice) return null;
 
   const balance = invoice.amountCents - invoice.paidCents;
@@ -106,6 +116,27 @@ export default function InvoiceDetailModal({ invoice, open, onClose, onPay, onLi
           </div>
         </div>
 
+        {/* Staged Payments Schedule */}
+        {schedules.length > 0 && (
+          <div className="mb-8">
+            <h4 className="text-sm font-semibold text-stone-900 mb-3">Staged Payment Schedule</h4>
+            <div className="border border-stone-200 rounded-xl divide-y divide-stone-100">
+              {schedules.map(s => (
+                <div key={s.id} className="flex items-center justify-between p-3 text-sm">
+                  <div>
+                    <p className="font-medium text-stone-800">{s.stage_name}</p>
+                    <p className="text-xs text-stone-500">Due: {formatDate(s.due_date)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-stone-900">{formatCents(s.amount_cents)}</p>
+                    <span className={\	ext-xs font-semibold \\}>{s.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Payment History */}
         <div>
           <h4 className="text-sm font-semibold text-stone-900 mb-3 flex items-center gap-2">
@@ -143,3 +174,4 @@ export default function InvoiceDetailModal({ invoice, open, onClose, onPay, onLi
     </Modal>
   );
 }
+

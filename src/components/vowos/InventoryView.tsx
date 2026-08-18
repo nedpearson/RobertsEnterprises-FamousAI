@@ -35,6 +35,7 @@ export default function InventoryView() {
   const [query, setQuery] = useState('');
   const [styleFilter, setStyleFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All');
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingGown, setEditingGown] = useState<Gown | null>(null);
@@ -261,6 +262,11 @@ export default function InventoryView() {
                   />
                   <div className="absolute left-3 top-3 flex flex-col gap-1.5">
                     <StatusBadge status={g.status} />
+                      {g.inventoryType === 'Sample' && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                          Sample (Try-On)
+                        </span>
+                      )}
                     {needsReorder && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
                         <AlertTriangle className="h-3 w-3" /> Reorder
@@ -410,3 +416,6 @@ export default function InventoryView() {
     </div>
   );
 }
+
+
+
