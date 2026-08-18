@@ -43,7 +43,7 @@ export const VIEW_ACCESS: Record<ViewKey, StaffRole[]> = {
   timeclock: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   communications: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
   contracts: ['Owner', 'Manager', 'Stylist', 'Front Desk'],
-  alterations: ['Owner', 'Manager', 'Stylist'],
+  alterations: ['Owner', 'Manager', 'Stylist', 'Seamstress'],
   invoices: ['Owner', 'Manager', 'Front Desk'],
   purchases: ['Owner', 'Manager'],
   reports: ['Owner', 'Manager'],
@@ -439,3 +439,4 @@ export default function Sidebar({
     </TooltipProvider>
   );
 }
+

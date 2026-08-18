@@ -2,9 +2,9 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, setActiveDataPlane } from '@/lib/supabase';
 
-export type StaffRole = 'Owner' | 'Manager' | 'Stylist' | 'Front Desk';
+export type StaffRole = 'Owner' | 'Manager' | 'Stylist' | 'Front Desk' | 'Seamstress';
 
-export const STAFF_ROLES: StaffRole[] = ['Owner', 'Manager', 'Stylist', 'Front Desk'];
+export const STAFF_ROLES: StaffRole[] = ['Owner', 'Manager', 'Stylist', 'Front Desk', 'Seamstress'];
 
 export const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
   Owner: 'Full access — financial ledgers, reports, and staff role management.',
@@ -18,6 +18,7 @@ export const ROLE_BADGE_CLASSES: Record<StaffRole, string> = {
   Manager: 'bg-amber-500/20 text-amber-600 ring-1 ring-inset ring-amber-500/30',
   Stylist: 'bg-violet-500/20 text-violet-500 ring-1 ring-inset ring-violet-500/30',
   'Front Desk': 'bg-sky-500/20 text-sky-600 ring-1 ring-inset ring-sky-500/30',
+  Seamstress: 'bg-emerald-500/20 text-emerald-600 ring-1 ring-inset ring-emerald-500/30',
 };
 
 /** Normalize any stored role string into a supported StaffRole. */
@@ -206,3 +207,5 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
+
+
