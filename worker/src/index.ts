@@ -30,6 +30,7 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 export interface RequestContext {
   db: SupabaseClient;
@@ -108,7 +109,9 @@ app.use('/api/scheduling', schedulingRouter);
 
 // Mount Shopify Router
 import { shopifyRouter } from './modules/shopify/routes';
+import { communicationsRouter } from './modules/communications/routes';
 app.use('/api/shopify', shopifyRouter);
+app.use('/api/communications', communicationsRouter);
 
 // OAuth Connect Endpoint
 app.get('/api/auth/connect/:provider', (req, res) => {
@@ -169,3 +172,5 @@ async function start() {
 start().catch((err) => {
   console.error('Failed to start worker:', err);
 });
+
+
